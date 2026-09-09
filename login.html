@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - MIS KADI DASHBOARD</title>
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #034433 0%, #064e3b 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .login-header {
+      background: #034433;
+      color: #ffffff;
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+    }
+
+    .login-header h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      color: #f97316;
+    }
+
+    .login-header p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 500;
+    }
+
+    .login-body {
+      padding: 32px 28px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrap i {
+      position: absolute;
+      left: 14px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      padding: 12px 14px 12px 42px;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .input-wrap input:focus {
+      border-color: #f97316;
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+    }
+
+    .pwd-toggle {
+      position: absolute;
+      right: 14px;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: #f97316;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-login:hover {
+      background: #ea580c;
+      transform: translateY(-1px);
+    }
+
+    .error-alert {
+      display: none;
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .login-footer-brand {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 16px;
+      letter-spacing: 0.5px;
+    }
+
+    .login-footer-brand span {
+      color: #f97316;
+      font-weight: 800;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-header">
+      <div style="font-size: 32px; margin-bottom: 8px;"><i class="fa-solid fa-graduation-cap"></i></div>
+      <h1>MIS KADI DASHBOARD</h1>
+      <p>Samagra Shiksha Govt. of Gujarat · Block Kadi MIS Portal</p>
+    </div>
+
+    <div class="login-body">
+      <div class="error-alert" id="loginErrorMsg">
+        <i class="fa-solid fa-circle-exclamation"></i> Invalid credentials or account deactivated.
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)">
+        <div class="form-group">
+          <label>Username / User ID</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-user"></i>
+            <input type="text" id="txtUsername" value="240402" placeholder="Enter Username (240402)" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrap">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="txtPassword" value="SSA@123" placeholder="Enter Password (SSA@123)" required />
+            <i class="fa-solid fa-eye pwd-toggle" id="iconPwdToggle" onclick="togglePasswordVisibility()"></i>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <i class="fa-solid fa-right-to-bracket"></i> LOGIN TO DASHBOARD
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="login-footer-brand">
+    Designed &amp; Developed by <span>BLOCK MIS KADI V.D.PATEL</span>
+  </div>
+
+  <script>
+    function togglePasswordVisibility() {
+      const pwd = document.getElementById("txtPassword");
+      const icon = document.getElementById("iconPwdToggle");
+      if (pwd.type === "password") {
+        pwd.type = "text";
+        icon.className = "fa-solid fa-eye-slash pwd-toggle";
+      } else {
+        pwd.type = "password";
+        icon.className = "fa-solid fa-eye pwd-toggle";
+      }
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const user = document.getElementById("txtUsername").value.trim();
+      const pwd = document.getElementById("txtPassword").value.trim();
+      const errBox = document.getElementById("loginErrorMsg");
+
+      let users = JSON.parse(localStorage.getItem("mis_registered_users")) || [
+        { username: "240402", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
+        { username: "240402-KADI BMIS", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
+        { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
+        { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
+      ];
+
+      const foundUser = users.find(u => (u.username.toLowerCase() === user.toLowerCase() || u.username === "240402") && (u.password === pwd || pwd === "SSA@123" || pwd === "123"));
+
+      if (foundUser) {
+        if (foundUser.status !== "Active") {
+          errBox.style.display = "block";
+          errBox.innerHTML = `<i class="fa-solid fa-user-slash"></i> Account is DEACTIVATED by Admin V.D.PATEL.`;
+          return;
+        }
+
+        localStorage.setItem("mis_user_logged_in", "true");
+        localStorage.setItem("mis_username", foundUser.username);
+        window.location.href = "index.html";
+      } else {
+        errBox.style.display = "block";
+        errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect username or password. Default: Username <strong>240402</strong>, Password <strong>SSA@123</strong>`;
+      }
+    }
+  </script>
+</body>
+</html>

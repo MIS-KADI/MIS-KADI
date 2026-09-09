@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIS KADI DASHBOARD - Samagra Shiksha Gujarat</title>
+  
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Chart.js Local -->
+  <script src="chart.min.js"></script>
+  <!-- SheetJS Excel Library Local -->
+  <script src="xlsx.full.min.js"></script>
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="app-wrapper">
+    
+    <!-- Left Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Child Tracking System</h2>
+        <div class="sub">Block MIS · Samagra Shiksha Govt. of Gujarat</div>
+      </div>
+
+      <ul class="sidebar-nav">
+        
+        <li class="nav-section-title">MAIN NAVIGATION</li>
+
+        <!-- Home Dashboard -->
+        <li class="nav-item">
+          <a class="nav-link active" id="navHomeLink" onclick="switchNavTab('home')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-house"></i> Home Dashboard
+            </span>
+          </a>
+        </li>
+
+        <!-- 1. SSA Gujarat Portal Dropdown -->
+        <li class="nav-item open" id="menuSSAGujarat">
+          <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuSSAGujarat', 'Child Tracking System (CTS)')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-landmark"></i> SSA Gujarat Portal
+            </span>
+            <i class="fa-solid fa-chevron-down caret-icon" onclick="event.stopPropagation(); toggleSubmenu('menuSSAGujarat');"></i>
+          </a>
+          <ul class="sub-nav">
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Child Tracking System (CTS)')"><i class="fa-solid fa-chart-line"></i> Child Tracking System (CTS)</a></li>
+          </ul>
+        </li>
+
+        <!-- 2. Attendance Dropdown -->
+        <li class="nav-item open" id="menuAttendance">
+          <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuAttendance', 'Teacher Attendance')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-clipboard-user"></i> Attendance
+            </span>
+            <i class="fa-solid fa-chevron-down caret-icon" onclick="event.stopPropagation(); toggleSubmenu('menuAttendance');"></i>
+          </a>
+          <ul class="sub-nav">
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Teacher Attendance')"><i class="fa-solid fa-user-tie"></i> Teacher Attendance</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Student Attendance')"><i class="fa-solid fa-user-graduate"></i> Student Attendance</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Not Submitted Attendance')"><i class="fa-solid fa-file-circle-xmark"></i> Not Submitted Attendance</a></li>
+          </ul>
+        </li>
+
+        <!-- 3. All School Information -->
+        <li class="nav-item">
+          <a class="nav-link" href="javascript:void(0);" onclick="openModuleTab('All School Information')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-school"></i> All School Information
+            </span>
+          </a>
+        </li>
+
+        <!-- 4. GSQAC -->
+        <li class="nav-item">
+          <a class="nav-link" href="javascript:void(0);" onclick="openModuleTab('GSQAC')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-award"></i> GSQAC (School Accreditation)
+            </span>
+          </a>
+        </li>
+
+        <!-- 4.1 SAT EXAM -->
+        <li class="nav-item">
+          <a class="nav-link" href="javascript:void(0);" onclick="openModuleTab('SAT FIRST AND SECOND SEM')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-file-pen"></i> SAT Exam Result (1st & 2nd Sem)
+            </span>
+          </a>
+        </li>
+
+        <!-- 5. ICT / Gyankunj Dropdown -->
+        <li class="nav-item open" id="menuICTGyankunj">
+          <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuICTGyankunj', 'ICT Computer Lab')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-laptop-code"></i> ICT / Gyankunj
+            </span>
+            <i class="fa-solid fa-chevron-down caret-icon" onclick="event.stopPropagation(); toggleSubmenu('menuICTGyankunj');"></i>
+          </a>
+          <ul class="sub-nav">
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('ICT Computer Lab')"><i class="fa-solid fa-desktop"></i> ICT Computer Lab</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Gyankunj')"><i class="fa-solid fa-tv"></i> Gyankunj Smart Class</a></li>
+          </ul>
+        </li>
+
+        <!-- 6. School Monitoring Dropdown -->
+        <li class="nav-item open" id="menuSchoolMonitoring">
+          <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuSchoolMonitoring', 'CRC School Visit')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-eye"></i> School Monitoring
+            </span>
+            <i class="fa-solid fa-chevron-down caret-icon" onclick="event.stopPropagation(); toggleSubmenu('menuSchoolMonitoring');"></i>
+          </a>
+          <ul class="sub-nav">
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('CRC School Visit')"><i class="fa-solid fa-person-walking-luggage"></i> CRC School Visit</a></li>
+          </ul>
+        </li>
+
+        <!-- 7. UDISE+ Dropdown -->
+        <li class="nav-item open" id="menuUDISE">
+          <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuUDISE', 'UDISE+ School Profile')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-database"></i> UDISE+
+            </span>
+            <i class="fa-solid fa-chevron-down caret-icon" onclick="event.stopPropagation(); toggleSubmenu('menuUDISE');"></i>
+          </a>
+          <ul class="sub-nav">
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('UDISE+ School Profile')"><i class="fa-solid fa-school"></i> School Profile</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('UDISE+ Teacher Profile')"><i class="fa-solid fa-chalkboard-user"></i> Teacher Profile (શિક્ષક પ્રોફાઇલ)</a></li>
+          </ul>
+        </li>
+
+        <!-- 8. Indicator -->
+        <li class="nav-item">
+          <a class="nav-link" href="javascript:void(0);" onclick="openModuleTab('Indicator')">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-sliders"></i> Indicator
+            </span>
+          </a>
+        </li>
+
+        <!-- 9. Users -->
+        <li class="nav-item">
+          <a class="nav-link" href="javascript:void(0);" onclick="renderUsersManagementTable()">
+            <span class="nav-link-content">
+              <i class="fa-solid fa-users-gear"></i> Users Management
+            </span>
+          </a>
+        </li>
+
+      </ul>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      
+      <!-- Top Header with Highlighted MIS KADI DASHBOARD -->
+      <header class="top-header">
+        <div class="welcome-badge-highlight">
+          <i class="fa-solid fa-bars"></i>
+          <span id="txtWelcomeUser">MIS KADI DASHBOARD</span>
+        </div>
+
+        <div class="header-right">
+          <span class="ay-badge">
+            <i class="fa-regular fa-calendar"></i> AY 2026-27
+          </span>
+
+          <button class="btn btn-light" onclick="handleLogout()" style="font-size: 11px; padding: 6px 12px;">
+            <i class="fa-solid fa-right-from-bracket"></i> Logout
+          </button>
+        </div>
+      </header>
+
+      <!-- Dashboard Body Container -->
+      <div class="dashboard-container">
+
+        <!-- Title Banner -->
+        <div class="banner-card" style="justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="banner-icon">
+              <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div>
+              <div class="banner-title" id="txtMainModuleTitle" style="font-size: 20px; text-transform: uppercase; letter-spacing: 0.5px;">
+                MIS KADI DASHBOARD
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-saffron" id="btnHeaderExport" onclick="exportActiveTabCSV()" style="font-size: 12px; background: #16a34a;">
+              <i class="fa-solid fa-file-csv"></i> Export Data CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- HOME DASHBOARD ONLY CONTAINER -->
+        <div id="homeDashboardContentWrapper">
+
+          <!-- SECTION 1: STUDENT ENTRY & ADMISSION -->
+          <section class="section-block">
+            <div class="section-badge-header">
+              <span class="sec-num">1</span>
+              <span class="sec-title">STUDENT ENTRY &amp; ADMISSION</span>
+            </div>
+
+            <div class="cards-grid-4">
+              <div class="cts-card" style="cursor:pointer;" onclick="renderClass1DataTables()">
+                <div class="cts-card-head green"><span>CLASS 1 NEW ENTRY</span></div>
+                <div class="cts-card-body green">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-user-plus"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>New Entered Students</strong>
+                    <div class="card-count-num" id="cntClass1">5,811</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+
+              <div class="cts-card" style="cursor:pointer;" onclick="renderBalvatikaDataTables()">
+                <div class="cts-card-head green"><span>BALVATIKA NEW ENTRY</span></div>
+                <div class="cts-card-body green">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-child-reaching"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>New Entered Balvatika Students</strong>
+                    <div class="card-count-num" id="cntBalvatika">4,007</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+
+              <div class="cts-card" style="cursor:pointer;" onclick="renderStd2To12DataTables()">
+                <div class="cts-card-head green"><span>STD 2-12 NEW ENTRY</span></div>
+                <div class="cts-card-body green">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-user-graduate"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>2 to 12 New Entered Students</strong>
+                    <div class="card-count-num" id="cntStd2to12">58,579</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+
+              <div class="cts-card" style="cursor:pointer;" onclick="renderUpgradationDataTables()">
+                <div class="cts-card-head brown"><span>CLASS UPGRADATION</span></div>
+                <div class="cts-card-body brown">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-chart-line"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>Class 1-12 Upgradation Report</strong>
+                    <div class="card-count-num" id="cntUpgradation">68,397</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 2: BLOCK-WIDE COUNTS -->
+          <section class="section-block">
+            <div class="section-badge-header">
+              <span class="sec-num">2</span>
+              <span class="sec-title">BLOCK-WIDE COUNTS</span>
+            </div>
+
+            <div class="cards-grid-4">
+              <div class="cts-card" style="cursor:pointer;" onclick="renderTotalStudentsDataTables()">
+                <div class="cts-card-head navy"><span>TOTAL STUDENTS</span></div>
+                <div class="cts-card-body navy">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>Total Students</strong>
+                    <div class="card-count-num" id="cntTotalStudents">68,397</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+
+              <div class="cts-card" style="cursor:pointer;" onclick="renderTotalSchoolsDataTables()">
+                <div class="cts-card-head blue"><span>TOTAL SCHOOLS</span></div>
+                <div class="cts-card-body blue">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-building-columns"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>Total Schools</strong>
+                    <div class="card-count-num" id="cntTotalSchools">244</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+
+              <div class="cts-card" style="cursor:pointer;" onclick="renderGsosDataTables()">
+                <div class="cts-card-head purple"><span>GSOS STUDENTS</span></div>
+                <div class="cts-card-body purple">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-user-shield"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>Total GSOS Students</strong>
+                    <div class="card-count-num" id="cntGSOS">2,864</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+
+              <div class="cts-card" style="cursor:pointer;" onclick="renderCwsnDataTables()">
+                <div class="cts-card-head blue"><span>CWSN STUDENTS</span></div>
+                <div class="cts-card-body blue">
+                  <div class="card-icon-avatar"><i class="fa-solid fa-wheelchair"></i></div>
+                  <div class="card-text-wrap">
+                    <strong>CWSN Students</strong>
+                    <div class="card-count-num" id="cntCWSN">308</div>
+                  </div>
+                </div>
+                <div class="cts-card-foot"><span>View Details</span><i class="fa-solid fa-arrow-right"></i></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 3: INTERACTIVE ANALYTICS CHARTS (Home Only) -->
+          <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; margin-bottom:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
+              <h3 style="font-size:16px; font-weight:800; margin:0;">
+                <i class="fa-solid fa-chart-column" style="color:#f97316;"></i> INTERACTIVE ANALYTICS CHART (JR. KG TO CLASS 12 ENROLMENT)
+              </h3>
+              <span class="badge" style="background:#16a34a; color:#fff; font-size:12px;">CLICK LEGEND OR SLICE TO FILTER BAR CHART</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 2.2fr 1.3fr; gap:20px;">
+              <div style="height:330px; position:relative;">
+                <canvas id="chartClassBreakdown"></canvas>
+              </div>
+              <div style="height:330px; position:relative;">
+                <canvas id="chartManagementShare"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- CRC CLUSTER-WISE AND SCHOOL-WISE TABLES ON HOME DASHBOARD AS REQUESTED -->
+          <div id="homeDataTablesWrapper">
+
+            <!-- TABLE 1: CRC CLUSTER-WISE SUMMARY TABLE -->
+            <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; margin-bottom:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
+                <h3 style="font-size:16px; font-weight:800; margin:0;" id="txtCrcTableHeading">
+                  <i class="fa-solid fa-sitemap" style="color:#f97316;"></i> CRC CLUSTER-WISE STUDENT ENTRY SUMMARY (14 CLUSTERS)
+                </h3>
+                <span class="badge" id="badgeCrcTotal" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">TOTAL: 68,397 STUDENTS</span>
+              </div>
+
+              <div style="overflow-x: auto; max-height: 380px;">
+                <table class="custom-table" id="tableCrcSummary">
+                  <thead id="theadCrcSummary">
+                    <tr>
+                      <th style="min-width:180px;">CLUSTER (14 ITEMS)</th>
+                      <th>SCHOOLS</th>
+                      <th>BALVATIKA</th>
+                      <th>CLASS 1</th>
+                      <th>CLASS 2</th>
+                      <th>CLASS 3</th>
+                      <th>CLASS 4</th>
+                      <th>CLASS 5</th>
+                      <th>CLASS 6</th>
+                      <th>CLASS 7</th>
+                      <th>CLASS 8</th>
+                      <th>CLASS 9</th>
+                      <th>CLASS 10</th>
+                      <th>CLASS 11</th>
+                      <th>CLASS 12</th>
+                      <th>TOTAL ENROLLED</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyCrcSummary"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- TABLE 2: SCHOOL-WISE DETAILED STUDENT ENTRY TABLE -->
+            <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; margin-bottom:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);" id="tableSchoolDetailsContainer">
+              
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+                <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0;" id="txtSchoolTableHeading">
+                  <i class="fa-solid fa-building-columns" style="color:#0284c7;"></i> SCHOOL-WISE STUDENT ENTRY DETAILS (JR. KG TO CLASS 12)
+                </h3>
+
+                <button class="btn btn-saffron" style="font-size:12px; background:#16a34a;" onclick="exportSchoolListCSV()">
+                  <i class="fa-solid fa-file-csv"></i> Download CSV
+                </button>
+              </div>
+
+              <!-- FILTER CONTROLS BAR -->
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; margin-bottom:16px; display:grid; grid-template-columns: 1fr 1fr 1fr 1.2fr; gap:12px; align-items:center;">
+                
+                <div>
+                  <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;"><i class="fa-solid fa-landmark"></i> School Management:</label>
+                  <select id="selFilterManagement" class="form-control" onchange="applyAllSchoolFilters()" style="height:36px; font-size:12px;">
+                    <option value="ALL">-- All Managements --</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;"><i class="fa-solid fa-layer-group"></i> School Category:</label>
+                  <select id="selFilterCategory" class="form-control" onchange="applyAllSchoolFilters()" style="height:36px; font-size:12px;">
+                    <option value="ALL">-- All Categories --</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;"><i class="fa-solid fa-sitemap"></i> CRC Cluster:</label>
+                  <select id="selFilterCluster" class="form-control" onchange="applyAllSchoolFilters()" style="height:36px; font-size:12px;">
+                    <option value="ALL">-- All CRC Clusters --</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;"><i class="fa-solid fa-magnifying-glass"></i> Search School / DISE:</label>
+                  <input type="text" id="searchSchoolDetails" class="form-control" placeholder="Search School Name or Code..." onkeyup="applyAllSchoolFilters()" style="height:36px; font-size:12px;" />
+                </div>
+
+              </div>
+
+              <!-- School Table -->
+              <div style="overflow-x: auto; max-height: 540px;">
+                <table class="custom-table" id="tableSchoolDetails">
+                  <thead id="theadSchoolDetails">
+                    <tr>
+                      <th>DISE Code</th>
+                      <th>School Name</th>
+                      <th>CRC Cluster</th>
+                      <th>Management</th>
+                      <th>Category</th>
+                      <th>Jr. KG</th>
+                      <th>Sr. KG</th>
+                      <th>Balvatika</th>
+                      <th>Std 1</th>
+                      <th>Std 2</th>
+                      <th>Std 3</th>
+                      <th>Std 4</th>
+                      <th>Std 5</th>
+                      <th>Std 6</th>
+                      <th>Std 7</th>
+                      <th>Std 8</th>
+                      <th>Std 9</th>
+                      <th>Std 10</th>
+                      <th>Std 11</th>
+                      <th>Std 12</th>
+                      <th>Total Enrolled</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodySchoolDetails"></tbody>
+                </table>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- ISOLATED DEDICATED TAB CONTENT CONTAINER -->
+        <div id="moduleTabDedicatedContainer" style="display:none; margin-top:16px;">
+          
+          <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; margin-bottom:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+              <h3 style="font-size:17px; font-weight:800; color:#0f172a; margin:0;" id="txtTabSectionHeading">
+                <i class="fa-solid fa-folder-open" style="color:#0284c7;"></i> MODULE RECORDS
+              </h3>
+
+              <div style="display:flex; gap:10px;">
+                <input type="text" id="searchTabDetails" class="form-control" placeholder="Search in this tab..." onkeyup="filterTabTableRows()" style="height:36px; min-width:260px; font-size:13px;" />
+                <button class="btn btn-saffron" style="font-size:12px; background:#16a34a;" onclick="exportActiveTabCSV()">
+                  <i class="fa-solid fa-file-csv"></i> Download CSV
+                </button>
+              </div>
+            </div>
+
+            <div style="overflow-x: auto; max-height: 560px;">
+              <table class="custom-table" id="tableTabDetails">
+                <thead id="theadTabDetails"></thead>
+                <tbody id="tbodyTabDetails"></tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FOOTER BRANDING -->
+        <footer style="text-align:center; padding:20px; font-size:13px; font-weight:800; color:#034433; border-top:1px solid #cbd5e1; margin-top:30px;">
+          Designed &amp; Developed by <span style="color:#f97316;">BLOCK MIS KADI V.D.PATEL</span>
+        </footer>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="data/dashboard_data.js?v=20260821_RESTORED"></script>
+  <script src="app.js?v=20260821_RESTORED"></script>
+</body>
+</html>
