@@ -284,20 +284,44 @@ async function loadDashboardData() {
   }
 }
 
-function updateDashboardCards() {
-  const totalStudents = (globalData && globalData.total_students) ? globalData.total_students : 68397;
-  const totalSchools = (globalData && globalData.total_schools) ? globalData.total_schools : 244;
-  const balvatikaTotal = (globalData && globalData.balvatika_total) ? globalData.balvatika_total : 4007;
-  const class1Total = (globalData && globalData.class_1_total) ? globalData.class_1_total : 5811;
-  const gsosTotal = (globalData && globalData.cntGSOS) ? globalData.cntGSOS : 2864;
-  const cwsnTotal = (globalData && globalData.cntCWSN) ? globalData.cntCWSN : 308;
-  const std2to12Total = totalStudents - class1Total - balvatikaTotal;
+function updateDashboardCards(filteredRows) {
+  const rows = (filteredRows && Array.isArray(filteredRows)) ? filteredRows : allSchoolRows;
+  
+  const totalSchools = rows.length;
+  const totalStudents = rows.reduce((acc, s) => acc + (s.total || s.total_students || 0), 0);
+  const balvatikaTotal = rows.reduce((acc, s) => acc + (s.balvatika || 0), 0);
+  const class1Total = rows.reduce((acc, s) => acc + (s.class_1 || 0), 0);
+  const std2to12Total = Math.max(0, totalStudents - class1Total - balvatikaTotal);
+  const upgradationTotal = totalStudents;
+
+  let gsosTotal = 0;
+  let cwsnTotal = 0;
+
+  if (rows.length === allSchoolRows.length && allSchoolRows.length > 0) {
+    gsosTotal = (globalData && globalData.cntGSOS) ? globalData.cntGSOS : 2864;
+    cwsnTotal = (globalData && globalData.cntCWSN) ? globalData.cntCWSN : 308;
+  } else {
+    const schoolNames = new Set(rows.map(s => (s.school_name || '').trim().toLowerCase()));
+    const clusterNames = new Set(rows.map(s => (s.cluster_name || '').trim().toLowerCase()));
+
+    if (allGsosRows && allGsosRows.length > 0) {
+      gsosTotal = allGsosRows.filter(r => schoolNames.has((r.school || '').trim().toLowerCase()) || clusterNames.has((r.cluster || '').trim().toLowerCase())).length;
+    } else {
+      gsosTotal = Math.round(2864 * (totalSchools / (allSchoolRows.length || 1)));
+    }
+
+    if (allCwsnRows && allCwsnRows.length > 0) {
+      cwsnTotal = allCwsnRows.filter(r => schoolNames.has((r.school || '').trim().toLowerCase()) || clusterNames.has((r.cluster || '').trim().toLowerCase())).length;
+    } else {
+      cwsnTotal = Math.round(308 * (totalSchools / (allSchoolRows.length || 1)));
+    }
+  }
 
   setElemText("cntTotalStudents", totalStudents.toLocaleString());
   setElemText("cntClass1", class1Total.toLocaleString());
   setElemText("cntBalvatika", balvatikaTotal.toLocaleString());
   setElemText("cntStd2to12", std2to12Total.toLocaleString());
-  setElemText("cntUpgradation", totalStudents.toLocaleString());
+  setElemText("cntUpgradation", upgradationTotal.toLocaleString());
   setElemText("cntTotalSchools", totalSchools.toLocaleString());
   setElemText("cntGSOS", gsosTotal.toLocaleString());
   setElemText("cntCWSN", cwsnTotal.toLocaleString());
@@ -565,7 +589,7 @@ function renderBlankTabNotice(tabName) {
         <i class="fa-solid fa-folder-open" style="color:#f97316;"></i> ${tabName.toUpperCase()} MODULE
       </h2>
       <p style="font-size:12px; color:#94a3b8; margin-top:4px; margin-bottom:0;">
-        ડેટા ઉપલબ્ધ નથી - તમે જ્યારે આ મોડ્યુલનો એક્સેલ ફાઈલ પાથ આપશો ત્યારે અહીં ઓટોમેટિકલી પત્રક અને KPI કાર્ડ્સ બની જશે.
+        Data not available - Live reports and KPI cards will be generated once data file is loaded.
       </p>
     </div>
 
@@ -574,10 +598,10 @@ function renderBlankTabNotice(tabName) {
         <i class="fa-solid fa-file-excel"></i>
       </div>
       <h3 style="font-size:18px; font-weight:800; color:#334155; margin-bottom:8px;">
-        ${tabName} ડેટા પત્રક અત્યારે ખાલી (Blank) છે
+        ${tabName} Data Table is currently empty
       </h3>
       <p style="font-size:13px; color:#64748b; max-width:550px; margin:0 auto 16px; line-height:1.6;">
-        તમારા કહેવા મુજબ જ્યાં સુધી તમે આ મોડ્યુલ માટે ચોક્કસ એક્સેલ ફાઈલનો પાથ (Excel File Path) ન આપો ત્યાં સુધી ડેટા બ્લેન્ક રાખવામાં આવ્યો છે. ફાઈલ પાથ આપતા જ ઓટોમેટિકલી પત્રક અને KPI કાર્ડ્સ લાઈવ થઈ જશે.
+        Reports and KPI cards will automatically appear once the data file is provided for this module.
       </p>
       <span class="badge" style="background:#034433; color:#fff; padding:6px 14px; font-size:12px;">Waiting for User Excel Path</span>
     </div>
@@ -2198,7 +2222,7 @@ function renderGsqacModuleView(yearVal) {
 
         <div style="display:flex; align-items:center; gap:12px;">
           <div style="background:rgba(255,255,255,0.08); padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.15);">
-            <label style="font-size:11px; font-weight:800; color:#f97316; display:block; margin-bottom:2px;"><i class="fa-regular fa-calendar-days"></i> EVALUATION YEAR (વર્ષ પસંદગી):</label>
+            <label style="font-size:11px; font-weight:800; color:#f97316; display:block; margin-bottom:2px;"><i class="fa-regular fa-calendar-days"></i> EVALUATION YEAR:</label>
             <select id="selGsqacYear" onchange="changeGsqacYear(this.value)" style="background:#1e293b; color:#fff; border:1px solid #f97316; border-radius:4px; padding:6px 10px; font-size:12px; font-weight:800; outline:none; cursor:pointer;">
               ${yearsOptions.map(y => `<option value="${y}" ${y === selectedGsqacYear ? 'selected' : ''}>${y === 'ALL YEARS' ? '★ ALL YEARS (2020-21 to 2024-25)' : 'YEAR: ' + y}</option>`).join('')}
             </select>
@@ -3324,7 +3348,7 @@ function renderAttendanceModuleView(tabName) {
   if (isTeacher) {
     kpiCardsHtml = `
       <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:6px 12px; margin-bottom:12px; font-size:11px; font-weight:700; color:#166534;">
-        <i class="fa-solid fa-hand-pointer"></i> કાર્ડ પર ક્લિક કરીને કોઈપણ કેટેગરીના શિક્ષકોનું પત્રક ફિલ્ટર કરો (Click Card to Filter Table Below):
+        <i class="fa-solid fa-hand-pointer"></i> Click any card below to filter teachers list by category:
       </div>
 
       <div style="display:grid; grid-template-columns: repeat(6, 1fr); gap:12px; margin-bottom:12px;">
@@ -3334,7 +3358,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-users"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Total Teachers</div>
-              <div style="font-size:18px; font-weight:800; color:#0f172a;">${totalCount.toLocaleString()}</div>
+              <div id="attCardTeacherTotal" style="font-size:18px; font-weight:800; color:#0f172a;">${totalCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3345,7 +3369,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-clipboard-check"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Submitted Count</div>
-              <div style="font-size:18px; font-weight:800; color:#0284c7;">${subCount.toLocaleString()}</div>
+              <div id="attCardTeacherSubmitted" style="font-size:18px; font-weight:800; color:#0284c7;">${subCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3356,7 +3380,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#dcfce7; color:#16a34a; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-user-check"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Present Teachers</div>
-              <div style="font-size:18px; font-weight:800; color:#16a34a;">${presCount.toLocaleString()}</div>
+              <div id="attCardTeacherPresent" style="font-size:18px; font-weight:800; color:#16a34a;">${presCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3367,7 +3391,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#fee2e2; color:#dc2626; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-user-xmark"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Absent Teachers</div>
-              <div style="font-size:18px; font-weight:800; color:#dc2626;">${absCount.toLocaleString()}</div>
+              <div id="attCardTeacherAbsent" style="font-size:18px; font-weight:800; color:#dc2626;">${absCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3378,7 +3402,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#fef3c7; color:#d97706; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-plane-departure"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Full Leave</div>
-              <div style="font-size:18px; font-weight:800; color:#d97706;">${(attData.fullleave || 0).toLocaleString()}</div>
+              <div id="attCardTeacherFullLeave" style="font-size:18px; font-weight:800; color:#d97706;">${(attData.fullleave || 0).toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3389,7 +3413,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#ffedd5; color:#ea580c; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-hourglass-half"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Half Leave</div>
-              <div style="font-size:18px; font-weight:800; color:#ea580c;">${(attData.halfleave || 0).toLocaleString()}</div>
+              <div id="attCardTeacherHalfLeave" style="font-size:18px; font-weight:800; color:#ea580c;">${(attData.halfleave || 0).toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3402,7 +3426,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#cffafe; color:#0891b2; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-umbrella-beach"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Holiday Count</div>
-              <div style="font-size:18px; font-weight:800; color:#0891b2;">${(attData.holiday || 0).toLocaleString()}</div>
+              <div id="attCardTeacherHoliday" style="font-size:18px; font-weight:800; color:#0891b2;">${(attData.holiday || 0).toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3413,7 +3437,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#dbeafe; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-chalkboard-user"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">In Training</div>
-              <div style="font-size:18px; font-weight:800; color:#2563eb;">${(attData.intraining || 0).toLocaleString()}</div>
+              <div id="attCardTeacherInTraining" style="font-size:18px; font-weight:800; color:#2563eb;">${(attData.intraining || 0).toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3435,7 +3459,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#fce7f3; color:#db2777; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-person-breastfeeding"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Maternity Leave</div>
-              <div style="font-size:18px; font-weight:800; color:#db2777;">${(attData.maternity || 0).toLocaleString()}</div>
+              <div id="attCardTeacherMaternity" style="font-size:18px; font-weight:800; color:#db2777;">${(attData.maternity || 0).toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3446,7 +3470,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#d1fae5; color:#059669; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-user-gear"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">On Duty Count</div>
-              <div style="font-size:18px; font-weight:800; color:#059669;">${(attData.onduty || 0).toLocaleString()}</div>
+              <div id="attCardTeacherOnDuty" style="font-size:18px; font-weight:800; color:#059669;">${(attData.onduty || 0).toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3457,7 +3481,7 @@ function renderAttendanceModuleView(tabName) {
             <div style="width:34px; height:34px; border-radius:6px; background:#e0e7ff; color:#4f46e5; display:flex; align-items:center; justify-content:center; font-size:16px;"><i class="fa-solid fa-chart-line"></i></div>
             <div style="text-align:right;">
               <div style="font-size:9px; color:#64748b; font-weight:700;">Attendance Rate</div>
-              <div style="font-size:18px; font-weight:800; color:#4f46e5;">${percVal}%</div>
+              <div id="attCardTeacherPerc" style="font-size:18px; font-weight:800; color:#4f46e5;">${percVal}%</div>
             </div>
           </div>
         </div>
@@ -3472,7 +3496,7 @@ function renderAttendanceModuleView(tabName) {
             <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
             <div class="card-text-wrap">
               <strong>Total Registered Students</strong>
-              <div class="card-count-num">${totalCount.toLocaleString()}</div>
+              <div class="card-count-num" id="attCardStudentTotal">${totalCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3483,7 +3507,7 @@ function renderAttendanceModuleView(tabName) {
             <div class="card-icon-avatar"><i class="fa-solid fa-file-invoice"></i></div>
             <div class="card-text-wrap">
               <strong>Total Submitted Attendance</strong>
-              <div class="card-count-num" style="color:#0284c7;">${subCount.toLocaleString()}</div>
+              <div class="card-count-num" id="attCardStudentSubmitted" style="color:#0284c7;">${subCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3494,7 +3518,7 @@ function renderAttendanceModuleView(tabName) {
             <div class="card-icon-avatar"><i class="fa-solid fa-user-check"></i></div>
             <div class="card-text-wrap">
               <strong>Present Students Count</strong>
-              <div class="card-count-num" style="color:#16a34a;">${presCount.toLocaleString()}</div>
+              <div class="card-count-num" id="attCardStudentPresent" style="color:#16a34a;">${presCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
@@ -3505,18 +3529,18 @@ function renderAttendanceModuleView(tabName) {
             <div class="card-icon-avatar"><i class="fa-solid fa-user-xmark"></i></div>
             <div class="card-text-wrap">
               <strong>Absent Students Count</strong>
-              <div class="card-count-num" style="color:#dc2626;">${absCount.toLocaleString()}</div>
+              <div class="card-count-num" id="attCardStudentAbsent" style="color:#dc2626;">${absCount.toLocaleString()}</div>
             </div>
           </div>
         </div>
 
         <div class="cts-card">
-          <div class="cts-card-head purple"><span>ATTENDANCE % (ટકાવારી)</span></div>
+          <div class="cts-card-head purple"><span>ATTENDANCE %</span></div>
           <div class="cts-card-body purple">
             <div class="card-icon-avatar"><i class="fa-solid fa-chart-line"></i></div>
             <div class="card-text-wrap">
               <strong>Average Attendance %</strong>
-              <div class="card-count-num" style="color:#6b21a8;">${percVal}%</div>
+              <div class="card-count-num" id="attCardStudentPerc" style="color:#6b21a8;">${percVal}%</div>
             </div>
           </div>
         </div>
@@ -3540,7 +3564,7 @@ function renderAttendanceModuleView(tabName) {
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <!-- BLOCK FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#c084fc !important;"><i class="fa-solid fa-city"></i> BLOCK (તાલુકો):</label>
+            <label class="att-filter-label" style="color:#c084fc !important;"><i class="fa-solid fa-city"></i> BLOCK:</label>
             <select id="selAttendanceBlock" class="att-filter-select" onchange="changeAttendanceBlock(this.value, '${tabName}')" style="border:2px solid #c084fc !important; font-weight:800;">
               ${blocksList.map(b => `<option value="${b}" ${b === selectedAttendanceBlock ? 'selected' : ''}>${b}</option>`).join('')}
             </select>
@@ -3548,7 +3572,7 @@ function renderAttendanceModuleView(tabName) {
 
           <!-- QUARTERLY FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#7dd3fc !important;"><i class="fa-solid fa-chart-pie"></i> QUARTER (ક્વાર્ટર):</label>
+            <label class="att-filter-label" style="color:#7dd3fc !important;"><i class="fa-solid fa-chart-pie"></i> QUARTER:</label>
             <select id="selAttendanceQuarter" class="att-filter-select" onchange="changeAttendanceQuarter(this.value, '${tabName}')" style="border:2px solid #38bdf8 !important;">
               ${quartersList.map(q => `<option value="${q}" ${q === selectedAttendanceQuarter ? 'selected' : ''}>${q}</option>`).join('')}
             </select>
@@ -3556,7 +3580,7 @@ function renderAttendanceModuleView(tabName) {
 
           <!-- MONTH FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#86efac !important;"><i class="fa-solid fa-calendar-month"></i> MONTH (મહિનો):</label>
+            <label class="att-filter-label" style="color:#86efac !important;"><i class="fa-solid fa-calendar-month"></i> MONTH:</label>
             <select id="selAttendanceMonth" class="att-filter-select" onchange="changeAttendanceMonth(this.value, '${tabName}')" style="border:2px solid #4ade80 !important;">
               ${monthsList.map(m => `<option value="${m}" ${m === selectedAttendanceMonth ? 'selected' : ''}>${m}</option>`).join('')}
             </select>
@@ -3564,9 +3588,9 @@ function renderAttendanceModuleView(tabName) {
 
           <!-- DATE FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#fdba74 !important;"><i class="fa-regular fa-calendar-days"></i> REPORT DATE (તારીખ):</label>
+            <label class="att-filter-label" style="color:#fdba74 !important;"><i class="fa-regular fa-calendar-days"></i> REPORT DATE:</label>
             <select id="selAttendanceDate" class="att-filter-select" onchange="changeAttendanceDate(this.value, '${tabName}')" style="border:2px solid #f97316 !important;">
-              ${datesList.map(d => `<option value="${d}" ${d === selectedAttendanceDate ? 'selected' : ''}>${d === 'ALL DATES' ? '★ ALL DATES (તમામ 25 તારીખો)' : 'DATE: ' + d}</option>`).join('')}
+              ${datesList.map(d => `<option value="${d}" ${d === selectedAttendanceDate ? 'selected' : ''}>${d === 'ALL DATES' ? '★ ALL DATES (Grand Aggregate)' : 'DATE: ' + d}</option>`).join('')}
             </select>
           </div>
 
@@ -3585,19 +3609,19 @@ function renderAttendanceModuleView(tabName) {
     <!-- 4 SUB-VIEW BUTTONS -->
     <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
       <button class="btn" onclick="switchAttSubView('school', '${tabName}')" style="background:${activeAttSubView==='school'?'#f97316':'#034433'}; color:#ffffff !important; font-weight:800; font-size:12px; padding:8px 16px; border-radius:6px; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-building-columns"></i> ૧. શાળાવાર પત્રક (School-wise)
+        <i class="fa-solid fa-building-columns"></i> 1. School-wise Table
       </button>
 
       <button class="btn" onclick="switchAttSubView('crc', '${tabName}')" style="background:${activeAttSubView==='crc'?'#f97316':'#034433'}; color:#ffffff !important; font-weight:800; font-size:12px; padding:8px 16px; border-radius:6px; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-layer-group"></i> ૨. CRC-વાર પત્રક (CRC-wise)
+        <i class="fa-solid fa-layer-group"></i> 2. CRC-wise Summary
       </button>
 
       <button class="btn" onclick="switchAttSubView('topbottom', '${tabName}')" style="background:${activeAttSubView==='topbottom'?'#f97316':'#034433'}; color:#ffffff !important; font-weight:800; font-size:12px; padding:8px 16px; border-radius:6px; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-trophy"></i> ૩. Top &amp; Bottom 10 શાળાઓ
+        <i class="fa-solid fa-trophy"></i> 3. Top &amp; Bottom 10 Schools
       </button>
 
       <button class="btn" onclick="switchAttSubView('pivot', '${tabName}')" style="background:${activeAttSubView==='pivot'?'#f97316':'#034433'}; color:#ffffff !important; font-weight:800; font-size:12px; padding:8px 16px; border-radius:6px; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-sliders"></i> ૪. પિવોટ ટેબલ (Pivot Analytics)
+        <i class="fa-solid fa-sliders"></i> 4. Pivot Analytics
       </button>
     </div>
 
@@ -4049,7 +4073,7 @@ function renderNotSubmittedAttendanceView() {
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <!-- BLOCK FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#c084fc !important;"><i class="fa-solid fa-city"></i> BLOCK (તાલુકો):</label>
+            <label class="att-filter-label" style="color:#c084fc !important;"><i class="fa-solid fa-city"></i> BLOCK:</label>
             <select id="selAttendanceBlock" class="att-filter-select" onchange="changeAttendanceBlock(this.value, 'Not Submitted Attendance')" style="border:2px solid #c084fc !important; font-weight:800;">
               ${blocksList.map(b => `<option value="${b}" ${b === selectedAttendanceBlock ? 'selected' : ''}>${b}</option>`).join('')}
             </select>
@@ -4057,7 +4081,7 @@ function renderNotSubmittedAttendanceView() {
 
           <!-- QUARTERLY FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#7dd3fc !important;"><i class="fa-solid fa-chart-pie"></i> QUARTER (ક્વાર્ટર):</label>
+            <label class="att-filter-label" style="color:#7dd3fc !important;"><i class="fa-solid fa-chart-pie"></i> QUARTER:</label>
             <select id="selAttendanceQuarter" class="att-filter-select" onchange="changeAttendanceQuarter(this.value, 'Not Submitted Attendance')" style="border:2px solid #38bdf8 !important;">
               ${quartersList.map(q => `<option value="${q}" ${q === selectedAttendanceQuarter ? 'selected' : ''}>${q}</option>`).join('')}
             </select>
@@ -4065,7 +4089,7 @@ function renderNotSubmittedAttendanceView() {
 
           <!-- MONTH FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#86efac !important;"><i class="fa-solid fa-calendar-month"></i> MONTH (મહિનો):</label>
+            <label class="att-filter-label" style="color:#86efac !important;"><i class="fa-solid fa-calendar-month"></i> MONTH:</label>
             <select id="selAttendanceMonth" class="att-filter-select" onchange="changeAttendanceMonth(this.value, 'Not Submitted Attendance')" style="border:2px solid #4ade80 !important;">
               ${monthsList.map(m => `<option value="${m}" ${m === selectedAttendanceMonth ? 'selected' : ''}>${m}</option>`).join('')}
             </select>
@@ -4073,9 +4097,9 @@ function renderNotSubmittedAttendanceView() {
 
           <!-- DATE FILTER -->
           <div class="att-filter-box">
-            <label class="att-filter-label" style="color:#fdba74 !important;"><i class="fa-regular fa-calendar-days"></i> REPORT DATE (તારીખ):</label>
+            <label class="att-filter-label" style="color:#fdba74 !important;"><i class="fa-regular fa-calendar-days"></i> REPORT DATE:</label>
             <select id="selAttendanceDate" class="att-filter-select" onchange="changeAttendanceDate(this.value, 'Not Submitted Attendance')" style="border:2px solid #f97316 !important;">
-              ${datesList.map(d => `<option value="${d}" ${d === selectedAttendanceDate ? 'selected' : ''}>${d === 'ALL DATES' ? '★ ALL DATES (તમામ 25 તારીખો)' : 'DATE: ' + d}</option>`).join('')}
+              ${datesList.map(d => `<option value="${d}" ${d === selectedAttendanceDate ? 'selected' : ''}>${d === 'ALL DATES' ? '★ ALL DATES (Grand Aggregate)' : 'DATE: ' + d}</option>`).join('')}
             </select>
           </div>
 
@@ -4344,6 +4368,42 @@ function filterAttendanceTable(tabName) {
 
   if (activeTeacherCardFilter !== "ALL") {
     filtered = filtered.filter(s => (s[activeTeacherCardFilter] || 0) > 0);
+  }
+
+  // Update attendance KPI cards dynamically based on filtered set
+  const fTotal = filtered.reduce((a, c) => a + (c.total || 0), 0);
+  const fSub = filtered.reduce((a, c) => a + (c.submitted || c.total || 0), 0);
+  const fPres = filtered.reduce((a, c) => a + (c.present || 0), 0);
+  const fAbs = filtered.reduce((a, c) => a + (c.absent || 0), 0);
+  const fPerc = fSub > 0 ? ((fPres / fSub) * 100).toFixed(2) : "0.00";
+
+  if (isTeacher) {
+    const fFl = filtered.reduce((a, c) => a + (c.fullleave || 0), 0);
+    const fHl = filtered.reduce((a, c) => a + (c.halfleave || 0), 0);
+    const fHol = filtered.reduce((a, c) => a + (c.holiday || 0), 0);
+    const fTr = filtered.reduce((a, c) => a + (c.intraining || 0), 0);
+    const fWp = filtered.reduce((a, c) => a + (c.withoutpay || 0), 0);
+    const fMat = filtered.reduce((a, c) => a + (c.maternity || 0), 0);
+    const fOd = filtered.reduce((a, c) => a + (c.onduty || 0), 0);
+
+    setElemText("attCardTeacherTotal", fTotal.toLocaleString());
+    setElemText("attCardTeacherSubmitted", fSub.toLocaleString());
+    setElemText("attCardTeacherPresent", fPres.toLocaleString());
+    setElemText("attCardTeacherAbsent", fAbs.toLocaleString());
+    setElemText("attCardTeacherFullLeave", fFl.toLocaleString());
+    setElemText("attCardTeacherHalfLeave", fHl.toLocaleString());
+    setElemText("attCardTeacherHoliday", fHol.toLocaleString());
+    setElemText("attCardTeacherInTraining", fTr.toLocaleString());
+    setElemText("attCardTeacherWithoutPay", fWp.toLocaleString());
+    setElemText("attCardTeacherMaternity", fMat.toLocaleString());
+    setElemText("attCardTeacherOnDuty", fOd.toLocaleString());
+    setElemText("attCardTeacherPerc", fPerc + "%");
+  } else {
+    setElemText("attCardStudentTotal", fTotal.toLocaleString());
+    setElemText("attCardStudentSubmitted", fSub.toLocaleString());
+    setElemText("attCardStudentPresent", fPres.toLocaleString());
+    setElemText("attCardStudentAbsent", fAbs.toLocaleString());
+    setElemText("attCardStudentPerc", fPerc + "%");
   }
 
   const tbody = document.getElementById("tbodyAttMain");
@@ -4816,6 +4876,15 @@ function handleSlicerToggle(clickedMgt) {
   applyAllSchoolFilters();
 }
 
+function resetAllSchoolFilters() {
+  if (document.getElementById("selFilterManagement")) document.getElementById("selFilterManagement").value = "ALL";
+  if (document.getElementById("selFilterCategory")) document.getElementById("selFilterCategory").value = "ALL";
+  if (document.getElementById("selFilterCluster")) document.getElementById("selFilterCluster").value = "ALL";
+  if (document.getElementById("searchSchoolDetails")) document.getElementById("searchSchoolDetails").value = "";
+  activeSelectedMgtSlicer = "ALL";
+  applyAllSchoolFilters();
+}
+
 function applyAllSchoolFilters() {
   const selMgt = document.getElementById("selFilterManagement");
   const selCat = document.getElementById("selFilterCategory");
@@ -4841,11 +4910,13 @@ function applyAllSchoolFilters() {
     return matchMgt && matchCat && matchCrc && matchSearch;
   });
 
+  updateDashboardCards(filtered);
+  renderCrcTable(filtered);
   renderSchoolTable(filtered);
   initAnalyticsCharts(filtered);
 }
 
-function renderCrcTable() {
+function renderCrcTable(filteredRecords) {
   const tbody = document.getElementById("tbodyCrcSummary");
   const heading = document.getElementById("txtCrcTableHeading");
   const badge = document.getElementById("badgeCrcTotal");
@@ -4853,50 +4924,99 @@ function renderCrcTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  if (heading) heading.innerHTML = `<i class="fa-solid fa-sitemap" style="color:#f97316;"></i> CRC CLUSTER-WISE STUDENT ENTRY SUMMARY (14 CLUSTERS)`;
-  if (badge) badge.innerText = `TOTAL: 68,397 STUDENTS`;
+  const records = (filteredRecords && Array.isArray(filteredRecords)) ? filteredRecords : allSchoolRows;
+  const isFiltered = (records.length < allSchoolRows.length);
+
+  // Group records by cluster to accurately represent filtered schools
+  const clusterMap = {};
+  records.forEach(s => {
+    const cName = (s.cluster_name || "OTHER").trim();
+    if (!clusterMap[cName]) {
+      clusterMap[cName] = {
+        cluster_name: cName,
+        schools: 0,
+        balvatika: 0,
+        class_1: 0,
+        class_2: 0,
+        class_3: 0,
+        class_4: 0,
+        class_5: 0,
+        class_6: 0,
+        class_7: 0,
+        class_8: 0,
+        class_9: 0,
+        class_10: 0,
+        class_11: 0,
+        class_12: 0,
+        total: 0
+      };
+    }
+    const c = clusterMap[cName];
+    c.schools += 1;
+    c.balvatika += (s.balvatika || 0);
+    c.class_1 += (s.class_1 || 0);
+    c.class_2 += (s.class_2 || 0);
+    c.class_3 += (s.class_3 || 0);
+    c.class_4 += (s.class_4 || 0);
+    c.class_5 += (s.class_5 || 0);
+    c.class_6 += (s.class_6 || 0);
+    c.class_7 += (s.class_7 || 0);
+    c.class_8 += (s.class_8 || 0);
+    c.class_9 += (s.class_9 || 0);
+    c.class_10 += (s.class_10 || 0);
+    c.class_11 += (s.class_11 || 0);
+    c.class_12 += (s.class_12 || 0);
+    c.total += (s.total || 0);
+  });
+
+  const displayRows = Object.values(clusterMap).sort((a, b) => b.total - a.total);
+
+  if (heading) {
+    heading.innerHTML = `<i class="fa-solid fa-sitemap" style="color:#f97316;"></i> CRC CLUSTER-WISE STUDENT ENTRY SUMMARY (${displayRows.length} CLUSTERS${isFiltered ? ' - FILTERED' : ''})`;
+  }
 
   let totSchools = 0, totBal = 0, totC1 = 0, totC2 = 0, totC3 = 0, totC4 = 0, totC5 = 0, totC6 = 0, totC7 = 0, totC8 = 0, totC9 = 0, totC10 = 0, totC11 = 0, totC12 = 0, totEnrolled = 0;
 
-  allCrcRows.forEach(c => {
-    const sCnt = (c.schools || c.schools_cnt || 0);
-    totSchools += sCnt;
-    totBal += (c.balvatika || 0);
-    totC1 += (c.class_1 || 0);
-    totC2 += (c.class_2 || 0);
-    totC3 += (c.class_3 || 0);
-    totC4 += (c.class_4 || 0);
-    totC5 += (c.class_5 || 0);
-    totC6 += (c.class_6 || 0);
-    totC7 += (c.class_7 || 0);
-    totC8 += (c.class_8 || 0);
-    totC9 += (c.class_9 || 0);
-    totC10 += (c.class_10 || 0);
-    totC11 += (c.class_11 || 0);
-    totC12 += (c.class_12 || 0);
-    totEnrolled += (c.total || 0);
+  displayRows.forEach(c => {
+    totSchools += c.schools;
+    totBal += c.balvatika;
+    totC1 += c.class_1;
+    totC2 += c.class_2;
+    totC3 += c.class_3;
+    totC4 += c.class_4;
+    totC5 += c.class_5;
+    totC6 += c.class_6;
+    totC7 += c.class_7;
+    totC8 += c.class_8;
+    totC9 += c.class_9;
+    totC10 += c.class_10;
+    totC11 += c.class_11;
+    totC12 += c.class_12;
+    totEnrolled += c.total;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong style="font-weight:800; text-transform:uppercase; color:#0f172a;">${c.cluster_name}</strong></td>
-      <td><span style="background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; font-weight:700; border-radius:4px; padding:2px 8px; font-size:11px;">${sCnt}</span></td>
-      <td>${(c.balvatika || 0).toLocaleString()}</td>
-      <td>${(c.class_1 || 0).toLocaleString()}</td>
-      <td>${(c.class_2 || 0).toLocaleString()}</td>
-      <td>${(c.class_3 || 0).toLocaleString()}</td>
-      <td>${(c.class_4 || 0).toLocaleString()}</td>
-      <td>${(c.class_5 || 0).toLocaleString()}</td>
-      <td>${(c.class_6 || 0).toLocaleString()}</td>
-      <td>${(c.class_7 || 0).toLocaleString()}</td>
-      <td>${(c.class_8 || 0).toLocaleString()}</td>
-      <td>${(c.class_9 || 0).toLocaleString()}</td>
-      <td>${(c.class_10 || 0).toLocaleString()}</td>
-      <td>${(c.class_11 || 0).toLocaleString()}</td>
-      <td>${(c.class_12 || 0).toLocaleString()}</td>
-      <td><strong style="color:#034433; font-weight:800; font-size:13px;">${(c.total || 0).toLocaleString()}</strong></td>
+      <td><span style="background:#f1f5f9; border:1px solid #cbd5e1; color:#475569; font-weight:700; border-radius:4px; padding:2px 8px; font-size:11px;">${c.schools}</span></td>
+      <td>${c.balvatika.toLocaleString()}</td>
+      <td>${c.class_1.toLocaleString()}</td>
+      <td>${c.class_2.toLocaleString()}</td>
+      <td>${c.class_3.toLocaleString()}</td>
+      <td>${c.class_4.toLocaleString()}</td>
+      <td>${c.class_5.toLocaleString()}</td>
+      <td>${c.class_6.toLocaleString()}</td>
+      <td>${c.class_7.toLocaleString()}</td>
+      <td>${c.class_8.toLocaleString()}</td>
+      <td>${c.class_9.toLocaleString()}</td>
+      <td>${c.class_10.toLocaleString()}</td>
+      <td>${c.class_11.toLocaleString()}</td>
+      <td>${c.class_12.toLocaleString()}</td>
+      <td><strong style="color:#034433; font-weight:800; font-size:13px;">${c.total.toLocaleString()}</strong></td>
     `;
     tbody.appendChild(tr);
   });
+
+  if (badge) badge.innerText = `TOTAL: ${totEnrolled.toLocaleString()} STUDENTS`;
 
   // Grand Total row
   const table = tbody.closest("table");
@@ -6187,7 +6307,7 @@ function renderIndicatorModuleView() {
 
     <!-- DYNAMIC & CLICKABLE 6 HIGH-IMPACT SARA KPI CARDS -->
     <div style="font-size:12px; font-weight:700; color:#f97316; margin-bottom:8px;">
-      <i class="fa-solid fa-hand-pointer"></i> 💡 કાર્ડ પર ક્લિક કરીને કોઈપણ રિપોર્ટ જોવો (Click Card to Open Detailed Table Below):
+      <i class="fa-solid fa-hand-pointer"></i> 💡 Click any card to open the corresponding detailed report:
     </div>
 
     <div style="display:grid; grid-template-columns: repeat(6, 1fr); gap:12px; margin-bottom:20px;">
@@ -6757,13 +6877,6 @@ function renderUdiseTeacherProfileView() {
 
   const rawProfiles = (globalData && globalData.udise_teacher_profiles) ? globalData.udise_teacher_profiles : [];
 
-  const totalTeachers = rawProfiles.length;
-  const totalSchools = new Set(rawProfiles.map(t => t.udise_code)).size;
-  const maleCount = rawProfiles.filter(t => t.gender === 'Male').length;
-  const femaleCount = rawProfiles.filter(t => t.gender === 'Female').length;
-  const pgCount = rawProfiles.filter(t => (t.academic_qualification || '').includes('Graduate') || (t.academic_qualification || '').includes('Post')).length;
-  const compCount = rawProfiles.filter(t => t.completion_status === 'Completed' || (t.completion_status || '').includes('Completed')).length;
-
   let filtered = rawProfiles;
   if (selUdiseMgmtFilter !== "ALL") {
     filtered = filtered.filter(t => (t.management || '').toLowerCase().includes(selUdiseMgmtFilter.toLowerCase()));
@@ -6780,6 +6893,13 @@ function renderUdiseTeacherProfileView() {
       (t.subject || '').toLowerCase().includes(q)
     );
   }
+
+  const totalTeachers = filtered.length;
+  const totalSchools = new Set(filtered.map(t => t.udise_code)).size;
+  const maleCount = filtered.filter(t => t.gender === 'Male').length;
+  const femaleCount = filtered.filter(t => t.gender === 'Female').length;
+  const pgCount = filtered.filter(t => (t.academic_qualification || '').includes('Graduate') || (t.academic_qualification || '').includes('Post')).length;
+  const compCount = filtered.filter(t => t.completion_status === 'Completed' || (t.completion_status || '').includes('Completed')).length;
 
   let subViewHtml = "";
   if (activeUdiseTeacherSubView === "summary") {
@@ -6973,10 +7093,10 @@ function renderUdiseTeacherProfileView() {
     <!-- SUB-NAVIGATION TABS -->
     <div style="display:flex; gap:10px; margin-bottom:16px;">
       <button class="btn" onclick="switchUdiseTeacherSubView('list')" style="background:${activeUdiseTeacherSubView==='list'?'#f97316':'#034433'}; color:#ffffff !important; font-weight:800; font-size:12px; padding:8px 16px; border-radius:6px;">
-        <i class="fa-solid fa-list"></i> ૧. તમામ શિક્ષકોનું પત્રક (All Teachers List)
+        <i class="fa-solid fa-list"></i> 1. All Teachers List
       </button>
       <button class="btn" onclick="switchUdiseTeacherSubView('summary')" style="background:${activeUdiseTeacherSubView==='summary'?'#f97316':'#034433'}; color:#ffffff !important; font-weight:800; font-size:12px; padding:8px 16px; border-radius:6px;">
-        <i class="fa-solid fa-school"></i> ૨. શાળા-વાર શિક્ષક સમરી (School Summary)
+        <i class="fa-solid fa-school"></i> 2. School-wise Summary
       </button>
     </div>
 
@@ -7041,7 +7161,7 @@ function renderUdiseModuleView() {
             <span style="color:#ffffff !important;">UDISE+ SCHOOL PROFILE DASHBOARD (AY 2026-27)</span>
           </h2>
           <p style="font-size:12px; color:#e2e8f0; margin-top:4px; font-weight:600;">
-            કડી તાલુકાની તમામ ${totalSchools} શાળાઓની UDISE+ પ્રોફાઇલ અને સુવિધાઓની સંપૂર્ણ માહિતી
+            Comprehensive UDISE+ profile & facility details for all ${totalSchools} schools in Kadi block
           </p>
         </div>
 
@@ -7216,7 +7336,7 @@ function renderSatModuleView() {
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <!-- SEMESTER FILTER -->
           <div style="background:rgba(255,255,255,0.08); padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.2);">
-            <label style="font-size:11px; font-weight:800; color:#f97316; display:block; margin-bottom:2px;"><i class="fa-solid fa-calendar-check"></i> SEMESTER (સેમેસ્ટર):</label>
+            <label style="font-size:11px; font-weight:800; color:#f97316; display:block; margin-bottom:2px;"><i class="fa-solid fa-calendar-check"></i> SEMESTER:</label>
             <select id="selSatSemSelector" onchange="changeSatSem(this.value)" style="background:#1e293b; color:#fff; border:1px solid #f97316; border-radius:4px; padding:6px 10px; font-size:12px; font-weight:800; outline:none; cursor:pointer;">
               <option value="ALL Semesters" ${selectedSatSem === 'ALL Semesters' ? 'selected' : ''}>★ ALL Semesters (First &amp; Second Sem Comparison)</option>
               <option value="First Sem" ${selectedSatSem === 'First Sem' ? 'selected' : ''}>First Semester (SAT-1 2022-23)</option>
@@ -7228,6 +7348,7 @@ function renderSatModuleView() {
     </div>
 
     <!-- 8 SARA KPI CARDS -->
+    <div id="satKpiCardsContainer">
     <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:14px;">
       
       <div class="cts-card">
@@ -7323,31 +7444,32 @@ function renderSatModuleView() {
       </div>
 
     </div>
+    </div>
 
     <!-- 6 SUB-NAVIGATION BUTTON TABS -->
     <div style="background:#0f172a; border-radius:10px; padding:8px 12px; margin-bottom:20px; display:flex; gap:10px; overflow-x:auto;">
       <button class="btn" onclick="switchSatSubView('comparison')" style="background:${activeSatSubView === 'comparison' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-code-compare"></i> ૧. સેમેસ્ટર સરખામણી (Sem 1 vs Sem 2)
+        <i class="fa-solid fa-code-compare"></i> 1. Semester Comparison (Sem 1 vs Sem 2)
       </button>
 
       <button class="btn" onclick="switchSatSubView('school')" style="background:${activeSatSubView === 'school' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-building-columns"></i> ૨. શાળાવાર પત્રક (School-wise)
+        <i class="fa-solid fa-building-columns"></i> 2. School-wise Table
       </button>
 
       <button class="btn" onclick="switchSatSubView('crc')" style="background:${activeSatSubView === 'crc' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-layer-group"></i> ૩. CRC-વાર સમરી (CRC-wise)
+        <i class="fa-solid fa-layer-group"></i> 3. CRC-wise Summary
       </button>
 
       <button class="btn" onclick="switchSatSubView('pivot')" style="background:${activeSatSubView === 'pivot' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-sliders"></i> ૪. પિવોટ ટેબલ (Pivot Analytics)
+        <i class="fa-solid fa-sliders"></i> 4. Pivot Analytics
       </button>
 
       <button class="btn" onclick="switchSatSubView('charts')" style="background:${activeSatSubView === 'charts' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-chart-column"></i> ૫. ઇન્ટરેક્ટિવ ચાર્ટ્સ (Charts)
+        <i class="fa-solid fa-chart-column"></i> 5. Interactive Charts
       </button>
 
       <button class="btn" onclick="switchSatSubView('soe')" style="background:${activeSatSubView === 'soe' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
-        <i class="fa-solid fa-award"></i> ૬. SoE શાળાઓ (SoE vs Non-SoE)
+        <i class="fa-solid fa-award"></i> 6. SoE Schools (SoE vs Non-SoE)
       </button>
     </div>
 
@@ -7419,7 +7541,141 @@ function switchSatSubView(subViewName) {
   renderSatModuleView();
 }
 
+function renderSatKpiCardsHtml(filtered, defaultTotals) {
+  let totals = {
+    schools: 0,
+    total_students: 0,
+    present_students: 0,
+    absent_students: 0,
+    p_80: 0,
+    p_60_80: 0,
+    p_40_60: 0,
+    p_0_40: 0,
+    soe_schools: 0
+  };
+
+  if (filtered && filtered.length > 0) {
+    totals.schools = filtered.length;
+    filtered.forEach(r => {
+      totals.total_students += (r.total_students || 0);
+      totals.present_students += (r.present_students || 0);
+      totals.absent_students += (r.absent_students || 0);
+      totals.p_80 += (r.p_80 || 0);
+      totals.p_60_80 += (r.p_60_80 || 0);
+      totals.p_40_60 += (r.p_40_60 || 0);
+      totals.p_0_40 += (r.p_0_40 || 0);
+      if (r.is_soe === 'Y') totals.soe_schools += 1;
+    });
+  } else if (defaultTotals) {
+    totals = defaultTotals;
+  }
+
+  const p80Perc = totals.present_students > 0 ? (totals.p_80 / totals.present_students * 100).toFixed(1) : 0;
+  const p60to80Perc = totals.present_students > 0 ? (totals.p_60_80 / totals.present_students * 100).toFixed(1) : 0;
+  const p40to60Perc = totals.present_students > 0 ? (totals.p_40_60 / totals.present_students * 100).toFixed(1) : 0;
+  const p0to40Perc = totals.present_students > 0 ? (totals.p_0_40 / totals.present_students * 100).toFixed(1) : 0;
+
+  return `
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:14px;">
+      <div class="cts-card">
+        <div class="cts-card-head navy"><span>TOTAL ASSESSED STUDENTS</span></div>
+        <div class="cts-card-body navy">
+          <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
+          <div class="card-text-wrap">
+            <strong>Registered Students</strong>
+            <div class="card-count-num">${totals.total_students.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head green"><span>PRESENT STUDENTS</span></div>
+        <div class="cts-card-body green">
+          <div class="card-icon-avatar"><i class="fa-solid fa-user-check"></i></div>
+          <div class="card-text-wrap">
+            <strong>Attendance Rate (${totals.total_students > 0 ? (totals.present_students/totals.total_students*100).toFixed(1) : 0}%)</strong>
+            <div class="card-count-num" style="color:#16a34a;">${totals.present_students.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head" style="background:#046c4e; color:#fff;"><span>OUTSTANDING (&gt;80% - GRADE A)</span></div>
+        <div class="cts-card-body" style="border:1px solid #bbf7d0;">
+          <div class="card-icon-avatar" style="background:#dcfce7; color:#046c4e;"><i class="fa-solid fa-trophy"></i></div>
+          <div class="card-text-wrap">
+            <strong>High Performers (${p80Perc}%)</strong>
+            <div class="card-count-num" style="color:#046c4e;">${totals.p_80.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head blue"><span>GOOD (60% TO 80% - GRADE B)</span></div>
+        <div class="cts-card-body blue">
+          <div class="card-icon-avatar"><i class="fa-solid fa-star"></i></div>
+          <div class="card-text-wrap">
+            <strong>Above Average (${p60to80Perc}%)</strong>
+            <div class="card-count-num" style="color:#0284c7;">${totals.p_60_80.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:20px;">
+      <div class="cts-card">
+        <div class="cts-card-head" style="background:#ca8a04; color:#fff;"><span>AVERAGE (40% TO 60% - GRADE C)</span></div>
+        <div class="cts-card-body" style="border:1px solid #fef08a;">
+          <div class="card-icon-avatar" style="background:#fef9c3; color:#ca8a04;"><i class="fa-solid fa-thumbs-up"></i></div>
+          <div class="card-text-wrap">
+            <strong>Average Tier (${p40to60Perc}%)</strong>
+            <div class="card-count-num" style="color:#ca8a04;">${totals.p_40_60.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head" style="background:#dc2626; color:#fff;"><span>NEEDS IMPROVEMENT (&lt;40% - GRADE D)</span></div>
+        <div class="cts-card-body" style="border:1px solid #fecaca;">
+          <div class="card-icon-avatar" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div class="card-text-wrap">
+            <strong>Remedial Focus (${p0to40Perc}%)</strong>
+            <div class="card-count-num" style="color:#dc2626;">${totals.p_0_40.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head purple"><span>SCHOOLS OF EXCELLENCE (SoE)</span></div>
+        <div class="cts-card-body purple">
+          <div class="card-icon-avatar"><i class="fa-solid fa-award"></i></div>
+          <div class="card-text-wrap">
+            <strong>Selected SoE Units</strong>
+            <div class="card-count-num" style="color:#6b21a8;">${totals.soe_schools} Schools</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head brown"><span>TOTAL ASSESSED SCHOOLS</span></div>
+        <div class="cts-card-body brown">
+          <div class="card-icon-avatar"><i class="fa-solid fa-school"></i></div>
+          <div class="card-text-wrap">
+            <strong>Participating Units</strong>
+            <div class="card-count-num" style="color:#a14e13;">${totals.schools} Schools</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function filterSatContent() {
+  const filtered = getFilteredSatRecords();
+  const kpiContainer = document.getElementById("satKpiCardsContainer");
+  if (kpiContainer) {
+    kpiContainer.innerHTML = renderSatKpiCardsHtml(filtered);
+  }
   renderSatSubViewContent();
 }
 

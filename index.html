@@ -130,7 +130,7 @@
           </a>
           <ul class="sub-nav">
             <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('UDISE+ School Profile')"><i class="fa-solid fa-school"></i> School Profile</a></li>
-            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('UDISE+ Teacher Profile')"><i class="fa-solid fa-chalkboard-user"></i> Teacher Profile (શિક્ષક પ્રોફાઇલ)</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('UDISE+ Teacher Profile')"><i class="fa-solid fa-chalkboard-user"></i> Teacher Profile</a></li>
           </ul>
         </li>
 
@@ -415,7 +415,12 @@
 
                 <div>
                   <label style="font-size:11px; font-weight:700; color:#475569; display:block; margin-bottom:4px;"><i class="fa-solid fa-magnifying-glass"></i> Search School / DISE:</label>
-                  <input type="text" id="searchSchoolDetails" class="form-control" placeholder="Search School Name or Code..." onkeyup="applyAllSchoolFilters()" style="height:36px; font-size:12px;" />
+                  <div style="display:flex; gap:6px;">
+                    <input type="text" id="searchSchoolDetails" class="form-control" placeholder="Search School Name or Code..." onkeyup="applyAllSchoolFilters()" style="height:36px; font-size:12px;" />
+                    <button class="btn btn-outline-secondary" onclick="resetAllSchoolFilters()" title="Reset All Filters" style="height:36px; font-size:12px; font-weight:700; white-space:nowrap; background:#fff; border:1px solid #cbd5e1;">
+                      <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                  </div>
                 </div>
 
               </div>
