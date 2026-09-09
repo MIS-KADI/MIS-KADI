@@ -242,9 +242,10 @@
           return;
         }
 
+        sessionStorage.setItem("mis_session_auth", "true");
         localStorage.setItem("mis_user_logged_in", "true");
         localStorage.setItem("mis_username", foundUser.username);
-        window.location.href = "index.html";
+        window.location.replace("index.html");
       } else {
         errBox.style.display = "block";
         errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect username or password. Default: Username <strong>240402</strong>, Password <strong>SSA@123</strong>`;

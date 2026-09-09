@@ -208,9 +208,10 @@ function checkUserAuth() {
 }
 
 function handleLogout() {
+  sessionStorage.removeItem("mis_session_auth");
   localStorage.removeItem("mis_user_logged_in");
   localStorage.removeItem("mis_username");
-  window.location.href = "login.html";
+  window.location.replace("login.html");
 }
 
 function toggleSubmenu(menuId) {
@@ -3557,7 +3558,7 @@ function renderAttendanceModuleView(tabName) {
             <span style="color:#ffffff !important;">${isTeacher ? 'Teacher Attendance REPORT' : 'Student Attendance REPORT'}</span>
           </h2>
           <div style="font-size:12px; color:#e2e8f0; font-weight:700; margin-top:4px;">
-            <i class="fa-solid fa-circle-check" style="color:#4ade80;"></i> District MIS MEHSANA / KADI BLOCK
+            <i class="fa-solid fa-circle-check" style="color:#4ade80;"></i> KADI BLOCK EDUCATION MIS
           </div>
         </div>
 
@@ -3771,7 +3772,7 @@ function renderAttSubViewContent(tabName) {
       </div>
     `;
 
-  // --- 2. PIVOT TABLE SUBVIEW ---
+  // --- 2. PIVOT TABLE SUBVIEW WITH ATTRACTIVE ANIMATIONS ---
   } else if (activeAttSubView === "pivot") {
     let rawSchools = attData.all_schools || [];
     let crcMap = {};
@@ -3801,60 +3802,119 @@ function renderAttSubViewContent(tabName) {
     const totSub = crcList.reduce((a,c) => a + c.submitted, 0);
     const totPres = crcList.reduce((a,c) => a + c.present, 0);
     const totAbs = crcList.reduce((a,c) => a + c.absent, 0);
+    const overallPerc = totTotal > 0 ? Math.round((totPres / totTotal * 10000)) / 100 : 100.0;
+    const topCluster = crcList.slice().sort((a,b) => (b.total>0?b.present/b.total:0) - (a.total>0?a.present/a.total:0))[0];
 
     panel.innerHTML = `
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
-          <h3 style="font-size:16px; font-weight:800; margin:0;">
-            <i class="fa-solid fa-sliders" style="color:#f97316;"></i> ATTENDANCE INTERACTIVE PIVOT TABLE ANALYTICS (${isTeacher ? 'TEACHERS' : 'STUDENTS'} - BLOCK: KADI - ${selectedAttendanceMonth} - ${selectedAttendanceDate})
-          </h3>
-          <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">TOTAL: ${totTotal.toLocaleString()}</span>
+      <div class="pivot-container" style="background:#ffffff; border-radius:12px; border:1px solid #cbd5e1; padding:22px; box-shadow:0 4px 14px rgba(0,0,0,0.06);">
+        <!-- ATTRACTIVE PIVOT HEADER & METRIC SUMMARY CARDS -->
+        <div style="background: linear-gradient(135deg, #034433 0%, #065f46 50%, #047857 100%); border-radius:10px; padding:16px 20px; color:#ffffff; margin-bottom:20px; box-shadow:0 4px 12px rgba(3,68,51,0.25);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+              <h3 style="font-size:18px; font-weight:800; margin:0; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-sliders" style="color:#f97316; font-size:20px;"></i> 
+                INTERACTIVE PIVOT ANALYTICS MATRIX
+              </h3>
+              <p style="margin:4px 0 0 0; font-size:12px; color:#a7f3d0; font-weight:600;">
+                ${isTeacher ? 'TEACHER ATTENDANCE' : 'STUDENT ATTENDANCE'} · BLOCK KADI · ${selectedAttendanceMonth} · ${selectedAttendanceDate}
+              </p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <span class="pivot-badge" style="background:#f97316; color:#ffffff; font-size:12px;">
+                <i class="fa-solid fa-chart-line"></i> Overall Avg: ${overallPerc}%
+              </span>
+              ${topCluster ? `
+                <span class="pivot-badge" style="background:#16a34a; color:#ffffff; font-size:12px;">
+                  <i class="fa-solid fa-crown"></i> Top CRC: ${topCluster.name}
+                </span>
+              ` : ''}
+            </div>
+          </div>
         </div>
 
+        <!-- 4 ANIMATED PIVOT KPI STAT CARDS -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:20px;">
+          <div class="pivot-card" style="border-left:4px solid #1e3a8a;">
+            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;"><i class="fa-solid fa-sitemap"></i> CRC CLUSTERS</span>
+            <div style="font-size:22px; font-weight:800; color:#1e3a8a; margin-top:4px;">${crcList.length} Clusters</div>
+            <div style="font-size:11px; color:#64748b; margin-top:2px;">Across ${totSchools} Schools</div>
+          </div>
+          <div class="pivot-card" style="border-left:4px solid #0284c7;">
+            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;"><i class="fa-solid fa-users"></i> TOTAL RECORDED</span>
+            <div style="font-size:22px; font-weight:800; color:#0284c7; margin-top:4px;">${totTotal.toLocaleString()}</div>
+            <div style="font-size:11px; color:#0284c7; font-weight:600; margin-top:2px;">Submitted: ${totSub.toLocaleString()}</div>
+          </div>
+          <div class="pivot-card" style="border-left:4px solid #16a34a;">
+            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;"><i class="fa-solid fa-circle-check"></i> PRESENT TOTAL</span>
+            <div style="font-size:22px; font-weight:800; color:#16a34a; margin-top:4px;">${totPres.toLocaleString()}</div>
+            <div style="font-size:11px; color:#16a34a; font-weight:700; margin-top:2px;">Attendance Rate: ${overallPerc}%</div>
+          </div>
+          <div class="pivot-card" style="border-left:4px solid #dc2626;">
+            <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;"><i class="fa-solid fa-circle-xmark"></i> ABSENT TOTAL</span>
+            <div style="font-size:22px; font-weight:800; color:#dc2626; margin-top:4px;">${totAbs.toLocaleString()}</div>
+            <div style="font-size:11px; color:#dc2626; font-weight:600; margin-top:2px;">Absence: ${totTotal>0?Math.round((totAbs/totTotal*10000))/100:0}%</div>
+          </div>
+        </div>
+
+        <!-- HIGH CONTRAST ANIMATED MATRIX TABLE -->
         <div style="overflow-x:auto;">
-          <table class="custom-table" style="border:1px solid #cbd5e1;">
+          <table class="custom-table pivot-table-animated" style="border:1px solid #cbd5e1; border-radius:8px; overflow:hidden;">
             <thead>
-              <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
-                <th style="background:#034433 !important; color:#ffffff !important; font-weight:800 !important; text-shadow:0 1px 3px rgba(0,0,0,0.9);">CRC CLUSTER (14 CLUSTERS)</th>
+              <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:3px solid #f97316;">
+                <th style="background:#034433 !important; color:#ffffff !important; font-weight:800 !important; text-shadow:0 1px 3px rgba(0,0,0,0.9);">#</th>
+                <th style="background:#034433 !important; color:#ffffff !important; font-weight:800 !important; text-shadow:0 1px 3px rgba(0,0,0,0.9);">CRC CLUSTER NAME</th>
                 <th style="background:#034433 !important; color:#ffffff !important; text-align:center; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">SCHOOLS</th>
-                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${isTeacher ? 'TEACHERS TOTAL' : 'STUDENTS TOTAL'}</th>
-                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${isTeacher ? 'SUBMITTED' : 'SUBMITTED'}</th>
-                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${isTeacher ? 'PRESENT' : 'PRESENT'}</th>
-                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${isTeacher ? 'ABSENT' : 'ABSENT'}</th>
+                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${isTeacher ? 'TEACHERS' : 'STUDENTS'}</th>
+                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">SUBMITTED</th>
+                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">PRESENT</th>
+                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">ABSENT</th>
                 ${isTeacher ? `
                   <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">FULL LEAVE</th>
                   <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">HALF LEAVE</th>
                   <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">TRAINING</th>
                   <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">ON DUTY</th>
                 ` : ''}
-                <th style="background:#f97316 !important; color:#ffffff !important; text-align:right; font-weight:900; text-shadow:0 1px 3px rgba(0,0,0,0.9);">ATTENDANCE %</th>
+                <th style="background:#f97316 !important; color:#ffffff !important; text-align:center; font-weight:900; text-shadow:0 1px 3px rgba(0,0,0,0.9); min-width:130px;">ATTENDANCE %</th>
               </tr>
             </thead>
             <tbody>
-              ${crcList.map(c => {
+              ${crcList.map((c, idx) => {
                 const perc = c.total > 0 ? Math.round((c.present / c.total * 10000)) / 100 : 100.0;
+                const percColor = perc >= 95 ? '#16a34a' : (perc >= 90 ? '#059669' : (perc >= 80 ? '#d97706' : '#dc2626'));
                 return `
                   <tr>
-                    <td><strong style="text-transform:uppercase;">${c.name}</strong></td>
-                    <td style="text-align:center;"><span class="badge" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">${c.schools}</span></td>
-                    <td style="text-align:right; font-weight:700;">${c.total.toLocaleString()}</td>
+                    <td style="font-weight:700; color:#64748b; width:40px;">${idx + 1}</td>
+                    <td>
+                      <strong style="text-transform:uppercase; color:#034433; font-size:12px;">${c.name}</strong>
+                    </td>
+                    <td style="text-align:center;">
+                      <span class="badge" style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; font-weight:700;">${c.schools}</span>
+                    </td>
+                    <td style="text-align:right; font-weight:700; color:#0f172a;">${c.total.toLocaleString()}</td>
                     <td style="text-align:right; font-weight:700; color:#0284c7;">${c.submitted.toLocaleString()}</td>
                     <td style="text-align:right; font-weight:800; color:#16a34a;">${c.present.toLocaleString()}</td>
                     <td style="text-align:right; font-weight:800; color:#dc2626;">${c.absent.toLocaleString()}</td>
                     ${isTeacher ? `
-                      <td style="text-align:right;">${c.fullleave}</td>
-                      <td style="text-align:right;">${c.halfleave}</td>
-                      <td style="text-align:right;">${c.intraining}</td>
-                      <td style="text-align:right;">${c.onduty}</td>
+                      <td style="text-align:right; color:#475569;">${c.fullleave}</td>
+                      <td style="text-align:right; color:#475569;">${c.halfleave}</td>
+                      <td style="text-align:right; color:#475569;">${c.intraining}</td>
+                      <td style="text-align:right; color:#475569;">${c.onduty}</td>
                     ` : ''}
-                    <td style="text-align:right; font-weight:900; color:#034433; background:#f0fdf4;">${perc}%</td>
+                    <td style="text-align:center;">
+                      <div style="display:inline-block; min-width:80px;">
+                        <span style="font-weight:900; font-size:12px; color:${percColor};">${perc}%</span>
+                        <div class="pivot-prog-wrap">
+                          <div class="pivot-prog-bar" style="width:${perc}%; background:${percColor};"></div>
+                        </div>
+                      </div>
+                    </td>
                   </tr>
                 `;
               }).join('')}
             </tbody>
             <tfoot>
               <tr style="background:#034433 !important; color:#ffffff !important; font-weight:800; font-size:13px;">
-                <td style="background:#034433 !important; color:#ffffff !important; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">GRAND TOTAL SUMMARY</td>
+                <td colspan="2" style="background:#034433 !important; color:#ffffff !important; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">GRAND TOTAL PIVOT SUMMARY</td>
                 <td style="background:#034433 !important; color:#ffffff !important; text-align:center; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${totSchools}</td>
                 <td style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${totTotal.toLocaleString()}</td>
                 <td style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${totSub.toLocaleString()}</td>
@@ -3866,7 +3926,7 @@ function renderAttSubViewContent(tabName) {
                   <td style="background:#034433 !important; color:#ffffff !important; text-align:right;">${crcList.reduce((a,c)=>a+c.intraining,0)}</td>
                   <td style="background:#034433 !important; color:#ffffff !important; text-align:right;">${crcList.reduce((a,c)=>a+c.onduty,0)}</td>
                 ` : ''}
-                <td style="background:#f97316 !important; color:#ffffff !important; text-align:right; font-weight:900; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${totTotal>0?Math.round(totPres/totTotal*10000)/100:100}%</td>
+                <td style="background:#f97316 !important; color:#ffffff !important; text-align:center; font-weight:900; font-size:14px; text-shadow:0 1px 3px rgba(0,0,0,0.9);">${overallPerc}%</td>
               </tr>
             </tfoot>
           </table>
@@ -4066,7 +4126,7 @@ function renderNotSubmittedAttendanceView() {
             <span style="color:#ffffff !important;">NOT SUBMITTED ATTENDANCE SCHOOLS REPORT</span>
           </h2>
           <div style="font-size:12px; color:#e2e8f0; font-weight:700; margin-top:4px;">
-            <i class="fa-solid fa-circle-check" style="color:#4ade80;"></i> District MIS MEHSANA / KADI BLOCK
+            <i class="fa-solid fa-circle-check" style="color:#4ade80;"></i> KADI BLOCK EDUCATION MIS
           </div>
         </div>
 
@@ -6898,7 +6958,7 @@ function renderUdiseTeacherProfileView() {
   const totalSchools = new Set(filtered.map(t => t.udise_code)).size;
   const maleCount = filtered.filter(t => t.gender === 'Male').length;
   const femaleCount = filtered.filter(t => t.gender === 'Female').length;
-  const pgCount = filtered.filter(t => (t.academic_qualification || '').includes('Graduate') || (t.academic_qualification || '').includes('Post')).length;
+  const pgCount = filtered.filter(t => (t.academic_qualification || '').includes('Graduate') || (t.academic_qualification || '').includes('Post') || (t.academic_qualification || '').includes('Ph.D') || (t.academic_qualification || '').includes('M.Phil')).length;
   const compCount = filtered.filter(t => t.completion_status === 'Completed' || (t.completion_status || '').includes('Completed')).length;
 
   let subViewHtml = "";
@@ -6912,7 +6972,7 @@ function renderUdiseTeacherProfileView() {
       const s = schoolMap[code];
       s.total++;
       if (t.gender === 'Male') s.male++; else s.female++;
-      if ((t.academic_qualification || '').includes('Graduate') || (t.academic_qualification || '').includes('Post')) s.pg++;
+      if ((t.academic_qualification || '').includes('Graduate') || (t.academic_qualification || '').includes('Post') || (t.academic_qualification || '').includes('Ph.D') || (t.academic_qualification || '').includes('M.Phil')) s.pg++;
     });
     const schoolList = Object.values(schoolMap);
 
@@ -6973,6 +7033,8 @@ function renderUdiseTeacherProfileView() {
                 <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">#</th>
                 <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">UDISE Code</th>
                 <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">School Name</th>
+                <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">CRC Cluster</th>
+                <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">School Management</th>
                 <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">Teacher Name</th>
                 <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">Gender</th>
                 <th style="color:#ffffff !important; background:#034433 !important; font-weight:800 !important;">Social Category</th>
@@ -6988,11 +7050,13 @@ function renderUdiseTeacherProfileView() {
                   <td>${i + 1}</td>
                   <td><code>${t.udise_code}</code></td>
                   <td><strong class="school-title" style="font-size:11px;">${t.school_name}</strong></td>
+                  <td><span class="badge" style="background:#e0f2fe; color:#0369a1; font-size:10px; font-weight:700; border:1px solid #bae6fd;">${t.cluster_name || 'KADI'}</span></td>
+                  <td><span class="badge" style="background:#f8fafc; color:#334155; font-size:10px; font-weight:600; border:1px solid #cbd5e1;">${t.management || 'Local Body'}</span></td>
                   <td><strong style="color:#034433; font-size:12px;">${t.teacher_name}</strong></td>
                   <td><span class="badge ${t.gender === 'Female' ? 'badge-danger' : 'badge-primary'}" style="font-size:10px;">${t.gender}</span></td>
-                  <td><span style="font-size:10px; color:#475569;">${t.social_category}</span></td>
+                  <td><span class="badge" style="background:${t.social_category === 'General' ? '#eff6ff' : t.social_category === 'OBC' ? '#fef3c7' : '#f3e8ff'}; color:${t.social_category === 'General' ? '#1d4ed8' : t.social_category === 'OBC' ? '#b45309' : '#6b21a8'}; font-size:10px; font-weight:700; border:1px solid rgba(0,0,0,0.08);">${t.social_category}</span></td>
                   <td><span class="badge badge-success" style="font-size:10px;">${t.academic_qualification}</span></td>
-                  <td><span style="font-size:10px; color:#334155;">${t.professional_qualification}</span></td>
+                  <td><span style="font-size:10px; color:#334155; font-weight:600;">${t.professional_qualification}</span></td>
                   <td><span style="font-size:10px; font-weight:700; color:#0284c7;">${t.subject}</span></td>
                   <td><span class="badge badge-success" style="font-size:10px;">${t.completion_status}</span></td>
                 </tr>
@@ -7000,7 +7064,7 @@ function renderUdiseTeacherProfileView() {
             </tbody>
             <tfoot style="background:#034433; color:#ffffff !important; font-weight:800; border-top:3px solid #f97316;">
               <tr>
-                <td colspan="3" style="text-align:right; color:#ffffff !important;">TOTAL DISPLAYED TEACHERS:</td>
+                <td colspan="5" style="text-align:right; color:#ffffff !important;">TOTAL DISPLAYED TEACHERS:</td>
                 <td colspan="7" style="color:#ffffff !important;"><strong>${filtered.length} Teachers</strong></td>
               </tr>
             </tfoot>
@@ -7035,8 +7099,9 @@ function renderUdiseTeacherProfileView() {
           <label style="font-size:11px; font-weight:800; color:#fdba74; display:block; margin-bottom:4px;">MANAGEMENT:</label>
           <select class="att-filter-select" onchange="changeUdiseMgmtFilter(this.value)">
             <option value="ALL">-- ALL Managements --</option>
-            <option value="Primary" ${selUdiseMgmtFilter==='Primary'?'selected':''}>1 - State Govt / Primary</option>
-            <option value="Unaided" ${selUdiseMgmtFilter==='Unaided'?'selected':''}>5 - Pvt. Unaided</option>
+            <option value="Local Body" ${selUdiseMgmtFilter==='Local Body'?'selected':''}>Local Body / Panchayat</option>
+            <option value="Private Unaided" ${selUdiseMgmtFilter==='Private Unaided'?'selected':''}>Private Unaided</option>
+            <option value="Government Aided" ${selUdiseMgmtFilter==='Government Aided'?'selected':''}>Government Aided</option>
           </select>
         </div>
 
@@ -7129,9 +7194,9 @@ function exportUdiseTeacherCSV() {
   const rawProfiles = (globalData && globalData.udise_teacher_profiles) ? globalData.udise_teacher_profiles : [];
   if (rawProfiles.length === 0) return alert("No UDISE teacher data available!");
 
-  let csv = "UDISE Code,School Name,Management,Teacher Name,Gender,Age,Social Category,Academic Qualification,Professional Qualification,Subject Taught,Completion Status\n";
+  let csv = "UDISE Code,School Name,CRC Cluster,School Management,Teacher Name,Gender,Age,Social Category,Academic Qualification,Professional Qualification,Subject Taught,Completion Status\n";
   rawProfiles.forEach(t => {
-    csv += `"${t.udise_code}","${t.school_name}","${t.management}","${t.teacher_name}","${t.gender}","${t.age}","${t.social_category}","${t.academic_qualification}","${t.professional_qualification}","${t.subject}","${t.completion_status}"\n`;
+    csv += `"${t.udise_code}","${t.school_name}","${t.cluster_name || 'KADI'}","${t.management}","${t.teacher_name}","${t.gender}","${t.age}","${t.social_category}","${t.academic_qualification}","${t.professional_qualification}","${t.subject}","${t.completion_status}"\n`;
   });
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -7211,7 +7276,7 @@ function renderUdiseModuleView() {
         <div class="cts-card-body purple">
           <div class="card-icon-avatar"><i class="fa-solid fa-location-dot"></i></div>
           <div class="card-text-wrap">
-            <strong>District MIS</strong>
+            <strong>BLOCK UNIT</strong>
             <div class="card-count-num" style="color:#6b21a8;">KADI BLOCK</div>
           </div>
         </div>
