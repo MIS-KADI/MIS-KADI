@@ -523,11 +523,25 @@
 
       // Registered portal users
       let users = JSON.parse(localStorage.getItem("mis_registered_users")) || [
-        { username: "240402", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
-        { username: "240402-KADI BMIS", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
+        { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+        { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
         { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
         { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
       ];
+
+      // Automatically migrate/update admin password to B@240402 in storage
+      let adminUpdated = false;
+      users.forEach(u => {
+        if (u.username === "240402" || u.username === "240402-KADI BMIS") {
+          if (u.password !== "B@240402") {
+            u.password = "B@240402";
+            adminUpdated = true;
+          }
+        }
+      });
+      if (adminUpdated) {
+        localStorage.setItem("mis_registered_users", JSON.stringify(users));
+      }
 
       // 3. Admin Role Enforcement: Admin can ONLY login with 240402
       if (currentLoginRole === "admin") {
@@ -539,7 +553,7 @@
         }
 
         const adminUser = users.find(u => (u.username === "240402" || u.username === "240402-KADI BMIS") && u.password === pwd);
-        if (!adminUser && pwd !== "SSA@123") {
+        if (!adminUser && pwd !== "B@240402") {
           errBox.style.display = "block";
           errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect Username or Password! Please try again.`;
           document.getElementById("txtPassword").value = "";

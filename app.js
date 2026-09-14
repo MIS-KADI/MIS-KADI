@@ -183,11 +183,19 @@ if (typeof Chart !== 'undefined') {
 
 // User Management System State
 let registeredUsersList = JSON.parse(localStorage.getItem("mis_registered_users")) || [
-  { username: "240402", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
-  { username: "240402-KADI BMIS", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
+  { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+  { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
   { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
   { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
 ];
+
+// Ensure admin password is set to B@240402
+registeredUsersList.forEach(u => {
+  if (u.username === "240402" || u.username === "240402-KADI BMIS") {
+    u.password = "B@240402";
+  }
+});
+localStorage.setItem("mis_registered_users", JSON.stringify(registeredUsersList));
 
 document.addEventListener("DOMContentLoaded", () => {
   checkUserAuth();
