@@ -46,7 +46,7 @@
         </li>
 
         <!-- 1. SSA Gujarat Portal Dropdown -->
-        <li class="nav-item open" id="menuSSAGujarat">
+        <li class="nav-item" id="menuSSAGujarat">
           <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuSSAGujarat', 'Child Tracking System (CTS)')">
             <span class="nav-link-content">
               <i class="fa-solid fa-landmark"></i> SSA Gujarat Portal
@@ -59,7 +59,7 @@
         </li>
 
         <!-- 2. Attendance Dropdown -->
-        <li class="nav-item open" id="menuAttendance">
+        <li class="nav-item" id="menuAttendance">
           <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuAttendance', 'Teacher Attendance')">
             <span class="nav-link-content">
               <i class="fa-solid fa-clipboard-user"></i> Attendance
@@ -101,7 +101,7 @@
         </li>
 
         <!-- 5. ICT / Gyankunj Dropdown -->
-        <li class="nav-item open" id="menuICTGyankunj">
+        <li class="nav-item" id="menuICTGyankunj">
           <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuICTGyankunj', 'ICT Computer Lab')">
             <span class="nav-link-content">
               <i class="fa-solid fa-laptop-code"></i> ICT / Gyankunj
@@ -115,7 +115,7 @@
         </li>
 
         <!-- 6. School Monitoring Dropdown -->
-        <li class="nav-item open" id="menuSchoolMonitoring">
+        <li class="nav-item" id="menuSchoolMonitoring">
           <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuSchoolMonitoring', 'CRC School Visit')">
             <span class="nav-link-content">
               <i class="fa-solid fa-eye"></i> School Monitoring
@@ -128,7 +128,7 @@
         </li>
 
         <!-- 7. UDISE+ Dropdown -->
-        <li class="nav-item open" id="menuUDISE">
+        <li class="nav-item" id="menuUDISE">
           <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuUDISE', 'UDISE+ School Profile')">
             <span class="nav-link-content">
               <i class="fa-solid fa-database"></i> UDISE+
@@ -151,7 +151,7 @@
         </li>
 
         <!-- 9. Users -->
-        <li class="nav-item">
+        <li class="nav-item" id="navItemUsersManagement">
           <a class="nav-link" href="javascript:void(0);" onclick="renderUsersManagementTable()">
             <span class="nav-link-content">
               <i class="fa-solid fa-users-gear"></i> Users Management
@@ -508,5 +508,171 @@
 
   <script src="data/dashboard_data.js?v=20260821_RESTORED"></script>
   <script src="app.js?v=20260821_RESTORED"></script>
+  <!-- ========================================================== -->
+  <!-- UDISE+ / MIS KADI VIRTUAL ASSISTANT CHATBOT (FLOATING UI) -->
+  <!-- ========================================================== -->
+
+  <!-- 1. Floating Launcher Button (Matches User Uploaded Image 1) -->
+  <div id="udiseBotLauncher" class="udise-bot-launcher" onclick="toggleUdiseBot()" title="UDISE+ Virtual Assistant">
+    <div class="udise-bot-launcher-inner">
+      <div class="udise-bot-online-dot"></div>
+      <!-- Robot Vector SVG matching Image 1 -->
+      <svg width="38" height="32" viewBox="0 0 64 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Mortarboard Cap -->
+        <path d="M30 4L12 14L30 24L48 14L30 4Z" fill="#0284c7" stroke="#0284c7" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M12 14V22" stroke="#0284c7" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="12" cy="23" r="2" fill="#0284c7"/>
+        <!-- Robot Head Outline -->
+        <rect x="18" y="20" width="24" height="20" rx="6" fill="#ffffff" stroke="#0284c7" stroke-width="2.5"/>
+        <!-- Ears / Headphones -->
+        <rect x="14.5" y="26" width="3.5" height="8" rx="1.5" fill="#0284c7"/>
+        <rect x="42" y="26" width="3.5" height="8" rx="1.5" fill="#0284c7"/>
+        <!-- Eyes -->
+        <circle cx="25" cy="29" r="3" fill="#0284c7"/>
+        <circle cx="26" cy="28" r="1" fill="#ffffff"/>
+        <circle cx="35" cy="29" r="3" fill="#0284c7"/>
+        <circle cx="36" cy="28" r="1" fill="#ffffff"/>
+        <!-- Smile -->
+        <path d="M26 34C28 36.5 32 36.5 34 34" stroke="#0284c7" stroke-width="2" stroke-linecap="round"/>
+        <!-- Speech Bubble -->
+        <rect x="44" y="16" width="16" height="12" rx="3" fill="#ffffff" stroke="#0284c7" stroke-width="1.8"/>
+        <path d="M44 24L41 26V23L44 24Z" fill="#0284c7"/>
+        <line x1="47" y1="19.5" x2="57" y2="19.5" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="47" y1="22.5" x2="55" y2="22.5" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="47" y1="25.5" x2="52" y2="25.5" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div style="font-size: 8px; font-weight: 900; letter-spacing: 0.4px; margin-top: 2px; line-height: 1;">
+        <span style="color: #e05638;">UDISE+</span> <span style="color: #002b49;">BOT</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Chat Bot Window Dialog (Matches User Uploaded Image 2) -->
+  <div id="udiseBotWindow" class="udise-bot-window">
+    <!-- Header -->
+    <div class="udise-bot-header">
+      <div class="udise-bot-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+          <circle cx="12" cy="5" r="2"></circle>
+          <path d="M12 7v4"></path>
+          <line x1="8" y1="16" x2="8.01" y2="16"></line>
+          <line x1="16" y1="16" x2="16.01" y2="16"></line>
+        </svg>
+        <span>UDISE<span style="color:#f97316;">+</span>Bot</span>
+      </div>
+      <button class="udise-bot-close-btn" onclick="toggleUdiseBot()" title="Close Bot">&times;</button>
+    </div>
+
+    <!-- Scrollable Body -->
+    <div id="udiseBotBody" class="udise-bot-body">
+      <!-- Card 1: Welcome Assistant Message (Matches Image 2) -->
+      <div class="udise-bot-card">
+        <p style="margin:0 0 10px; font-size:12.5px; line-height:1.55; color:#1e293b;">
+          Hi! I'm your virtual assistant to assist you with your enquiries on Reports from Profile / Facility Module.<br><br>
+          Your feedback is valuable; use thumbs up or thumbs down icons to help us improve further.<br>
+          <strong style="color:#002b49;">Thank you!</strong>
+        </p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="udise-bot-feedback-btn" onclick="sendBotFeedback('up', this)" title="Helpful"><i class="fa-regular fa-thumbs-up"></i></span>
+          <span class="udise-bot-feedback-btn" onclick="sendBotFeedback('down', this)" title="Not helpful"><i class="fa-regular fa-thumbs-down"></i></span>
+          <span id="txtBotFeedbackNotice" style="font-size:11px; color:#16a34a; font-weight:700; display:none;">Thank you for your feedback!</span>
+        </div>
+      </div>
+
+      <!-- Card 2: Interactive Parameter Selector (Matches Image 2) -->
+      <div class="udise-bot-card accent-blue">
+        <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:12px;">
+          To help you get started, please select the parameter that best suits you:
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('Electricity')">
+            <span><i class="fa-solid fa-bolt" style="color:#eab308; margin-right:8px;"></i> Electricity</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('Classroom')">
+            <span><i class="fa-solid fa-chalkboard" style="color:#0284c7; margin-right:8px;"></i> Classroom</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('Toilet')">
+            <span><i class="fa-solid fa-restroom" style="color:#16a34a; margin-right:8px;"></i> Toilet</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('Drinking Water')">
+            <span><i class="fa-solid fa-faucet-drip" style="color:#0ea5e9; margin-right:8px;"></i> Drinking Water</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('Teacher Profile')">
+            <span><i class="fa-solid fa-chalkboard-user" style="color:#7c3aed; margin-right:8px;"></i> Teacher Profile</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('Student Enrollment')">
+            <span><i class="fa-solid fa-user-graduate" style="color:#2563eb; margin-right:8px;"></i> Student Enrollment</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('Attendance Report')">
+            <span><i class="fa-solid fa-calendar-check" style="color:#15803d; margin-right:8px;"></i> Attendance Report</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('SAT Exam Results')">
+            <span><i class="fa-solid fa-file-signature" style="color:#ea580c; margin-right:8px;"></i> SAT Exam Results</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('ICT & Gyankunj')">
+            <span><i class="fa-solid fa-laptop-code" style="color:#0284c7; margin-right:8px;"></i> ICT &amp; Gyankunj Labs</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" onclick="handleBotParameter('SoE Schools')">
+            <span><i class="fa-solid fa-award" style="color:#b45309; margin-right:8px;"></i> Schools of Excellence (SoE)</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Container for dynamic conversation turns -->
+      <div id="udiseBotChatHistory" style="display:flex; flex-direction:column; gap:12px;"></div>
+    </div>
+
+    <!-- Input Box Area -->
+    <div class="udise-bot-input-area">
+      <input id="txtBotInput" type="text" class="udise-bot-input" placeholder="Ask about school, facility, or DISE code..." onkeydown="if(event.key==='Enter') sendBotMessage();" />
+      <button class="udise-bot-send-btn" onclick="sendBotMessage()" title="Send query">
+        <i class="fa-solid fa-paper-plane" style="font-size:12px;"></i>
+      </button>
+    </div>
+
+    <!-- Footer Bar with NIC Logo (Matches Image 2) -->
+    <div class="udise-bot-footer">
+      <div style="display:flex; flex-direction:column; line-height:1.2;">
+        <span style="font-size:10px; color:#cbd5e1; font-weight:700;">Last Updated Time -</span>
+        <span id="botLastUpdatedTime" style="font-size:11px; font-weight:800; color:#ffffff; letter-spacing:0.3px;">14/09/2026 12:00:01 PM</span>
+      </div>
+
+      <!-- NIC Logo & Text -->
+      <div style="display:flex; align-items:center; gap:8px;">
+        <svg width="44" height="22" viewBox="0 0 76 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Horizontal stripes creating NIC pattern -->
+          <rect x="2" y="2" width="6" height="32" fill="#ffffff"/>
+          <rect x="2" y="2" width="22" height="5" fill="#ffffff"/>
+          <rect x="18" y="2" width="6" height="32" fill="#ffffff"/>
+          <path d="M6 7L20 30" stroke="#002b49" stroke-width="4"/>
+          
+          <rect x="30" y="2" width="6" height="32" fill="#ffffff"/>
+          <rect x="26" y="2" width="14" height="5" fill="#ffffff"/>
+          <rect x="26" y="29" width="14" height="5" fill="#ffffff"/>
+
+          <rect x="46" y="2" width="6" height="32" fill="#ffffff"/>
+          <rect x="46" y="2" width="24" height="5" fill="#ffffff"/>
+          <rect x="46" y="29" width="24" height="5" fill="#ffffff"/>
+        </svg>
+        <div style="line-height:1.1; text-align:left;">
+          <div style="font-size:9.5px; font-weight:800; color:#ffffff; letter-spacing:0.5px;">एन आई सी</div>
+          <div style="font-size:7.5px; color:#cbd5e1; font-weight:600; text-transform:uppercase;">National<br>Informatics<br>Centre</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

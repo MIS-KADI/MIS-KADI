@@ -256,6 +256,50 @@
       justify-content: center;
       gap: 6px;
     }
+  
+    /* ROLE SELECTOR: ADMIN vs OTHER USER */
+    .role-selector-container {
+      display: flex;
+      gap: 10px;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .role-pill {
+      flex: 1;
+      text-align: center;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #64748b;
+      transition: all 0.22s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    .role-pill.active {
+      background: #034433;
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(3, 68, 51, 0.25);
+    }
+
+    .role-pill.active i {
+      color: #f97316;
+    }
+
+    .role-pill:hover:not(.active) {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
   </style>
 </head>
 <body>
@@ -274,12 +318,22 @@
 
       <form id="loginForm" onsubmit="handleLoginSubmit(event)" autocomplete="off">
         
+        <!-- ROLE SELECTOR: ADMIN vs OTHER USER -->
+        <div class="role-selector-container">
+          <div class="role-pill active" id="roleBtnAdmin" onclick="setLoginRole('admin')">
+            <i class="fa-solid fa-user-shield"></i> Admin
+          </div>
+          <div class="role-pill" id="roleBtnUser" onclick="setLoginRole('user')">
+            <i class="fa-solid fa-users"></i> Other User
+          </div>
+        </div>
+
         <!-- USERNAME -->
         <div class="form-group">
           <label><i class="fa-solid fa-user" style="color:#034433; margin-right:4px;"></i> Username / User ID</label>
           <div class="input-wrap">
             <i class="fa-solid fa-user prefix-icon"></i>
-            <input type="text" id="txtUsername" placeholder="Enter User ID (e.g. 240402)" autocomplete="off" required />
+            <input type="text" id="txtUsername" value="240402" placeholder="Admin User ID (240402)" autocomplete="off" required />
           </div>
         </div>
 
@@ -417,7 +471,31 @@
       }
     }
 
-    // Handle Login Submit with Mandatory Password and Captcha Verification
+    let currentLoginRole = "admin";
+
+    function setLoginRole(role) {
+      currentLoginRole = role;
+      const btnAdmin = document.getElementById("roleBtnAdmin");
+      const btnUser = document.getElementById("roleBtnUser");
+      const txtUser = document.getElementById("txtUsername");
+      const errBox = document.getElementById("loginErrorMsg");
+      if (errBox) errBox.style.display = "none";
+
+      if (role === "admin") {
+        btnAdmin.classList.add("active");
+        btnUser.classList.remove("active");
+        txtUser.value = "240402";
+        txtUser.placeholder = "Admin User ID (240402)";
+      } else {
+        btnUser.classList.add("active");
+        btnAdmin.classList.remove("active");
+        txtUser.value = "";
+        txtUser.placeholder = "Enter User ID / Username";
+        txtUser.focus();
+      }
+    }
+
+    // Handle Login Submit with Role Enforcement and Secure Error Messages
     function handleLoginSubmit(e) {
       e.preventDefault();
       const user = document.getElementById("txtUsername").value.trim();
@@ -451,12 +529,53 @@
         { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
       ];
 
-      const foundUser = users.find(u => 
-        (u.username.toLowerCase() === user.toLowerCase() || u.username === "240402") && 
-        (u.password === pwd || pwd === "SSA@123" || pwd === "123")
-      );
+      // 3. Admin Role Enforcement: Admin can ONLY login with 240402
+      if (currentLoginRole === "admin") {
+        if (user !== "240402" && user !== "240402-KADI BMIS") {
+          errBox.style.display = "block";
+          errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Admin login is strictly restricted to User ID <strong>240402</strong>.`;
+          generateCaptcha();
+          return;
+        }
 
-      if (foundUser) {
+        const adminUser = users.find(u => (u.username === "240402" || u.username === "240402-KADI BMIS") && u.password === pwd);
+        if (!adminUser && pwd !== "SSA@123") {
+          errBox.style.display = "block";
+          errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect Username or Password! Please try again.`;
+          document.getElementById("txtPassword").value = "";
+          document.getElementById("txtCaptcha").value = "";
+          generateCaptcha();
+          document.getElementById("txtPassword").focus();
+          return;
+        }
+
+        // Admin login success
+        sessionStorage.setItem("mis_session_auth", "true");
+        sessionStorage.setItem("mis_user_role", "admin");
+        sessionStorage.setItem("mis_username", "240402");
+        localStorage.setItem("mis_user_logged_in", "true");
+        localStorage.setItem("mis_user_role", "admin");
+        localStorage.setItem("mis_username", "240402");
+
+        document.getElementById("txtPassword").value = "";
+        window.location.replace("index.html");
+        return;
+      }
+
+      // 4. Other User Login Enforcement
+      if (currentLoginRole === "user") {
+        const foundUser = users.find(u => u.username.toLowerCase() === user.toLowerCase() && u.password === pwd);
+
+        if (!foundUser) {
+          errBox.style.display = "block";
+          errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect Username or Password! Please try again.`;
+          document.getElementById("txtPassword").value = "";
+          document.getElementById("txtCaptcha").value = "";
+          generateCaptcha();
+          document.getElementById("txtPassword").focus();
+          return;
+        }
+
         if (foundUser.status !== "Active") {
           errBox.style.display = "block";
           errBox.innerHTML = `<i class="fa-solid fa-user-slash"></i> Account is DEACTIVATED by Admin V.D.PATEL.`;
@@ -464,21 +583,16 @@
           return;
         }
 
-        // Authentication Success: Store session authentication
+        // User login success (Restricted role)
         sessionStorage.setItem("mis_session_auth", "true");
+        sessionStorage.setItem("mis_user_role", "user");
+        sessionStorage.setItem("mis_username", foundUser.username);
         localStorage.setItem("mis_user_logged_in", "true");
+        localStorage.setItem("mis_user_role", "user");
         localStorage.setItem("mis_username", foundUser.username);
 
-        // Clear password in memory before redirect
         document.getElementById("txtPassword").value = "";
         window.location.replace("index.html");
-      } else {
-        errBox.style.display = "block";
-        errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect username or password. Default credentials: Username <strong>240402</strong>, Password <strong>SSA@123</strong>`;
-        document.getElementById("txtPassword").value = "";
-        document.getElementById("txtCaptcha").value = "";
-        generateCaptcha();
-        document.getElementById("txtPassword").focus();
       }
     }
 

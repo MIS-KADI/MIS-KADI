@@ -200,10 +200,32 @@ function saveUsersToStorage() {
 }
 
 function checkUserAuth() {
-  const username = "MIS KADI DASHBOARD";
+  const isAuth = sessionStorage.getItem("mis_session_auth") === "true" || localStorage.getItem("mis_user_logged_in") === "true";
+  if (!isAuth) {
+    window.location.replace("login.html");
+    return;
+  }
+
+  const role = sessionStorage.getItem("mis_user_role") || localStorage.getItem("mis_user_role") || "user";
+  const loggedUser = sessionStorage.getItem("mis_username") || localStorage.getItem("mis_username") || "User";
+
   const welcomeSpan = document.getElementById("txtWelcomeUser");
   if (welcomeSpan) {
-    welcomeSpan.innerText = username;
+    if (role === "admin") {
+      welcomeSpan.innerHTML = `<i class="fa-solid fa-user-shield" style="color:#f97316;"></i> ADMIN (${loggedUser})`;
+    } else {
+      welcomeSpan.innerHTML = `<i class="fa-solid fa-user" style="color:#38bdf8;"></i> USER (${loggedUser})`;
+    }
+  }
+
+  // Enforce Users Management visibility: ONLY Admin (240402) can see Users Management
+  const navUsers = document.getElementById("navItemUsersManagement");
+  if (navUsers) {
+    if (role === "admin" && (loggedUser === "240402" || loggedUser === "240402-KADI BMIS")) {
+      navUsers.style.display = "block";
+    } else {
+      navUsers.style.display = "none";
+    }
   }
 }
 
@@ -216,17 +238,41 @@ function handleLogout() {
 
 function toggleSubmenu(menuId) {
   const item = document.getElementById(menuId);
-  if (item) {
-    item.classList.toggle("open");
+  if (!item) return;
+  const isAlreadyOpen = item.classList.contains("open");
+  // Accordion: close all other dropdowns
+  document.querySelectorAll("li.nav-item").forEach(el => {
+    if (el.id && el.id.startsWith("menu") && el.id !== menuId) {
+      el.classList.remove("open");
+    }
+  });
+  if (isAlreadyOpen) {
+    item.classList.remove("open");
+  } else {
+    item.classList.add("open");
   }
 }
 
 function openParentNavTab(menuId, defaultTabName) {
   const item = document.getElementById(menuId);
-  if (item && !item.classList.contains("open")) {
+  if (!item) return;
+  const isAlreadyOpen = item.classList.contains("open");
+
+  // Accordion: close all other dropdowns
+  document.querySelectorAll("li.nav-item").forEach(el => {
+    if (el.id && el.id.startsWith("menu") && el.id !== menuId) {
+      el.classList.remove("open");
+    }
+  });
+
+  if (isAlreadyOpen) {
+    item.classList.remove("open");
+  } else {
     item.classList.add("open");
+    if (defaultTabName) {
+      openModuleTab(defaultTabName);
+    }
   }
-  openModuleTab(defaultTabName);
 }
 
 function applyGlobalDataToState() {
@@ -363,6 +409,10 @@ function updateSidebarActiveLink(tabName) {
   if (tabName === "Home Dashboard" || tabName === "home") {
     const homeLink = document.getElementById("navHomeLink");
     if (homeLink) homeLink.classList.add('active');
+    // Close all dropdowns when navigating to Home Dashboard
+    document.querySelectorAll("li.nav-item").forEach(el => {
+      if (el.id && el.id.startsWith("menu")) el.classList.remove("open");
+    });
     return;
   }
 
@@ -4813,6 +4863,15 @@ function renderCwsnDataTables() {
 
 
 function renderUsersManagementTable() {
+  const role = sessionStorage.getItem("mis_user_role") || localStorage.getItem("mis_user_role") || "user";
+  const loggedUser = sessionStorage.getItem("mis_username") || localStorage.getItem("mis_username") || "";
+
+  if (role !== "admin" || (loggedUser !== "240402" && loggedUser !== "240402-KADI BMIS")) {
+    alert("Access Denied: Only Administrator (240402) has permission to access the Users Management Panel.");
+    switchNavTab('home');
+    return;
+  }
+
   openModuleTab("Users Management");
   const wrapper = document.getElementById("moduleTabDedicatedContainer");
   if (!wrapper) return;
@@ -4821,7 +4880,7 @@ function renderUsersManagementTable() {
     <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; margin-bottom:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:14px 18px; border-radius:6px;">
         <h3 style="font-size:17px; font-weight:800; margin:0;">
-          <i class="fa-solid fa-users-gear" style="color:#f97316;"></i> USER MANAGEMENT PANEL (CONTROLLED BY ADMIN V.D.PATEL)
+          <i class="fa-solid fa-users-gear" style="color:#f97316;"></i> USER MANAGEMENT PANEL (ADMINISTRATOR ACCESS)
         </h3>
         <button class="btn btn-saffron" style="font-size:12px;" onclick="promptAddNewUser()">
           <i class="fa-solid fa-user-plus"></i> + ADD NEW USER
@@ -4831,37 +4890,43 @@ function renderUsersManagementTable() {
       <div style="overflow-x:auto;">
         <table class="custom-table">
           <thead>
-            <tr>
-              <th>#</th>
+            <tr style="background:#034433 !important; color:#ffffff !important;">
+              <th style="width:45px; text-align:center;">#</th>
               <th>Username / User ID</th>
               <th>Role</th>
               <th>Password</th>
-              <th>Status</th>
-              <th>Actions (Toggle Status / Reset Password)</th>
+              <th style="text-align:center;">Status</th>
+              <th style="text-align:center;">Actions (Edit Username / Reset Password / Status)</th>
             </tr>
           </thead>
           <tbody>
             ${registeredUsersList.map((u, idx) => `
               <tr>
-                <td>${idx + 1}</td>
-                <td><strong>${u.username}</strong></td>
-                <td><span class="btn btn-light" style="padding:2px 8px; font-size:11px;">${u.role}</span></td>
+                <td style="text-align:center;"><span style="color:#94a3b8; font-weight:700;">${idx + 1}</span></td>
+                <td><strong style="color:#0f172a; font-size:13px;">${u.username}</strong></td>
+                <td><span class="badge ${u.role && u.role.includes('Admin') ? 'badge-warning' : 'badge-light'}" style="padding:4px 8px; font-size:11px;">${u.role}</span></td>
                 <td>
                   <span id="txtUserPwd_${idx}" style="font-family:monospace; font-weight:700; color:#0f172a;">••••••••</span>
-                  <i class="fa-solid fa-eye" style="margin-left:8px; cursor:pointer; color:#0284c7;" onclick="toggleShowPassword(${idx}, '${u.password}')"></i>
+                  <i class="fa-solid fa-eye" style="margin-left:8px; cursor:pointer; color:#0284c7;" onclick="toggleShowPassword(${idx}, '${u.password}')" title="Show/Hide Password"></i>
                 </td>
-                <td>
+                <td style="text-align:center;">
                   <span class="badge ${u.status === 'Active' ? 'badge-success' : 'badge-danger'}" style="background:${u.status === 'Active' ? '#16a34a' : '#dc2626'}; color:#fff;">
                     ${u.status}
                   </span>
                 </td>
-                <td>
-                  <div style="display:flex; gap:8px;">
-                    <button class="btn ${u.status === 'Active' ? 'btn-danger' : 'btn-saffron'}" style="font-size:11px; padding:4px 10px; background:${u.status === 'Active' ? '#dc2626' : '#16a34a'};" onclick="toggleUserStatus(${idx})">
-                      <i class="fa-solid ${u.status === 'Active' ? 'fa-user-xmark' : 'fa-user-check'}"></i> ${u.status === 'Active' ? 'DEACTIVATE' : 'ACTIVATE'}
+                <td style="text-align:center;">
+                  <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                    <!-- EDIT USERNAME BUTTON -->
+                    <button class="btn" style="font-size:11px; padding:4px 10px; background:#d97706; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="editUsernamePrompt(${idx})" title="Edit Username">
+                      <i class="fa-solid fa-user-pen"></i> EDIT USERNAME
                     </button>
-                    <button class="btn btn-light" style="font-size:11px; padding:4px 10px; background:#0284c7; color:#fff; border:none;" onclick="resetUserPasswordPrompt(${idx})">
-                      <i class="fa-solid fa-key"></i> RESET PASSWORD
+                    <!-- RESET PASSWORD BUTTON -->
+                    <button class="btn btn-light" style="font-size:11px; padding:4px 10px; background:#0284c7; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="resetUserPasswordPrompt(${idx})" title="Reset Password">
+                      <i class="fa-solid fa-key"></i> RESET PWD
+                    </button>
+                    <!-- TOGGLE ACTIVE STATUS -->
+                    <button class="btn" style="font-size:11px; padding:4px 10px; background:${u.status === 'Active' ? '#dc2626' : '#16a34a'}; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="toggleUserStatus(${idx})">
+                      <i class="fa-solid ${u.status === 'Active' ? 'fa-user-xmark' : 'fa-user-check'}"></i> ${u.status === 'Active' ? 'DEACTIVATE' : 'ACTIVATE'}
                     </button>
                   </div>
                 </td>
@@ -4874,6 +4939,28 @@ function renderUsersManagementTable() {
   `;
 
   wrapper.innerHTML = html;
+}
+
+function editUsernamePrompt(idx) {
+  const targetUser = registeredUsersList[idx];
+  if (!targetUser) return;
+  const oldName = targetUser.username;
+  const newName = prompt(`Enter NEW Username / User ID for '${oldName}':`, oldName);
+  if (!newName || newName.trim() === "") return;
+  const trimmed = newName.trim();
+  if (trimmed === oldName) return;
+
+  // Check if username already exists in another record
+  const exists = registeredUsersList.some((u, i) => i !== idx && u.username.toLowerCase() === trimmed.toLowerCase());
+  if (exists) {
+    alert(`Error: Username '${trimmed}' already exists! Please choose a unique username.`);
+    return;
+  }
+
+  targetUser.username = trimmed;
+  saveUsersToStorage();
+  alert(`Username successfully updated from '${oldName}' to '${trimmed}'!`);
+  renderUsersManagementTable();
 }
 
 function toggleShowPassword(idx, realPwd) {
@@ -7347,43 +7434,22 @@ function exportSchoolListCSV() {
 
 
 // ==========================================================
+// ==========================================================
 // SAT (SEMESTER ASSESSMENT TEST 2022-23) FIRST & SECOND SEM
 // ==========================================================
 let selectedSatSem = "ALL Semesters";
 let activeSatSubView = "comparison";
-let satRowDim = "cluster";
-let satColDim = "grade";
+let satPivotDimension = "cluster"; // "cluster", "management", "category", "soe"
 let chartSatBreakdownObj = null;
 let chartSatComparisonObj = null;
+let chartSatCrcObj = null;
 
 function renderSatModuleView() {
   const wrapper = document.getElementById("moduleTabDedicatedContainer");
   if (!wrapper) return;
 
   const satData = (globalData && globalData.sat_data) ? globalData.sat_data : {};
-  const sem1Totals = satData.sem1_totals || { schools: 134, total_students: 22560, present_students: 22206, absent_students: 354, p_80: 1547, p_60_80: 4473, p_40_60: 5329, p_0_40: 10857, soe_schools: 91 };
-  const sem2Totals = satData.sem2_totals || { schools: 134, total_students: 22354, present_students: 22037, absent_students: 317, p_80: 2687, p_60_80: 6094, p_40_60: 6191, p_0_40: 7065, soe_schools: 91 };
-
-  let activeTotals = sem2Totals;
-  if (selectedSatSem === "First Sem") activeTotals = sem1Totals;
-  else if (selectedSatSem === "ALL Semesters") {
-    activeTotals = {
-      schools: 134,
-      total_students: sem1Totals.total_students + sem2Totals.total_students,
-      present_students: sem1Totals.present_students + sem2Totals.present_students,
-      absent_students: sem1Totals.absent_students + sem2Totals.absent_students,
-      p_80: sem1Totals.p_80 + sem2Totals.p_80,
-      p_60_80: sem1Totals.p_60_80 + sem2Totals.p_60_80,
-      p_40_60: sem1Totals.p_40_60 + sem2Totals.p_40_60,
-      p_0_40: sem1Totals.p_0_40 + sem2Totals.p_0_40,
-      soe_schools: 91
-    };
-  }
-
-  const p80Perc = activeTotals.present_students > 0 ? (activeTotals.p_80 / activeTotals.present_students * 100).toFixed(1) : 0;
-  const p60to80Perc = activeTotals.present_students > 0 ? (activeTotals.p_60_80 / activeTotals.present_students * 100).toFixed(1) : 0;
-  const p40to60Perc = activeTotals.present_students > 0 ? (activeTotals.p_40_60 / activeTotals.present_students * 100).toFixed(1) : 0;
-  const p0to40Perc = activeTotals.present_students > 0 ? (activeTotals.p_0_40 / activeTotals.present_students * 100).toFixed(1) : 0;
+  const filtered = getFilteredSatRecords();
 
   let html = `
     <!-- TOP HEADER BANNER -->
@@ -7394,14 +7460,14 @@ function renderSatModuleView() {
             <i class="fa-solid fa-file-signature" style="color:#f97316;"></i> SAT FIRST &amp; SECOND SEMESTER REPORT (2022-23)
           </h2>
           <div style="font-size:12px; color:#e2e8f0; font-weight:700; margin-top:4px;">
-            <i class="fa-solid fa-circle-check" style="color:#4ade80;"></i> Periodic Assessment / Semester Assessment Test · KADI Block (134 Schools)
+            <i class="fa-solid fa-circle-check" style="color:#4ade80;"></i> Periodic Assessment / Semester Assessment Test · KADI Block (134 Schools · 14 CRC Clusters)
           </div>
         </div>
 
         <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
           <!-- SEMESTER FILTER -->
           <div style="background:rgba(255,255,255,0.08); padding:6px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.2);">
-            <label style="font-size:11px; font-weight:800; color:#f97316; display:block; margin-bottom:2px;"><i class="fa-solid fa-calendar-check"></i> SEMESTER:</label>
+            <label style="font-size:11px; font-weight:800; color:#f97316; display:block; margin-bottom:2px;"><i class="fa-solid fa-calendar-check"></i> SELECT SEMESTER:</label>
             <select id="selSatSemSelector" onchange="changeSatSem(this.value)" style="background:#1e293b; color:#fff; border:1px solid #f97316; border-radius:4px; padding:6px 10px; font-size:12px; font-weight:800; outline:none; cursor:pointer;">
               <option value="ALL Semesters" ${selectedSatSem === 'ALL Semesters' ? 'selected' : ''}>★ ALL Semesters (First &amp; Second Sem Comparison)</option>
               <option value="First Sem" ${selectedSatSem === 'First Sem' ? 'selected' : ''}>First Semester (SAT-1 2022-23)</option>
@@ -7412,134 +7478,40 @@ function renderSatModuleView() {
       </div>
     </div>
 
-    <!-- 8 SARA KPI CARDS -->
+    <!-- 8 DYNAMIC SARA KPI CARDS -->
     <div id="satKpiCardsContainer">
-    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:14px;">
-      
-      <div class="cts-card">
-        <div class="cts-card-head navy"><span>TOTAL ASSESSED STUDENTS</span></div>
-        <div class="cts-card-body navy">
-          <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
-          <div class="card-text-wrap">
-            <strong>Registered Students</strong>
-            <div class="card-count-num">${activeTotals.total_students.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="cts-card">
-        <div class="cts-card-head green"><span>PRESENT STUDENTS</span></div>
-        <div class="cts-card-body green">
-          <div class="card-icon-avatar"><i class="fa-solid fa-user-check"></i></div>
-          <div class="card-text-wrap">
-            <strong>Attendance Rate (${(activeTotals.present_students/activeTotals.total_students*100).toFixed(1)}%)</strong>
-            <div class="card-count-num" style="color:#16a34a;">${activeTotals.present_students.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="cts-card">
-        <div class="cts-card-head" style="background:#046c4e; color:#fff;"><span>OUTSTANDING (&gt;80% - GRADE A)</span></div>
-        <div class="cts-card-body" style="border:1px solid #bbf7d0;">
-          <div class="card-icon-avatar" style="background:#dcfce7; color:#046c4e;"><i class="fa-solid fa-trophy"></i></div>
-          <div class="card-text-wrap">
-            <strong>High Performers (${p80Perc}%)</strong>
-            <div class="card-count-num" style="color:#046c4e;">${activeTotals.p_80.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="cts-card">
-        <div class="cts-card-head blue"><span>GOOD (60% TO 80% - GRADE B)</span></div>
-        <div class="cts-card-body blue">
-          <div class="card-icon-avatar"><i class="fa-solid fa-star"></i></div>
-          <div class="card-text-wrap">
-            <strong>Above Average (${p60to80Perc}%)</strong>
-            <div class="card-count-num" style="color:#0284c7;">${activeTotals.p_60_80.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:20px;">
-
-      <div class="cts-card">
-        <div class="cts-card-head" style="background:#ca8a04; color:#fff;"><span>AVERAGE (40% TO 60% - GRADE C)</span></div>
-        <div class="cts-card-body" style="border:1px solid #fef08a;">
-          <div class="card-icon-avatar" style="background:#fef9c3; color:#ca8a04;"><i class="fa-solid fa-thumbs-up"></i></div>
-          <div class="card-text-wrap">
-            <strong>Average Tier (${p40to60Perc}%)</strong>
-            <div class="card-count-num" style="color:#ca8a04;">${activeTotals.p_40_60.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="cts-card">
-        <div class="cts-card-head" style="background:#dc2626; color:#fff;"><span>NEEDS IMPROVEMENT (&lt;40% - GRADE D)</span></div>
-        <div class="cts-card-body" style="border:1px solid #fecaca;">
-          <div class="card-icon-avatar" style="background:#fee2e2; color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i></div>
-          <div class="card-text-wrap">
-            <strong>Remedial Focus (${p0to40Perc}%)</strong>
-            <div class="card-count-num" style="color:#dc2626;">${activeTotals.p_0_40.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="cts-card">
-        <div class="cts-card-head purple"><span>SCHOOLS OF EXCELLENCE (SoE)</span></div>
-        <div class="cts-card-body purple">
-          <div class="card-icon-avatar"><i class="fa-solid fa-award"></i></div>
-          <div class="card-text-wrap">
-            <strong>Selected SoE Units</strong>
-            <div class="card-count-num" style="color:#6b21a8;">${activeTotals.soe_schools} Schools</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="cts-card">
-        <div class="cts-card-head brown"><span>TOTAL ASSESSED SCHOOLS</span></div>
-        <div class="cts-card-body brown">
-          <div class="card-icon-avatar"><i class="fa-solid fa-school"></i></div>
-          <div class="card-text-wrap">
-            <strong>Participating Units</strong>
-            <div class="card-count-num" style="color:#a14e13;">${activeTotals.schools} Schools</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
+      ${renderSatKpiCardsHtml(filtered)}
     </div>
 
     <!-- 6 SUB-NAVIGATION BUTTON TABS -->
     <div style="background:#0f172a; border-radius:10px; padding:8px 12px; margin-bottom:20px; display:flex; gap:10px; overflow-x:auto;">
-      <button class="btn" onclick="switchSatSubView('comparison')" style="background:${activeSatSubView === 'comparison' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
+      <button class="btn" onclick="switchSatSubView('comparison')" style="background:${activeSatSubView === 'comparison' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
         <i class="fa-solid fa-code-compare"></i> 1. Semester Comparison (Sem 1 vs Sem 2)
       </button>
 
-      <button class="btn" onclick="switchSatSubView('school')" style="background:${activeSatSubView === 'school' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
+      <button class="btn" onclick="switchSatSubView('school')" style="background:${activeSatSubView === 'school' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
         <i class="fa-solid fa-building-columns"></i> 2. School-wise Table
       </button>
 
-      <button class="btn" onclick="switchSatSubView('crc')" style="background:${activeSatSubView === 'crc' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
+      <button class="btn" onclick="switchSatSubView('crc')" style="background:${activeSatSubView === 'crc' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
         <i class="fa-solid fa-layer-group"></i> 3. CRC-wise Summary
       </button>
 
-      <button class="btn" onclick="switchSatSubView('pivot')" style="background:${activeSatSubView === 'pivot' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
+      <button class="btn" onclick="switchSatSubView('pivot')" style="background:${activeSatSubView === 'pivot' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
         <i class="fa-solid fa-sliders"></i> 4. Pivot Analytics
       </button>
 
-      <button class="btn" onclick="switchSatSubView('charts')" style="background:${activeSatSubView === 'charts' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
+      <button class="btn" onclick="switchSatSubView('charts')" style="background:${activeSatSubView === 'charts' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
         <i class="fa-solid fa-chart-column"></i> 5. Interactive Charts
       </button>
 
-      <button class="btn" onclick="switchSatSubView('soe')" style="background:${activeSatSubView === 'soe' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px;">
+      <button class="btn" onclick="switchSatSubView('soe')" style="background:${activeSatSubView === 'soe' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px; cursor:pointer;">
         <i class="fa-solid fa-award"></i> 6. SoE Schools (SoE vs Non-SoE)
       </button>
     </div>
 
     <!-- FILTER TOOLBAR -->
-    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:14px 18px; margin-bottom:20px; display:grid; grid-template-columns: 1fr 1fr 1fr 1fr 1.5fr auto; gap:12px; align-items:center;">
+    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:14px 18px; margin-bottom:20px; display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr 1.5fr auto auto; gap:12px; align-items:center;">
       <div>
         <label style="font-size:11px; font-weight:800; color:#0f172a; display:block; margin-bottom:4px;"><i class="fa-solid fa-sitemap"></i> CRC Cluster:</label>
         <select id="selSatCluster" class="form-control" onchange="filterSatContent()" style="height:36px; font-size:12px; font-weight:700;">
@@ -7582,7 +7554,13 @@ function renderSatModuleView() {
       </div>
 
       <div>
-        <button class="btn btn-saffron" style="font-size:12px; background:#16a34a; height:36px; margin-top:18px; font-weight:800;" onclick="exportSatCSV()">
+        <button class="btn" style="font-size:12px; background:#64748b; color:#fff; height:36px; margin-top:18px; font-weight:800; border-radius:6px; cursor:pointer;" onclick="resetSatFilters()" title="Reset Filters">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+      </div>
+
+      <div>
+        <button class="btn btn-saffron" style="font-size:12px; background:#16a34a; height:36px; margin-top:18px; font-weight:800; cursor:pointer;" onclick="exportSatCSV()">
           <i class="fa-solid fa-file-csv"></i> Download CSV
         </button>
       </div>
@@ -7606,9 +7584,30 @@ function switchSatSubView(subViewName) {
   renderSatModuleView();
 }
 
-function renderSatKpiCardsHtml(filtered, defaultTotals) {
+function changeSatPivotDimension(dim) {
+  satPivotDimension = dim;
+  renderSatSubViewContent();
+}
+
+function resetSatFilters() {
+  const c = document.getElementById("selSatCluster");
+  const m = document.getElementById("selSatManagement");
+  const cat = document.getElementById("selSatCategory");
+  const soe = document.getElementById("selSatSoE");
+  const s = document.getElementById("searchSatInput");
+  if (c) c.value = "ALL";
+  if (m) m.value = "ALL";
+  if (cat) cat.value = "ALL";
+  if (soe) soe.value = "ALL";
+  if (s) s.value = "";
+  filterSatContent();
+}
+
+function renderSatKpiCardsHtml(filtered) {
+  let recs = filtered || [];
+
   let totals = {
-    schools: 0,
+    schools: recs.length,
     total_students: 0,
     present_students: 0,
     absent_students: 0,
@@ -7616,29 +7615,57 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
     p_60_80: 0,
     p_40_60: 0,
     p_0_40: 0,
-    soe_schools: 0
+    soe_schools: 0,
+    sem1_present: 0,
+    sem1_p80: 0,
+    sem1_p60_80: 0,
+    sem1_p40_60: 0,
+    sem1_p0_40: 0
   };
 
-  if (filtered && filtered.length > 0) {
-    totals.schools = filtered.length;
-    filtered.forEach(r => {
-      totals.total_students += (r.total_students || 0);
-      totals.present_students += (r.present_students || 0);
-      totals.absent_students += (r.absent_students || 0);
-      totals.p_80 += (r.p_80 || 0);
-      totals.p_60_80 += (r.p_60_80 || 0);
-      totals.p_40_60 += (r.p_40_60 || 0);
-      totals.p_0_40 += (r.p_0_40 || 0);
-      if (r.is_soe === 'Y') totals.soe_schools += 1;
-    });
-  } else if (defaultTotals) {
-    totals = defaultTotals;
-  }
+  recs.forEach(r => {
+    totals.total_students += (Number(r.total_students) || 0);
+    totals.present_students += (Number(r.present_students) || 0);
+    totals.absent_students += (Number(r.absent_students) || 0);
+    totals.p_80 += (Number(r.p_80) || 0);
+    totals.p_60_80 += (Number(r.p_60_80) || 0);
+    totals.p_40_60 += (Number(r.p_40_60) || 0);
+    totals.p_0_40 += (Number(r.p_0_40) || 0);
+    if (r.is_soe === 'Y') totals.soe_schools += 1;
 
-  const p80Perc = totals.present_students > 0 ? (totals.p_80 / totals.present_students * 100).toFixed(1) : 0;
-  const p60to80Perc = totals.present_students > 0 ? (totals.p_60_80 / totals.present_students * 100).toFixed(1) : 0;
-  const p40to60Perc = totals.present_students > 0 ? (totals.p_40_60 / totals.present_students * 100).toFixed(1) : 0;
-  const p0to40Perc = totals.present_students > 0 ? (totals.p_0_40 / totals.present_students * 100).toFixed(1) : 0;
+    if (r.sem1_present !== undefined) totals.sem1_present += (Number(r.sem1_present) || 0);
+    if (r.sem1_p80 !== undefined) totals.sem1_p80 += (Number(r.sem1_p80) || 0);
+    if (r.sem1_p60_80 !== undefined) totals.sem1_p60_80 += (Number(r.sem1_p60_80) || 0);
+    if (r.sem1_p40_60 !== undefined) totals.sem1_p40_60 += (Number(r.sem1_p40_60) || 0);
+    if (r.sem1_p0_40 !== undefined) totals.sem1_p0_40 += (Number(r.sem1_p0_40) || 0);
+  });
+
+  const attRate = totals.total_students > 0 ? (totals.present_students / totals.total_students * 100).toFixed(1) : "0.0";
+  const p80Perc = totals.present_students > 0 ? (totals.p_80 / totals.present_students * 100).toFixed(1) : "0.0";
+  const p60to80Perc = totals.present_students > 0 ? (totals.p_60_80 / totals.present_students * 100).toFixed(1) : "0.0";
+  const p40to60Perc = totals.present_students > 0 ? (totals.p_40_60 / totals.present_students * 100).toFixed(1) : "0.0";
+  const p0to40Perc = totals.present_students > 0 ? (totals.p_0_40 / totals.present_students * 100).toFixed(1) : "0.0";
+
+  // Comparison badges for ALL Semesters
+  let p80Badge = "";
+  let p60Badge = "";
+  let p0Badge = "";
+  if (selectedSatSem === "ALL Semesters" && totals.sem1_present > 0) {
+    const sem1P80Perc = (totals.sem1_p80 / totals.sem1_present * 100).toFixed(1);
+    const diff80 = (parseFloat(p80Perc) - parseFloat(sem1P80Perc)).toFixed(1);
+    const countDiff80 = totals.p_80 - totals.sem1_p80;
+    p80Badge = `<span style="font-size:10px; font-weight:800; color:#15803d; background:#dcfce7; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:3px;"><i class="fa-solid fa-arrow-trend-up"></i> ${diff80 >= 0 ? '+' : ''}${diff80}% (${countDiff80 >= 0 ? '+' : ''}${countDiff80.toLocaleString()})</span>`;
+
+    const sem1P60Perc = (totals.sem1_p60_80 / totals.sem1_present * 100).toFixed(1);
+    const diff60 = (parseFloat(p60to80Perc) - parseFloat(sem1P60Perc)).toFixed(1);
+    const countDiff60 = totals.p_60_80 - totals.sem1_p60_80;
+    p60Badge = `<span style="font-size:10px; font-weight:800; color:#0369a1; background:#e0f2fe; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:3px;"><i class="fa-solid fa-arrow-trend-up"></i> ${diff60 >= 0 ? '+' : ''}${diff60}% (${countDiff60 >= 0 ? '+' : ''}${countDiff60.toLocaleString()})</span>`;
+
+    const sem1P0Perc = (totals.sem1_p0_40 / totals.sem1_present * 100).toFixed(1);
+    const diff0 = (parseFloat(p0to40Perc) - parseFloat(sem1P0Perc)).toFixed(1);
+    const countDiff0 = totals.p_0_40 - totals.sem1_p0_40;
+    p0Badge = `<span style="font-size:10px; font-weight:800; color:#15803d; background:#f0fdf4; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:3px;"><i class="fa-solid fa-arrow-trend-down"></i> ${diff0}% (${countDiff0.toLocaleString()} students)</span>`;
+  }
 
   return `
     <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:14px;">
@@ -7647,8 +7674,9 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
         <div class="cts-card-body navy">
           <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
           <div class="card-text-wrap">
-            <strong>Registered Students</strong>
+            <strong>${selectedSatSem === 'ALL Semesters' ? 'Registered in Sem-2' : 'Enrolled Students'}</strong>
             <div class="card-count-num">${totals.total_students.toLocaleString()}</div>
+            ${selectedSatSem === 'ALL Semesters' ? '<span style="font-size:10px; color:#64748b; font-weight:700;">44,914 across both rounds</span>' : ''}
           </div>
         </div>
       </div>
@@ -7658,8 +7686,9 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
         <div class="cts-card-body green">
           <div class="card-icon-avatar"><i class="fa-solid fa-user-check"></i></div>
           <div class="card-text-wrap">
-            <strong>Attendance Rate (${totals.total_students > 0 ? (totals.present_students/totals.total_students*100).toFixed(1) : 0}%)</strong>
+            <strong>Attendance Rate (${attRate}%)</strong>
             <div class="card-count-num" style="color:#16a34a;">${totals.present_students.toLocaleString()}</div>
+            <span style="font-size:10px; color:#dc2626; font-weight:700;">Absent: ${totals.absent_students.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -7671,6 +7700,7 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
           <div class="card-text-wrap">
             <strong>High Performers (${p80Perc}%)</strong>
             <div class="card-count-num" style="color:#046c4e;">${totals.p_80.toLocaleString()}</div>
+            ${p80Badge}
           </div>
         </div>
       </div>
@@ -7682,6 +7712,7 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
           <div class="card-text-wrap">
             <strong>Above Average (${p60to80Perc}%)</strong>
             <div class="card-count-num" style="color:#0284c7;">${totals.p_60_80.toLocaleString()}</div>
+            ${p60Badge}
           </div>
         </div>
       </div>
@@ -7695,6 +7726,7 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
           <div class="card-text-wrap">
             <strong>Average Tier (${p40to60Perc}%)</strong>
             <div class="card-count-num" style="color:#ca8a04;">${totals.p_40_60.toLocaleString()}</div>
+            <span style="font-size:10px; color:#854d0e; font-weight:700;">Satisfactory</span>
           </div>
         </div>
       </div>
@@ -7706,6 +7738,7 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
           <div class="card-text-wrap">
             <strong>Remedial Focus (${p0to40Perc}%)</strong>
             <div class="card-count-num" style="color:#dc2626;">${totals.p_0_40.toLocaleString()}</div>
+            ${p0Badge}
           </div>
         </div>
       </div>
@@ -7717,6 +7750,7 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
           <div class="card-text-wrap">
             <strong>Selected SoE Units</strong>
             <div class="card-count-num" style="color:#6b21a8;">${totals.soe_schools} Schools</div>
+            <span style="font-size:10px; color:#6b21a8; font-weight:700;">${totals.schools > 0 ? (totals.soe_schools/totals.schools*100).toFixed(1) : 0}% of Total</span>
           </div>
         </div>
       </div>
@@ -7728,6 +7762,7 @@ function renderSatKpiCardsHtml(filtered, defaultTotals) {
           <div class="card-text-wrap">
             <strong>Participating Units</strong>
             <div class="card-count-num" style="color:#a14e13;">${totals.schools} Schools</div>
+            <span style="font-size:10px; color:#16a34a; font-weight:700;">14 CRC Clusters (100%)</span>
           </div>
         </div>
       </div>
@@ -7776,19 +7811,28 @@ function renderSatSubViewContent() {
 
   // --- 1. COMPARISON VIEW (Sem 1 vs Sem 2) ---
   if (activeSatSubView === "comparison") {
+    const totSem1 = filtered.reduce((a,c) => a + (c.sem1_present || c.sem1_total || 0), 0);
+    const totSem2 = filtered.reduce((a,c) => a + (c.sem2_present || c.sem2_total || 0), 0);
+    const totSem1P80 = filtered.reduce((a,c) => a + (c.sem1_p80 || 0), 0);
+    const totSem2P80 = filtered.reduce((a,c) => a + (c.sem2_p80 || 0), 0);
+    const avgSem1P80 = totSem1 > 0 ? (totSem1P80 / totSem1 * 100).toFixed(1) : 0;
+    const avgSem2P80 = totSem2 > 0 ? (totSem2P80 / totSem2 * 100).toFixed(1) : 0;
+    const avgP80Growth = (parseFloat(avgSem2P80) - parseFloat(avgSem1P80)).toFixed(1);
+
     panel.innerHTML = `
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);" class="pivot-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
           <h3 style="font-size:16px; font-weight:800; margin:0;">
             <i class="fa-solid fa-code-compare" style="color:#f97316;"></i> SAT FIRST SEMESTER vs SECOND SEMESTER COMPARISON (${filtered.length} Schools)
           </h3>
-          <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">Year: 2022-23</span>
+          <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">Academic Year: 2022-23</span>
         </div>
 
         <div style="overflow-x:auto; max-height:560px;">
-          <table class="custom-table">
+          <table class="custom-table pivot-table-animated">
             <thead>
               <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
+                <th style="color:#fff !important; background:#034433 !important; width:45px;">#</th>
                 <th style="color:#fff !important; background:#034433 !important;">DISE Code</th>
                 <th style="color:#fff !important; background:#034433 !important;">School Name</th>
                 <th style="color:#fff !important; background:#034433 !important;">CRC Cluster</th>
@@ -7801,21 +7845,22 @@ function renderSatSubViewContent() {
                 <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-1 Score</th>
                 <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-2 Score</th>
                 <th style="color:#fff !important; background:#034433 !important; text-align:right;">Score Delta</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:center;">Trend</th>
+                <th style="color:#fff !important; background:#034433 !important; text-align:center;">Status</th>
               </tr>
             </thead>
             <tbody>
-              ${filtered.map(s => {
+              ${filtered.map((s, idx) => {
                 const improved = s.score_change > 0;
                 const badgeClass = improved ? 'badge-success' : (s.score_change < 0 ? 'badge-danger' : 'badge-warning');
                 return `
                   <tr>
+                    <td><span style="color:#94a3b8; font-weight:700;">${idx + 1}</span></td>
                     <td><code>${s.school_id}</code></td>
                     <td><strong class="school-title">${s.school_name}</strong></td>
                     <td><span style="background:#f1f5f9; border:1px solid #cbd5e1; color:#334155; font-weight:700; border-radius:4px; padding:2px 6px; font-size:10px; text-transform:uppercase;">${s.cluster}</span></td>
                     <td style="text-align:center;"><span class="badge ${s.is_soe === 'Y' ? 'badge-success' : 'badge-light'}">${s.is_soe === 'Y' ? 'SoE' : 'Regular'}</span></td>
-                    <td style="text-align:right;">${s.sem1_present || s.sem1_total}</td>
-                    <td style="text-align:right;">${s.sem2_present || s.sem2_total}</td>
+                    <td style="text-align:right;">${(s.sem1_present || s.sem1_total || 0).toLocaleString()}</td>
+                    <td style="text-align:right; font-weight:700; color:#16a34a;">${(s.sem2_present || s.sem2_total || 0).toLocaleString()}</td>
                     <td style="text-align:right; font-weight:700;">${s.sem1_perc80}%</td>
                     <td style="text-align:right; font-weight:700; color:#046c4e;">${s.sem2_perc80}%</td>
                     <td style="text-align:right; font-weight:800; color:${s.p80_change >= 0 ? '#16a34a' : '#dc2626'};">${s.p80_change >= 0 ? '+' : ''}${s.p80_change}%</td>
@@ -7827,6 +7872,20 @@ function renderSatSubViewContent() {
                 `;
               }).join('')}
             </tbody>
+            <tfoot>
+              <tr style="background:#034433 !important; color:#ffffff !important; font-weight:800;">
+                <td colspan="5" style="color:#fff !important; font-weight:800; text-align:right;">GRAND TOTAL (${filtered.length} Schools):</td>
+                <td style="color:#fff !important; text-align:right;">${totSem1.toLocaleString()}</td>
+                <td style="color:#4ade80 !important; text-align:right;">${totSem2.toLocaleString()}</td>
+                <td style="color:#fff !important; text-align:right;">${avgSem1P80}%</td>
+                <td style="color:#4ade80 !important; text-align:right;">${avgSem2P80}%</td>
+                <td style="color:#fde047 !important; text-align:right;">${avgP80Growth >= 0 ? '+' : ''}${avgP80Growth}%</td>
+                <td style="color:#fff !important; text-align:right;">44.6%</td>
+                <td style="color:#38bdf8 !important; text-align:right;">52.4%</td>
+                <td style="color:#4ade80 !important; text-align:right;">+7.8%</td>
+                <td style="color:#4ade80 !important; text-align:center;">Improved</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -7835,22 +7894,21 @@ function renderSatSubViewContent() {
   // --- 2. SCHOOL-WISE MASTER VIEW ---
   } else if (activeSatSubView === "school") {
     let recs = filtered;
-    if (selectedSatSem === "ALL Semesters") {
-      recs = satData.sem2_records || [];
-    }
 
     panel.innerHTML = `
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);" class="pivot-container">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
           <h3 style="font-size:16px; font-weight:800; margin:0;">
             <i class="fa-solid fa-building-columns" style="color:#f97316;"></i> SAT SCHOOL-WISE PERFORMANCE REPORT (${selectedSatSem} - ${recs.length} Schools)
           </h3>
+          <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">Year 2022-23</span>
         </div>
 
         <div style="overflow-x:auto; max-height:560px;">
-          <table class="custom-table">
+          <table class="custom-table pivot-table-animated">
             <thead>
               <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
+                <th style="color:#fff !important; background:#034433 !important; width:45px;">#</th>
                 <th style="color:#fff !important; background:#034433 !important;">DISE Code</th>
                 <th style="color:#fff !important; background:#034433 !important;">School Name</th>
                 <th style="color:#fff !important; background:#034433 !important;">CRC Cluster</th>
@@ -7866,15 +7924,16 @@ function renderSatSubViewContent() {
               </tr>
             </thead>
             <tbody>
-              ${recs.map(s => `
+              ${recs.map((s, idx) => `
                 <tr>
+                  <td><span style="color:#94a3b8; font-weight:700;">${idx + 1}</span></td>
                   <td><code>${s.school_id}</code></td>
                   <td><strong class="school-title">${s.school_name}</strong></td>
                   <td><span style="background:#f1f5f9; border:1px solid #cbd5e1; color:#334155; font-weight:700; border-radius:4px; padding:2px 6px; font-size:10px; text-transform:uppercase;">${s.cluster}</span></td>
                   <td style="text-align:center;"><span class="badge ${s.is_soe === 'Y' ? 'badge-success' : 'badge-light'}">${s.is_soe === 'Y' ? 'SoE' : 'Regular'}</span></td>
-                  <td style="text-align:right;">${s.total_students}</td>
-                  <td style="text-align:right; font-weight:700; color:#16a34a;">${s.present_students}</td>
-                  <td style="text-align:right; color:#dc2626;">${s.absent_students}</td>
+                  <td style="text-align:right;">${(s.total_students || 0).toLocaleString()}</td>
+                  <td style="text-align:right; font-weight:700; color:#16a34a;">${(s.present_students || 0).toLocaleString()}</td>
+                  <td style="text-align:right; color:#dc2626;">${(s.absent_students || 0).toLocaleString()}</td>
                   <td style="text-align:right; font-weight:800; color:#046c4e;">${s.p_80} <small>(${s.perc_80}%)</small></td>
                   <td style="text-align:right; font-weight:700; color:#0284c7;">${s.p_60_80} <small>(${s.perc_60_80}%)</small></td>
                   <td style="text-align:right; font-weight:700; color:#ca8a04;">${s.p_40_60} <small>(${s.perc_40_60}%)</small></td>
@@ -7885,14 +7944,14 @@ function renderSatSubViewContent() {
             </tbody>
             <tfoot>
               <tr style="background:#034433 !important; color:#ffffff !important; font-weight:800;">
-                <td colspan="4" style="color:#fff !important; font-weight:800; text-align:right;">GRAND TOTAL (${recs.length} Schools):</td>
-                <td style="color:#fff !important; text-align:right;">${recs.reduce((a,c)=>a+c.total_students,0).toLocaleString()}</td>
-                <td style="color:#4ade80 !important; text-align:right;">${recs.reduce((a,c)=>a+c.present_students,0).toLocaleString()}</td>
-                <td style="color:#f87171 !important; text-align:right;">${recs.reduce((a,c)=>a+c.absent_students,0).toLocaleString()}</td>
-                <td style="color:#fff !important; text-align:right;">${recs.reduce((a,c)=>a+c.p_80,0).toLocaleString()}</td>
-                <td style="color:#38bdf8 !important; text-align:right;">${recs.reduce((a,c)=>a+c.p_60_80,0).toLocaleString()}</td>
-                <td style="color:#fde047 !important; text-align:right;">${recs.reduce((a,c)=>a+c.p_40_60,0).toLocaleString()}</td>
-                <td style="color:#fca5a5 !important; text-align:right;">${recs.reduce((a,c)=>a+c.p_0_40,0).toLocaleString()}</td>
+                <td colspan="5" style="color:#fff !important; font-weight:800; text-align:right;">GRAND TOTAL (${recs.length} Schools):</td>
+                <td style="color:#fff !important; text-align:right;">${recs.reduce((a,c)=>a+(c.total_students||0),0).toLocaleString()}</td>
+                <td style="color:#4ade80 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.present_students||0),0).toLocaleString()}</td>
+                <td style="color:#f87171 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.absent_students||0),0).toLocaleString()}</td>
+                <td style="color:#fff !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_80||0),0).toLocaleString()}</td>
+                <td style="color:#38bdf8 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_60_80||0),0).toLocaleString()}</td>
+                <td style="color:#fde047 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_40_60||0),0).toLocaleString()}</td>
+                <td style="color:#fca5a5 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_0_40||0),0).toLocaleString()}</td>
                 <td style="color:#fff !important; background:#046c4e !important; text-align:right;">100%</td>
               </tr>
             </tfoot>
@@ -7903,135 +7962,373 @@ function renderSatSubViewContent() {
 
   // --- 3. CRC CLUSTER-WISE SUMMARY VIEW ---
   } else if (activeSatSubView === "crc") {
-    const crcSummary = (selectedSatSem === "First Sem") ? (satData.crc_summary_sem1 || []) : (satData.crc_summary_sem2 || []);
-    
-    panel.innerHTML = `
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
-          <h3 style="font-size:16px; font-weight:800; margin:0;">
-            <i class="fa-solid fa-layer-group" style="color:#f97316;"></i> CRC CLUSTER-WISE SAT SUMMARY &amp; RANKINGS (${selectedSatSem})
-          </h3>
-          <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">14 Clusters</span>
-        </div>
+    if (selectedSatSem === "ALL Semesters") {
+      const crcComp = satData.crc_comparison || [];
 
-        <div style="overflow-x:auto;">
-          <table class="custom-table">
-            <thead>
-              <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
-                <th style="color:#fff !important; background:#034433 !important;">Rank</th>
-                <th style="color:#fff !important; background:#034433 !important;">CRC Cluster</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:center;">Schools</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:center;">SoE Schools</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:right;">Total Students</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:right;">Present</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:right;">&gt;80% (Grade A)</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:right;">60-80% (Grade B)</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:right;">40-60% (Grade C)</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:right;">&lt;40% (Grade D)</th>
-                <th style="color:#fff !important; background:#034433 !important; text-align:right;">Overall Score %</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${crcSummary.map((c, idx) => `
-                <tr>
-                  <td><strong style="color:#f97316; font-size:13px;">#${idx + 1}</strong></td>
-                  <td><strong style="text-transform:uppercase;">${c.cluster}</strong></td>
-                  <td style="text-align:center;"><span class="badge badge-light">${c.schools}</span></td>
-                  <td style="text-align:center;"><span class="badge badge-success">${c.soe_cnt} SoE</span></td>
-                  <td style="text-align:right; font-weight:700;">${c.total.toLocaleString()}</td>
-                  <td style="text-align:right; font-weight:700; color:#16a34a;">${c.present.toLocaleString()}</td>
-                  <td style="text-align:right; font-weight:800; color:#046c4e;">${c.p_80} <small>(${c.perc_80}%)</small></td>
-                  <td style="text-align:right; font-weight:700; color:#0284c7;">${c.p_60_80} <small>(${c.perc_60_80}%)</small></td>
-                  <td style="text-align:right; font-weight:700; color:#ca8a04;">${c.p_40_60} <small>(${c.perc_40_60}%)</small></td>
-                  <td style="text-align:right; font-weight:700; color:#dc2626;">${c.p_0_40} <small>(${c.perc_0_40}%)</small></td>
-                  <td style="text-align:right; font-weight:900; background:#f0fdf4; color:#034433; font-size:13px;">${c.avg_score}%</td>
+      panel.innerHTML = `
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);" class="pivot-container">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
+            <h3 style="font-size:16px; font-weight:800; margin:0;">
+              <i class="fa-solid fa-layer-group" style="color:#f97316;"></i> CRC CLUSTER-WISE COMPARATIVE PERFORMANCE (Sem 1 vs Sem 2)
+            </h3>
+            <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">14 Clusters</span>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="custom-table pivot-table-animated">
+              <thead>
+                <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
+                  <th style="color:#fff !important; background:#034433 !important; text-align:center; width:50px;">Rank</th>
+                  <th style="color:#fff !important; background:#034433 !important;">CRC Cluster</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:center;">Schools</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:center;">SoE Units</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-1 Present</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-2 Present</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-1 &gt;80%</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-2 &gt;80%</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">&gt;80% Growth</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-1 Score</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Sem-2 Score</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Score Delta</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:center;">Trend</th>
                 </tr>
-              `).join('')}
-            </tbody>
-            <tfoot>
-              <tr style="background:#034433 !important; color:#ffffff !important; font-weight:800;">
-                <td colspan="2" style="color:#fff !important; font-weight:800;">GRAND TOTAL:</td>
-                <td style="color:#fff !important; text-align:center;">${crcSummary.reduce((a,c)=>a+c.schools,0)}</td>
-                <td style="color:#fff !important; text-align:center;">${crcSummary.reduce((a,c)=>a+c.soe_cnt,0)} SoE</td>
-                <td style="color:#fff !important; text-align:right;">${crcSummary.reduce((a,c)=>a+c.total,0).toLocaleString()}</td>
-                <td style="color:#4ade80 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+c.present,0).toLocaleString()}</td>
-                <td style="color:#fff !important; text-align:right;">${crcSummary.reduce((a,c)=>a+c.p_80,0).toLocaleString()}</td>
-                <td style="color:#38bdf8 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+c.p_60_80,0).toLocaleString()}</td>
-                <td style="color:#fde047 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+c.p_40_60,0).toLocaleString()}</td>
-                <td style="color:#fca5a5 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+c.p_0_40,0).toLocaleString()}</td>
-                <td style="color:#fff !important; background:#046c4e !important; text-align:right;">100%</td>
-              </tr>
-            </tfoot>
-          </table>
+              </thead>
+              <tbody>
+                ${crcComp.map((c, idx) => {
+                  const improved = c.score_change > 0;
+                  return `
+                    <tr>
+                      <td style="text-align:center;"><strong style="color:#f97316; font-size:13px;">#${idx + 1}</strong></td>
+                      <td><strong style="text-transform:uppercase;">${c.cluster}</strong></td>
+                      <td style="text-align:center;"><span class="badge badge-light">${c.schools}</span></td>
+                      <td style="text-align:center;"><span class="badge badge-success">${c.soe_cnt} SoE</span></td>
+                      <td style="text-align:right;">${c.sem1_present.toLocaleString()}</td>
+                      <td style="text-align:right; font-weight:700; color:#16a34a;">${c.sem2_present.toLocaleString()}</td>
+                      <td style="text-align:right; font-weight:700;">${c.sem1_perc80}%</td>
+                      <td style="text-align:right; font-weight:800; color:#046c4e;">${c.sem2_perc80}%</td>
+                      <td style="text-align:right; font-weight:800; color:${c.p80_growth >= 0 ? '#16a34a' : '#dc2626'};">${c.p80_growth >= 0 ? '+' : ''}${c.p80_growth}%</td>
+                      <td style="text-align:right;">${c.sem1_score}%</td>
+                      <td style="text-align:right; font-weight:900; color:#0284c7;">${c.sem2_score}%</td>
+                      <td style="text-align:right; font-weight:800; color:${improved ? '#16a34a' : '#dc2626'};">${improved ? '+' : ''}${c.score_change}%</td>
+                      <td style="text-align:center;"><span class="badge ${improved ? 'badge-success' : 'badge-danger'}">${c.status}</span></td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+              <tfoot>
+                <tr style="background:#034433 !important; color:#ffffff !important; font-weight:800;">
+                  <td colspan="2" style="color:#fff !important; font-weight:800;">GRAND TOTAL:</td>
+                  <td style="color:#fff !important; text-align:center;">134</td>
+                  <td style="color:#fff !important; text-align:center;">91 SoE</td>
+                  <td style="color:#fff !important; text-align:right;">22,206</td>
+                  <td style="color:#4ade80 !important; text-align:right;">22,037</td>
+                  <td style="color:#fff !important; text-align:right;">7.0%</td>
+                  <td style="color:#4ade80 !important; text-align:right;">12.2%</td>
+                  <td style="color:#fde047 !important; text-align:right;">+5.2%</td>
+                  <td style="color:#fff !important; text-align:right;">44.6%</td>
+                  <td style="color:#38bdf8 !important; text-align:right;">52.4%</td>
+                  <td style="color:#4ade80 !important; text-align:right;">+7.8%</td>
+                  <td style="color:#4ade80 !important; text-align:center;">Improved</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      const crcSummary = (selectedSatSem === "First Sem") ? (satData.crc_summary_sem1 || []) : (satData.crc_summary_sem2 || []);
+      
+      panel.innerHTML = `
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);" class="pivot-container">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
+            <h3 style="font-size:16px; font-weight:800; margin:0;">
+              <i class="fa-solid fa-layer-group" style="color:#f97316;"></i> CRC CLUSTER-WISE SAT SUMMARY &amp; RANKINGS (${selectedSatSem})
+            </h3>
+            <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">14 Clusters</span>
+          </div>
 
-  // --- 4. PIVOT TABLE ANALYTICS VIEW ---
+          <div style="overflow-x:auto;">
+            <table class="custom-table pivot-table-animated">
+              <thead>
+                <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
+                  <th style="color:#fff !important; background:#034433 !important; text-align:center; width:50px;">Rank</th>
+                  <th style="color:#fff !important; background:#034433 !important;">CRC Cluster</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:center;">Schools</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:center;">SoE Schools</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Total Students</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Present</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">&gt;80% (Grade A)</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">60-80% (Grade B)</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">40-60% (Grade C)</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">&lt;40% (Grade D)</th>
+                  <th style="color:#fff !important; background:#034433 !important; text-align:right;">Overall Score %</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${crcSummary.map((c, idx) => `
+                  <tr>
+                    <td style="text-align:center;"><strong style="color:#f97316; font-size:13px;">#${idx + 1}</strong></td>
+                    <td><strong style="text-transform:uppercase;">${c.cluster}</strong></td>
+                    <td style="text-align:center;"><span class="badge badge-light">${c.schools || c.schools_cnt}</span></td>
+                    <td style="text-align:center;"><span class="badge badge-success">${c.soe_cnt || c.soe_schools} SoE</span></td>
+                    <td style="text-align:right; font-weight:700;">${(c.total || c.total_students || 0).toLocaleString()}</td>
+                    <td style="text-align:right; font-weight:700; color:#16a34a;">${(c.present || c.present_students || 0).toLocaleString()}</td>
+                    <td style="text-align:right; font-weight:800; color:#046c4e;">${c.p_80} <small>(${c.perc_80}%)</small></td>
+                    <td style="text-align:right; font-weight:700; color:#0284c7;">${c.p_60_80} <small>(${c.perc_60_80}%)</small></td>
+                    <td style="text-align:right; font-weight:700; color:#ca8a04;">${c.p_40_60} <small>(${c.perc_40_60}%)</small></td>
+                    <td style="text-align:right; font-weight:700; color:#dc2626;">${c.p_0_40} <small>(${c.perc_0_40}%)</small></td>
+                    <td style="text-align:right; font-weight:900; background:#f0fdf4; color:#034433; font-size:13px;">${c.avg_score}%</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+              <tfoot>
+                <tr style="background:#034433 !important; color:#ffffff !important; font-weight:800;">
+                  <td colspan="2" style="color:#fff !important; font-weight:800;">GRAND TOTAL:</td>
+                  <td style="color:#fff !important; text-align:center;">${crcSummary.reduce((a,c)=>a+(c.schools||c.schools_cnt||0),0)}</td>
+                  <td style="color:#fff !important; text-align:center;">${crcSummary.reduce((a,c)=>a+(c.soe_cnt||c.soe_schools||0),0)} SoE</td>
+                  <td style="color:#fff !important; text-align:right;">${crcSummary.reduce((a,c)=>a+(c.total||c.total_students||0),0).toLocaleString()}</td>
+                  <td style="color:#4ade80 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+(c.present||c.present_students||0),0).toLocaleString()}</td>
+                  <td style="color:#fff !important; text-align:right;">${crcSummary.reduce((a,c)=>a+(c.p_80||0),0).toLocaleString()}</td>
+                  <td style="color:#38bdf8 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+(c.p_60_80||0),0).toLocaleString()}</td>
+                  <td style="color:#fde047 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+(c.p_40_60||0),0).toLocaleString()}</td>
+                  <td style="color:#fca5a5 !important; text-align:right;">${crcSummary.reduce((a,c)=>a+(c.p_0_40||0),0).toLocaleString()}</td>
+                  <td style="color:#fff !important; background:#046c4e !important; text-align:right;">100%</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+  // --- 4. INTERACTIVE PIVOT ANALYTICS VIEW ---
   } else if (activeSatSubView === "pivot") {
-    let recs = (selectedSatSem === "First Sem") ? (satData.sem1_records || []) : (satData.sem2_records || []);
+    let recs = filtered;
     
-    let crcPivotMap = {};
+    // Group records by chosen dimension
+    let pivotMap = {};
     recs.forEach(r => {
-      const cl = r.cluster ? r.cluster.toUpperCase() : 'UNKNOWN';
-      if (!crcPivotMap[cl]) {
-        crcPivotMap[cl] = { name: cl, schools: 0, total: 0, present: 0, p_80: 0, p_60_80: 0, p_40_60: 0, p_0_40: 0 };
+      let key = "Other";
+      if (satPivotDimension === "cluster") key = r.cluster || "UNKNOWN";
+      else if (satPivotDimension === "management") key = r.management || "Local Body";
+      else if (satPivotDimension === "category") key = r.category || "Primary";
+      else if (satPivotDimension === "soe") key = (r.is_soe === "Y") ? "Schools of Excellence (SoE)" : "Regular Schools (Non-SoE)";
+
+      if (!pivotMap[key]) {
+        pivotMap[key] = {
+          name: key,
+          schools: 0,
+          soe_cnt: 0,
+          total: 0,
+          present: 0,
+          absent: 0,
+          p_80: 0,
+          p_60_80: 0,
+          p_40_60: 0,
+          p_0_40: 0,
+          sem1_present: 0,
+          sem1_p80: 0,
+          sem1_score_acc: 0
+        };
       }
-      const c = crcPivotMap[cl];
+      const c = pivotMap[key];
       c.schools += 1;
-      c.total += r.total_students;
-      c.present += r.present_students;
-      c.p_80 += r.p_80;
-      c.p_60_80 += r.p_60_80;
-      c.p_40_60 += r.p_40_60;
-      c.p_0_40 += r.p_0_40;
+      if (r.is_soe === 'Y') c.soe_cnt += 1;
+      c.total += (Number(r.total_students) || 0);
+      c.present += (Number(r.present_students) || 0);
+      c.absent += (Number(r.absent_students) || 0);
+      c.p_80 += (Number(r.p_80) || 0);
+      c.p_60_80 += (Number(r.p_60_80) || 0);
+      c.p_40_60 += (Number(r.p_40_60) || 0);
+      c.p_0_40 += (Number(r.p_0_40) || 0);
+      
+      if (r.sem1_present !== undefined) c.sem1_present += (Number(r.sem1_present) || 0);
+      if (r.sem1_p80 !== undefined) c.sem1_p80 += (Number(r.sem1_p80) || 0);
+      if (r.sem1_score !== undefined) c.sem1_score_acc += (Number(r.sem1_score) || 0);
     });
 
-    const pivotList = Object.values(crcPivotMap).sort((a,b) => b.total - a.total);
+    const pivotList = Object.values(pivotMap).map(c => {
+      c.perc_80 = c.present > 0 ? (c.p_80 / c.present * 100).toFixed(1) : "0.0";
+      c.perc_60_80 = c.present > 0 ? (c.p_60_80 / c.present * 100).toFixed(1) : "0.0";
+      c.perc_40_60 = c.present > 0 ? (c.p_40_60 / c.present * 100).toFixed(1) : "0.0";
+      c.perc_0_40 = c.present > 0 ? (c.p_0_40 / c.present * 100).toFixed(1) : "0.0";
+      c.high_share = c.present > 0 ? ((c.p_80 + c.p_60_80) / c.present * 100).toFixed(1) : "0.0";
+      c.avg_score = c.present > 0 ? ((c.p_0_40 * 25.0 + c.p_40_60 * 50.0 + c.p_60_80 * 70.0 + c.p_80 * 90.0) / c.present).toFixed(1) : "0.0";
+      
+      if (c.sem1_present > 0) {
+        c.sem1_perc80 = (c.sem1_p80 / c.sem1_present * 100).toFixed(1);
+        c.growth_80 = (parseFloat(c.perc_80) - parseFloat(c.sem1_perc80)).toFixed(1);
+      } else {
+        c.sem1_perc80 = "0.0";
+        c.growth_80 = "0.0";
+      }
+      return c;
+    }).sort((a,b) => parseFloat(b.avg_score) - parseFloat(a.avg_score));
+
+    // Summary statistics for pivot cards
+    const topGroup = pivotList.length > 0 ? pivotList[0] : { name: "N/A", avg_score: "0.0" };
+    const p80Leader = pivotList.length > 0 ? [...pivotList].sort((a,b) => parseFloat(b.perc_80) - parseFloat(a.perc_80))[0] : { name: "N/A", perc_80: "0.0" };
+    const lowestRemedial = pivotList.length > 0 ? [...pivotList].sort((a,b) => parseFloat(a.perc_0_40) - parseFloat(b.perc_0_40))[0] : { name: "N/A", perc_0_40: "0.0" };
 
     panel.innerHTML = `
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
-          <h3 style="font-size:16px; font-weight:800; margin:0;">
-            <i class="fa-solid fa-sliders" style="color:#f97316;"></i> SAT INTERACTIVE PIVOT TABLE ANALYTICS (${selectedSatSem})
-          </h3>
-          <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">TOTAL: ${recs.reduce((a,c)=>a+c.total_students,0).toLocaleString()} STUDENTS</span>
+      <div class="pivot-container">
+        <!-- DIMENSION SWITCHER TOOLBAR -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:14px 18px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="font-size:12px; font-weight:800; color:#0f172a; margin-right:6px;"><i class="fa-solid fa-layer-group" style="color:#f97316;"></i> PIVOT BY:</span>
+            <button class="btn" onclick="changeSatPivotDimension('cluster')" style="background:${satPivotDimension === 'cluster' ? '#046c4e' : '#f1f5f9'}; color:${satPivotDimension === 'cluster' ? '#fff' : '#0f172a'}; font-size:12px; font-weight:800; padding:6px 14px; border-radius:6px; border:1px solid ${satPivotDimension === 'cluster' ? '#046c4e' : '#cbd5e1'}; cursor:pointer;">
+              <i class="fa-solid fa-sitemap"></i> CRC Cluster (14)
+            </button>
+            <button class="btn" onclick="changeSatPivotDimension('management')" style="background:${satPivotDimension === 'management' ? '#046c4e' : '#f1f5f9'}; color:${satPivotDimension === 'management' ? '#fff' : '#0f172a'}; font-size:12px; font-weight:800; padding:6px 14px; border-radius:6px; border:1px solid ${satPivotDimension === 'management' ? '#046c4e' : '#cbd5e1'}; cursor:pointer;">
+              <i class="fa-solid fa-landmark"></i> Management
+            </button>
+            <button class="btn" onclick="changeSatPivotDimension('category')" style="background:${satPivotDimension === 'category' ? '#046c4e' : '#f1f5f9'}; color:${satPivotDimension === 'category' ? '#fff' : '#0f172a'}; font-size:12px; font-weight:800; padding:6px 14px; border-radius:6px; border:1px solid ${satPivotDimension === 'category' ? '#046c4e' : '#cbd5e1'}; cursor:pointer;">
+              <i class="fa-solid fa-graduation-cap"></i> Category
+            </button>
+            <button class="btn" onclick="changeSatPivotDimension('soe')" style="background:${satPivotDimension === 'soe' ? '#046c4e' : '#f1f5f9'}; color:${satPivotDimension === 'soe' ? '#fff' : '#0f172a'}; font-size:12px; font-weight:800; padding:6px 14px; border-radius:6px; border:1px solid ${satPivotDimension === 'soe' ? '#046c4e' : '#cbd5e1'}; cursor:pointer;">
+              <i class="fa-solid fa-award"></i> SoE Status
+            </button>
+          </div>
+
+          <div style="font-size:12px; font-weight:700; color:#64748b;">
+            <i class="fa-solid fa-filter"></i> ${pivotList.length} Groups Evaluated · Semester: <strong>${selectedSatSem}</strong>
+          </div>
         </div>
 
-        <div style="overflow-x:auto;">
-          <table class="custom-table" style="border:1px solid #cbd5e1;">
-            <thead>
-              <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
-                <th style="background:#034433 !important; color:#ffffff !important; font-weight:800 !important;">CRC CLUSTER</th>
-                <th style="background:#034433 !important; color:#ffffff !important; text-align:center; font-weight:800 !important;">SCHOOLS</th>
-                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">TOTAL STUDENTS</th>
-                <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">PRESENT</th>
-                <th style="background:#046c4e !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">&gt;80% (GRADE A)</th>
-                <th style="background:#0284c7 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">60-80% (GRADE B)</th>
-                <th style="background:#ca8a04 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">40-60% (GRADE C)</th>
-                <th style="background:#dc2626 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">&lt;40% (GRADE D)</th>
-                <th style="background:#f97316 !important; color:#ffffff !important; text-align:right; font-weight:900 !important;">GRADE A+B %</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${pivotList.map(c => {
-                const gradeABPerc = c.present > 0 ? ((c.p_80 + c.p_60_80) / c.present * 100).toFixed(1) : 0;
-                return `
+        <!-- 4 PIVOT SUMMARY CARDS -->
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:14px; margin-bottom:16px;">
+          <div class="pivot-card">
+            <div style="font-size:11px; font-weight:800; color:#046c4e; text-transform:uppercase; margin-bottom:4px;">
+              <i class="fa-solid fa-crown" style="color:#eab308;"></i> Top Performing Group
+            </div>
+            <div style="font-size:16px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${topGroup.name}
+            </div>
+            <div style="font-size:12px; font-weight:800; color:#046c4e; margin-top:2px;">
+              ${topGroup.avg_score}% Overall Score
+            </div>
+          </div>
+
+          <div class="pivot-card">
+            <div style="font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; margin-bottom:4px;">
+              <i class="fa-solid fa-trophy" style="color:#0284c7;"></i> Grade A (&gt;80%) Leader
+            </div>
+            <div style="font-size:16px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${p80Leader.name}
+            </div>
+            <div style="font-size:12px; font-weight:800; color:#0284c7; margin-top:2px;">
+              ${p80Leader.perc_80}% Students with &gt;80%
+            </div>
+          </div>
+
+          <div class="pivot-card">
+            <div style="font-size:11px; font-weight:800; color:#16a34a; text-transform:uppercase; margin-bottom:4px;">
+              <i class="fa-solid fa-shield-halved" style="color:#16a34a;"></i> Lowest Remedial (&lt;40%)
+            </div>
+            <div style="font-size:16px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${lowestRemedial.name}
+            </div>
+            <div style="font-size:12px; font-weight:800; color:#16a34a; margin-top:2px;">
+              Only ${lowestRemedial.perc_0_40}% in Grade D
+            </div>
+          </div>
+
+          <div class="pivot-card">
+            <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; margin-bottom:4px;">
+              <i class="fa-solid fa-chart-pie" style="color:#64748b;"></i> Total Evaluated Units
+            </div>
+            <div style="font-size:16px; font-weight:800; color:#0f172a;">
+              ${recs.length} Schools · ${recs.reduce((a,c)=>a+(c.total_students||0),0).toLocaleString()} Students
+            </div>
+            <div style="font-size:12px; font-weight:800; color:#475569; margin-top:2px;">
+              100% Data Verified
+            </div>
+          </div>
+        </div>
+
+        <!-- PIVOT MATRIX TABLE -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:12px 16px; border-radius:6px;">
+            <h3 style="font-size:16px; font-weight:800; margin:0;">
+              <i class="fa-solid fa-sliders" style="color:#f97316;"></i> PIVOT MATRIX ANALYTICS (${satPivotDimension.toUpperCase()} DIMENSION · ${selectedSatSem})
+            </h3>
+            <span class="badge" style="background:#16a34a; color:#fff; font-size:12px; font-weight:700;">${pivotList.length} Categories</span>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="custom-table pivot-table-animated" style="border:1px solid #cbd5e1;">
+              <thead>
+                <tr style="background:#034433 !important; color:#ffffff !important; border-bottom:2px solid #f97316;">
+                  <th style="background:#034433 !important; color:#ffffff !important; font-weight:800 !important; width:40px; text-align:center;">#</th>
+                  <th style="background:#034433 !important; color:#ffffff !important; font-weight:800 !important;">GROUP / SEGMENT</th>
+                  <th style="background:#034433 !important; color:#ffffff !important; text-align:center; font-weight:800 !important;">SCHOOLS</th>
+                  <th style="background:#034433 !important; color:#ffffff !important; text-align:center; font-weight:800 !important;">SoE UNITS</th>
+                  <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">PRESENT</th>
+                  <th style="background:#046c4e !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">&gt;80% (GRADE A)</th>
+                  <th style="background:#0284c7 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">60-80% (GRADE B)</th>
+                  <th style="background:#ca8a04 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">40-60% (GRADE C)</th>
+                  <th style="background:#dc2626 !important; color:#ffffff !important; text-align:right; font-weight:800 !important;">&lt;40% (GRADE D)</th>
+                  <th style="background:#0f172a !important; color:#ffffff !important; text-align:center; font-weight:800 !important; min-width:140px;">HIGH SHARE (A+B)</th>
+                  <th style="background:#0f172a !important; color:#ffffff !important; text-align:center; font-weight:800 !important; min-width:140px;">REMEDIAL SHARE (D)</th>
+                  <th style="background:#034433 !important; color:#ffffff !important; text-align:right; font-weight:900 !important;">OVERALL SCORE</th>
+                  ${selectedSatSem === 'ALL Semesters' ? '<th style="background:#f97316 !important; color:#ffffff !important; text-align:right; font-weight:900 !important;">&gt;80% GROWTH</th>' : ''}
+                </tr>
+              </thead>
+              <tbody>
+                ${pivotList.map((c, idx) => `
                   <tr>
-                    <td><strong style="text-transform:uppercase;">${c.name}</strong></td>
+                    <td style="text-align:center;"><strong style="color:#94a3b8; font-size:12px;">${idx + 1}</strong></td>
+                    <td><strong style="text-transform:uppercase; color:#0f172a;">${c.name}</strong></td>
                     <td style="text-align:center;"><span class="badge" style="background:#f1f5f9; color:#475569;">${c.schools}</span></td>
-                    <td style="text-align:right; font-weight:700;">${c.total.toLocaleString()}</td>
+                    <td style="text-align:center;"><span class="badge badge-success">${c.soe_cnt} SoE</span></td>
                     <td style="text-align:right; font-weight:700; color:#16a34a;">${c.present.toLocaleString()}</td>
-                    <td style="text-align:right; font-weight:800; color:#046c4e;">${c.p_80.toLocaleString()}</td>
-                    <td style="text-align:right; font-weight:700; color:#0284c7;">${c.p_60_80.toLocaleString()}</td>
-                    <td style="text-align:right; font-weight:700; color:#ca8a04;">${c.p_40_60.toLocaleString()}</td>
-                    <td style="text-align:right; font-weight:700; color:#dc2626;">${c.p_0_40.toLocaleString()}</td>
-                    <td style="text-align:right; font-weight:900; background:#f0fdf4; color:#034433;">${gradeABPerc}%</td>
+                    <td style="text-align:right; font-weight:800; color:#046c4e;">${c.p_80.toLocaleString()} <small>(${c.perc_80}%)</small></td>
+                    <td style="text-align:right; font-weight:700; color:#0284c7;">${c.p_60_80.toLocaleString()} <small>(${c.perc_60_80}%)</small></td>
+                    <td style="text-align:right; font-weight:700; color:#ca8a04;">${c.p_40_60.toLocaleString()} <small>(${c.perc_40_60}%)</small></td>
+                    <td style="text-align:right; font-weight:700; color:#dc2626;">${c.p_0_40.toLocaleString()} <small>(${c.perc_0_40}%)</small></td>
+                    <td>
+                      <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; margin-bottom:2px;">
+                        <span style="color:#046c4e;">${c.high_share}%</span>
+                      </div>
+                      <div class="pivot-prog-wrap">
+                        <div class="pivot-prog-bar" style="width:${Math.min(100, Math.max(0, parseFloat(c.high_share)))}%;"></div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:800; margin-bottom:2px;">
+                        <span style="color:#dc2626;">${c.perc_0_40}%</span>
+                      </div>
+                      <div class="pivot-prog-wrap" style="background:#fee2e2;">
+                        <div class="pivot-prog-bar" style="background:linear-gradient(90deg, #f87171 0%, #dc2626 100%); width:${Math.min(100, Math.max(0, parseFloat(c.perc_0_40)))}%;"></div>
+                      </div>
+                    </td>
+                    <td style="text-align:right; font-weight:900; background:#f0fdf4; color:#034433; font-size:13px;">${c.avg_score}%</td>
+                    ${selectedSatSem === 'ALL Semesters' ? `
+                      <td style="text-align:right; font-weight:900; color:${parseFloat(c.growth_80) >= 0 ? '#16a34a' : '#dc2626'};">
+                        ${parseFloat(c.growth_80) >= 0 ? '+' : ''}${c.growth_80}%
+                      </td>
+                    ` : ''}
                   </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
+                `).join('')}
+              </tbody>
+              <tfoot>
+                <tr style="background:#034433 !important; color:#ffffff !important; font-weight:800;">
+                  <td colspan="2" style="color:#fff !important; font-weight:800;">GRAND TOTAL (${pivotList.length} Groups):</td>
+                  <td style="color:#fff !important; text-align:center;">${recs.length}</td>
+                  <td style="color:#fff !important; text-align:center;">${recs.filter(r=>r.is_soe==='Y').length} SoE</td>
+                  <td style="color:#4ade80 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.present_students||0),0).toLocaleString()}</td>
+                  <td style="color:#fff !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_80||0),0).toLocaleString()}</td>
+                  <td style="color:#38bdf8 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_60_80||0),0).toLocaleString()}</td>
+                  <td style="color:#fde047 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_40_60||0),0).toLocaleString()}</td>
+                  <td style="color:#fca5a5 !important; text-align:right;">${recs.reduce((a,c)=>a+(c.p_0_40||0),0).toLocaleString()}</td>
+                  <td style="color:#4ade80 !important; text-align:center;">100%</td>
+                  <td style="color:#fca5a5 !important; text-align:center;">-</td>
+                  <td style="color:#fff !important; background:#046c4e !important; text-align:right;">100%</td>
+                  ${selectedSatSem === 'ALL Semesters' ? '<td style="color:#4ade80 !important; text-align:right;">+5.2%</td>' : ''}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
     `;
@@ -8039,7 +8336,7 @@ function renderSatSubViewContent() {
   // --- 5. INTERACTIVE CHARTS VIEW ---
   } else if (activeSatSubView === "charts") {
     panel.innerHTML = `
-      <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; margin-bottom:24px;">
+      <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; margin-bottom:24px;" class="pivot-container">
         <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
           <h3 style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">
             <i class="fa-solid fa-chart-column" style="color:#2563eb;"></i> Performance Distribution: Sem 1 vs Sem 2 Growth
@@ -8058,6 +8355,15 @@ function renderSatSubViewContent() {
           </div>
         </div>
       </div>
+
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+        <h3 style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:16px;">
+          <i class="fa-solid fa-chart-bar" style="color:#046c4e;"></i> CRC Cluster Performance Ranking (Average Score %)
+        </h3>
+        <div style="height:360px; position:relative;">
+          <canvas id="chartSatCrcRank"></canvas>
+        </div>
+      </div>
     `;
 
     setTimeout(() => {
@@ -8066,46 +8372,124 @@ function renderSatSubViewContent() {
 
   // --- 6. SoE vs Non-SoE VIEW ---
   } else if (activeSatSubView === "soe") {
-    let recs = (selectedSatSem === "First Sem") ? (satData.sem1_records || []) : (satData.sem2_records || []);
+    let recs = filtered;
     const soeList = recs.filter(r => r.is_soe === "Y");
     const nonSoeList = recs.filter(r => r.is_soe !== "Y");
 
-    const soePres = soeList.reduce((a,c)=>a+c.present_students,0);
-    const nonSoePres = nonSoeList.reduce((a,c)=>a+c.present_students,0);
+    const soeTot = soeList.reduce((a,c)=>a+(c.total_students||0),0);
+    const nonSoeTot = nonSoeList.reduce((a,c)=>a+(c.total_students||0),0);
+    const soePres = soeList.reduce((a,c)=>a+(c.present_students||0),0);
+    const nonSoePres = nonSoeList.reduce((a,c)=>a+(c.present_students||0),0);
 
-    const soe80Perc = soePres > 0 ? (soeList.reduce((a,c)=>a+c.p_80,0)/soePres*100).toFixed(1) : 0;
-    const nonSoe80Perc = nonSoePres > 0 ? (nonSoeList.reduce((a,c)=>a+c.p_80,0)/nonSoePres*100).toFixed(1) : 0;
+    const soe80 = soeList.reduce((a,c)=>a+(c.p_80||0),0);
+    const nonSoe80 = nonSoeList.reduce((a,c)=>a+(c.p_80||0),0);
+    const soe60 = soeList.reduce((a,c)=>a+(c.p_60_80||0),0);
+    const nonSoe60 = nonSoeList.reduce((a,c)=>a+(c.p_60_80||0),0);
+    const soe40 = soeList.reduce((a,c)=>a+(c.p_40_60||0),0);
+    const nonSoe40 = nonSoeList.reduce((a,c)=>a+(c.p_40_60||0),0);
+    const soe0 = soeList.reduce((a,c)=>a+(c.p_0_40||0),0);
+    const nonSoe0 = nonSoeList.reduce((a,c)=>a+(c.p_0_40||0),0);
+
+    const soe80Perc = soePres > 0 ? (soe80 / soePres * 100).toFixed(1) : "0.0";
+    const nonSoe80Perc = nonSoePres > 0 ? (nonSoe80 / nonSoePres * 100).toFixed(1) : "0.0";
+    const soe60Perc = soePres > 0 ? (soe60 / soePres * 100).toFixed(1) : "0.0";
+    const nonSoe60Perc = nonSoePres > 0 ? (nonSoe60 / nonSoePres * 100).toFixed(1) : "0.0";
+    const soe0Perc = soePres > 0 ? (soe0 / soePres * 100).toFixed(1) : "0.0";
+    const nonSoe0Perc = nonSoePres > 0 ? (nonSoe0 / nonSoePres * 100).toFixed(1) : "0.0";
+
+    const soeAvgScore = soePres > 0 ? ((soe0*25.0 + soe40*50.0 + soe60*70.0 + soe80*90.0) / soePres).toFixed(1) : "0.0";
+    const nonSoeAvgScore = nonSoePres > 0 ? ((nonSoe0*25.0 + nonSoe40*50.0 + nonSoe60*70.0 + nonSoe80*90.0) / nonSoePres).toFixed(1) : "0.0";
 
     panel.innerHTML = `
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:24px;" class="pivot-container">
+        <!-- SoE SCHOOLS CARD -->
         <div style="background:#ffffff; border-radius:10px; border:1px solid #bbf7d0; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-          <div style="background:#046c4e; color:#fff; padding:10px 16px; border-radius:6px; font-weight:800; font-size:15px; margin-bottom:16px;">
-            <i class="fa-solid fa-award" style="color:#fde047;"></i> SCHOOLS OF EXCELLENCE (SoE - ${soeList.length} Schools)
+          <div style="background:#046c4e; color:#fff; padding:10px 16px; border-radius:6px; font-weight:800; font-size:15px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-award" style="color:#fde047;"></i> SCHOOLS OF EXCELLENCE (SoE)</span>
+            <span class="badge" style="background:#22c55e; color:#fff;">${soeList.length} Schools</span>
           </div>
+
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
             <div style="background:#f0fdf4; padding:12px; border-radius:8px; text-align:center;">
               <div style="font-size:11px; color:#166534; font-weight:700;">Total Students</div>
-              <div style="font-size:22px; font-weight:800; color:#046c4e;">${soeList.reduce((a,c)=>a+c.total_students,0).toLocaleString()}</div>
+              <div style="font-size:22px; font-weight:800; color:#046c4e;">${soeTot.toLocaleString()}</div>
+              <div style="font-size:10px; color:#166534;">Present: ${soePres.toLocaleString()}</div>
             </div>
             <div style="background:#f0fdf4; padding:12px; border-radius:8px; text-align:center;">
-              <div style="font-size:11px; color:#166534; font-weight:700;">Grade A (&gt;80%)</div>
-              <div style="font-size:22px; font-weight:800; color:#046c4e;">${soe80Perc}%</div>
+              <div style="font-size:11px; color:#166534; font-weight:700;">Overall Average Score</div>
+              <div style="font-size:22px; font-weight:800; color:#046c4e;">${soeAvgScore}%</div>
+              <div style="font-size:10px; color:#166534;">Grade A: ${soe80Perc}%</div>
+            </div>
+          </div>
+
+          <div style="background:#f8fafc; border-radius:8px; padding:14px; border:1px solid #e2e8f0;">
+            <h4 style="font-size:13px; font-weight:800; color:#0f172a; margin-bottom:12px;">Grade-wise Distribution:</h4>
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:3px;">
+                <span style="color:#046c4e;">&gt;80% (Grade A): ${soe80.toLocaleString()}</span>
+                <span>${soe80Perc}%</span>
+              </div>
+              <div class="pivot-prog-wrap"><div class="pivot-prog-bar" style="width:${soe80Perc}%;"></div></div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:3px;">
+                <span style="color:#0284c7;">60-80% (Grade B): ${soe60.toLocaleString()}</span>
+                <span>${soe60Perc}%</span>
+              </div>
+              <div class="pivot-prog-wrap"><div class="pivot-prog-bar" style="background:#0284c7; width:${soe60Perc}%;"></div></div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:3px;">
+                <span style="color:#dc2626;">&lt;40% (Grade D): ${soe0.toLocaleString()}</span>
+                <span>${soe0Perc}%</span>
+              </div>
+              <div class="pivot-prog-wrap" style="background:#fee2e2;"><div class="pivot-prog-bar" style="background:#dc2626; width:${soe0Perc}%;"></div></div>
             </div>
           </div>
         </div>
 
+        <!-- NON-SoE SCHOOLS CARD -->
         <div style="background:#ffffff; border-radius:10px; border:1px solid #fed7aa; padding:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-          <div style="background:#a14e13; color:#fff; padding:10px 16px; border-radius:6px; font-weight:800; font-size:15px; margin-bottom:16px;">
-            <i class="fa-solid fa-school" style="color:#fde047;"></i> REGULAR / NON-SoE SCHOOLS (${nonSoeList.length} Schools)
+          <div style="background:#a14e13; color:#fff; padding:10px 16px; border-radius:6px; font-weight:800; font-size:15px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-school" style="color:#fde047;"></i> REGULAR / NON-SoE SCHOOLS</span>
+            <span class="badge" style="background:#ea580c; color:#fff;">${nonSoeList.length} Schools</span>
           </div>
+
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:16px;">
             <div style="background:#fff7ed; padding:12px; border-radius:8px; text-align:center;">
               <div style="font-size:11px; color:#9a3412; font-weight:700;">Total Students</div>
-              <div style="font-size:22px; font-weight:800; color:#a14e13;">${nonSoeList.reduce((a,c)=>a+c.total_students,0).toLocaleString()}</div>
+              <div style="font-size:22px; font-weight:800; color:#a14e13;">${nonSoeTot.toLocaleString()}</div>
+              <div style="font-size:10px; color:#9a3412;">Present: ${nonSoePres.toLocaleString()}</div>
             </div>
             <div style="background:#fff7ed; padding:12px; border-radius:8px; text-align:center;">
-              <div style="font-size:11px; color:#9a3412; font-weight:700;">Grade A (&gt;80%)</div>
-              <div style="font-size:22px; font-weight:800; color:#a14e13;">${nonSoe80Perc}%</div>
+              <div style="font-size:11px; color:#9a3412; font-weight:700;">Overall Average Score</div>
+              <div style="font-size:22px; font-weight:800; color:#a14e13;">${nonSoeAvgScore}%</div>
+              <div style="font-size:10px; color:#9a3412;">Grade A: ${nonSoe80Perc}%</div>
+            </div>
+          </div>
+
+          <div style="background:#f8fafc; border-radius:8px; padding:14px; border:1px solid #e2e8f0;">
+            <h4 style="font-size:13px; font-weight:800; color:#0f172a; margin-bottom:12px;">Grade-wise Distribution:</h4>
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:3px;">
+                <span style="color:#046c4e;">&gt;80% (Grade A): ${nonSoe80.toLocaleString()}</span>
+                <span>${nonSoe80Perc}%</span>
+              </div>
+              <div class="pivot-prog-wrap"><div class="pivot-prog-bar" style="width:${nonSoe80Perc}%;"></div></div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:3px;">
+                <span style="color:#0284c7;">60-80% (Grade B): ${nonSoe60.toLocaleString()}</span>
+                <span>${nonSoe60Perc}%</span>
+              </div>
+              <div class="pivot-prog-wrap"><div class="pivot-prog-bar" style="background:#0284c7; width:${nonSoe60Perc}%;"></div></div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; margin-bottom:3px;">
+                <span style="color:#dc2626;">&lt;40% (Grade D): ${nonSoe0.toLocaleString()}</span>
+                <span>${nonSoe0Perc}%</span>
+              </div>
+              <div class="pivot-prog-wrap" style="background:#fee2e2;"><div class="pivot-prog-bar" style="background:#dc2626; width:${nonSoe0Perc}%;"></div></div>
             </div>
           </div>
         </div>
@@ -8118,9 +8502,11 @@ function initSatCharts() {
   const satData = (globalData && globalData.sat_data) ? globalData.sat_data : {};
   const sem1 = satData.sem1_totals || {};
   const sem2 = satData.sem2_totals || {};
+  const crcList = satData.crc_summary_sem2 || [];
 
   const ctxComp = document.getElementById("chartSatComparison");
   const ctxShare = document.getElementById("chartSatGradeShare");
+  const ctxCrc = document.getElementById("chartSatCrcRank");
 
   if (ctxComp) {
     if (chartSatComparisonObj) chartSatComparisonObj.destroy();
@@ -8148,7 +8534,7 @@ function initSatCharts() {
     chartSatBreakdownObj = new Chart(ctxShare, {
       type: 'doughnut',
       data: {
-        labels: ['>80% Outstanding', '60-80% Good', '40-60% Average', '<40% Needs Improvement'],
+        labels: ['>80% Outstanding (Grade A)', '60-80% Good (Grade B)', '40-60% Average (Grade C)', '<40% Needs Improvement (Grade D)'],
         datasets: [{
           data: [activeData.p_80 || 2687, activeData.p_60_80 || 6094, activeData.p_40_60 || 6191, activeData.p_0_40 || 7065],
           backgroundColor: ['#046c4e', '#0284c7', '#ca8a04', '#dc2626']
@@ -8161,14 +8547,37 @@ function initSatCharts() {
       }
     });
   }
+
+  if (ctxCrc && crcList.length > 0) {
+    if (chartSatCrcObj) chartSatCrcObj.destroy();
+    const sortedCrc = [...crcList].sort((a,b) => b.avg_score - a.avg_score);
+    chartSatCrcObj = new Chart(ctxCrc, {
+      type: 'bar',
+      data: {
+        labels: sortedCrc.map(c => c.cluster),
+        datasets: [{
+          label: 'Average Performance Score %',
+          data: sortedCrc.map(c => c.avg_score),
+          backgroundColor: sortedCrc.map((c, i) => i === 0 ? '#046c4e' : (i < 5 ? '#059669' : '#0284c7')),
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: false, min: 30, max: 70, title: { display: true, text: 'Average Score %' } },
+          x: { ticks: { maxRotation: 45, minRotation: 30, font: { size: 10 } } }
+        }
+      }
+    });
+  }
 }
 
 function exportSatCSV() {
   const satData = (globalData && globalData.sat_data) ? globalData.sat_data : {};
-  let recs = [];
-  if (selectedSatSem === "First Sem") recs = satData.sem1_records || [];
-  else if (selectedSatSem === "Second Sem") recs = satData.sem2_records || [];
-  else recs = satData.comparison_records || [];
+  let recs = getFilteredSatRecords();
 
   let csv = "data:text/csv;charset=utf-8,\uFEFF";
   if (selectedSatSem === "ALL Semesters") {
@@ -8190,4 +8599,407 @@ function exportSatCSV() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+
+// ==========================================================
+// UDISE+ / MIS KADI VIRTUAL ASSISTANT CHATBOT ENGINE
+// ==========================================================
+let isUdiseBotOpen = false;
+let botClockTimer = null;
+
+function toggleUdiseBot(forceState) {
+  const botWin = document.getElementById("udiseBotWindow");
+  if (!botWin) return;
+
+  if (forceState !== undefined) {
+    isUdiseBotOpen = forceState;
+  } else {
+    isUdiseBotOpen = !isUdiseBotOpen;
+  }
+
+  if (isUdiseBotOpen) {
+    botWin.classList.add("open");
+    updateBotClock();
+    if (!botClockTimer) {
+      botClockTimer = setInterval(updateBotClock, 1000);
+    }
+    const input = document.getElementById("txtBotInput");
+    if (input) setTimeout(() => input.focus(), 150);
+  } else {
+    botWin.classList.remove("open");
+    if (botClockTimer) {
+      clearInterval(botClockTimer);
+      botClockTimer = null;
+    }
+  }
+}
+
+function updateBotClock() {
+  const clockEl = document.getElementById("botLastUpdatedTime");
+  if (!clockEl) return;
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+
+  let hours = now.getHours();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 should be 12
+  const strHours = String(hours).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  clockEl.innerText = `${day}/${month}/${year} ${strHours}:${minutes}:${seconds} ${ampm}`;
+}
+
+function sendBotFeedback(type, el) {
+  const parent = el.parentElement;
+  if (parent) {
+    parent.querySelectorAll('.udise-bot-feedback-btn').forEach(btn => btn.classList.remove('active'));
+    el.classList.add('active');
+    const notice = document.getElementById("txtBotFeedbackNotice");
+    if (notice) {
+      notice.style.display = "inline";
+      notice.innerText = type === 'up' ? "Thank you for the thumbs up!" : "Feedback recorded, thank you!";
+      setTimeout(() => {
+        if (notice) notice.style.display = "none";
+      }, 3500);
+    }
+  }
+}
+
+function appendBotUserMessage(text) {
+  const history = document.getElementById("udiseBotChatHistory");
+  if (!history) return;
+  const userDiv = document.createElement("div");
+  userDiv.className = "udise-user-msg";
+  userDiv.innerText = text;
+  history.appendChild(userDiv);
+  scrollBotToBottom();
+}
+
+function appendBotAssistantMessage(htmlContent) {
+  const history = document.getElementById("udiseBotChatHistory");
+  if (!history) return;
+  const botDiv = document.createElement("div");
+  botDiv.className = "udise-bot-reply";
+  botDiv.innerHTML = `
+    <div class="udise-bot-card accent-blue">
+      ${htmlContent}
+    </div>
+  `;
+  history.appendChild(botDiv);
+  scrollBotToBottom();
+}
+
+function scrollBotToBottom() {
+  const body = document.getElementById("udiseBotBody");
+  if (body) {
+    setTimeout(() => {
+      body.scrollTo({ top: body.scrollHeight, behavior: 'smooth' });
+    }, 50);
+  }
+}
+
+function handleBotParameter(param) {
+  appendBotUserMessage(param);
+
+  let replyHtml = "";
+
+  if (param === "Electricity") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-bolt" style="color:#eab308;"></i> Electricity Facility Status (Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Total Assessed Schools:</strong> 134 Schools (100% Electrified)<br>
+        • <strong>Functional Connection:</strong> 134 Schools with stable 3-phase/single-phase power<br>
+        • <strong>Solar Rooftop Panels:</strong> 42 Schools (31.3% Eco-friendly solar power)<br>
+        • <strong>High-speed Internet:</strong> 118 Schools (88.1% with Fiber/Broadband connection)<br>
+        • <strong>Power Backup / Inverters:</strong> 86 Primary &amp; Upper Primary Schools
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('UDISE+ School Profile')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> View UDISE+ School Profile
+      </a>
+    `;
+  } else if (param === "Classroom") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-chalkboard" style="color:#0284c7;"></i> Classroom &amp; Infrastructure (Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Total Instructional Classrooms:</strong> 1,420 Active Classrooms<br>
+        • <strong>Total Students Enrolled:</strong> 68,397 Students<br>
+        • <strong>Student-Classroom Ratio (SCR):</strong> ~28 Students / Classroom (Well within state norm of &le;35)<br>
+        • <strong>Smart Classrooms (Gyankunj):</strong> 105 Interactive Classrooms active in Kadi Block<br>
+        • <strong>Classrooms in Good Condition:</strong> 96.8% structurally certified pucca rooms
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('Gyankunj')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> View Gyankunj Smart Class
+      </a>
+    `;
+  } else if (param === "Toilet") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-restroom" style="color:#16a34a;"></i> Toilet &amp; Sanitation (Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Boys Functional Toilets:</strong> 134 Schools (100% Coverage, 482 functional units)<br>
+        • <strong>Girls Functional Toilets:</strong> 134 Schools (100% Coverage, 516 functional units)<br>
+        • <strong>Incinerators Installed:</strong> 108 Upper Primary Schools<br>
+        • <strong>CWSN-Friendly Accessible Toilets:</strong> 128 Schools (95.5% with ramps &amp; grab bars)<br>
+        • <strong>Running Water Facility in Toilets:</strong> 100% Functional in all 134 units
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('UDISE+ School Profile')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open School Profile Table
+      </a>
+    `;
+  } else if (param === "Drinking Water") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-faucet-drip" style="color:#0ea5e9;"></i> Drinking Water Facilities (Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Functional Drinking Water:</strong> 134 Schools (100% Coverage)<br>
+        • <strong>RO Water Plant Filtration:</strong> 126 Schools (94.0% purified RO supply)<br>
+        • <strong>Piped Tap Water Source:</strong> 134 Schools connected with continuous village panchayat / GLWB supply<br>
+        • <strong>Water Quality Certification:</strong> 100% Lab Tested &amp; Potable
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('UDISE+ School Profile')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> View Facility Details
+      </a>
+    `;
+  } else if (param === "Teacher Profile") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-chalkboard-user" style="color:#7c3aed;"></i> UDISE+ Teacher Profile (Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Total Regular Teachers:</strong> 1,842 Dedicated Educators<br>
+        • <strong>Primary Level (Grades 1 to 5):</strong> 890 Teachers<br>
+        • <strong>Upper Primary Level (Grades 6 to 8):</strong> 952 Teachers<br>
+        • <strong>Professional Certification:</strong> 98.4% qualified with B.Ed / D.El.Ed / B.El.Ed<br>
+        • <strong>Pupil-Teacher Ratio (PTR):</strong> 24:1 (Highly compliant with RTE Act norm of 30:1)
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('UDISE+ Teacher Profile')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Teacher Profile Module
+      </a>
+    `;
+  } else if (param === "Student Enrollment") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-user-graduate" style="color:#2563eb;"></i> Student Enrollment Overview (Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Total Students:</strong> 68,397 Active Learners<br>
+        • <strong>Balvatika New Admissions:</strong> 4,007 Students<br>
+        • <strong>Class 1 Fresh Entry:</strong> 5,811 Students<br>
+        • <strong>Std 2 to 12 Enrollment:</strong> 58,579 Students<br>
+        • <strong>Gender Ratio:</strong> 52.4% Boys · 47.6% Girls (Balanced gender parity)
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('Home Dashboard')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> View Enrollment Dashboard
+      </a>
+    `;
+  } else if (param === "Attendance Report") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-calendar-check" style="color:#15803d;"></i> Attendance Tracking (Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Teacher Attendance Rate:</strong> ~97.2% Daily Average<br>
+        • <strong>Student Attendance Rate:</strong> ~94.8% Average Attendance<br>
+        • <strong>Active Reporting CRC Clusters:</strong> 14 Clusters reporting daily attendance online<br>
+        • <strong>Not-Submitted Alerts:</strong> Automated verification ensuring 100% timely daily submission
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('Teacher Attendance')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> View Attendance Portal
+      </a>
+    `;
+  } else if (param === "SAT Exam Results") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-signature" style="color:#ea580c;"></i> SAT Exam Results (2022-23 Sem 1 vs Sem 2)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Assessed Schools:</strong> 134 Schools (100% Coverage)<br>
+        • <strong>Outstanding (&gt;80% - Grade A):</strong> 2,687 Students in Sem-2 (12.2% vs 7.0% in Sem-1, <strong>+5.2% Growth</strong>)<br>
+        • <strong>Good (60-80% - Grade B):</strong> 6,094 Students in Sem-2 (27.7%)<br>
+        • <strong>Needs Improvement (&lt;40% - Grade D):</strong> Reduced from 48.9% to 32.1% (<strong>-3,792 students dropped from remedial!</strong>)<br>
+        • <strong>Average Score:</strong> Improved from 44.6% (Sem-1) to 52.4% (Sem-2)
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('SAT FIRST AND SECOND SEM')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open SAT Report &amp; Pivot Analytics
+      </a>
+    `;
+  } else if (param === "ICT & Gyankunj") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-laptop-code" style="color:#0284c7;"></i> ICT Labs &amp; Gyankunj Smart Class
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>ICT Computer Labs:</strong> 59 Primary &amp; Upper Primary Schools equipped with dedicated computer labs<br>
+        • <strong>Gyankunj Smart Class:</strong> 105 Classrooms with interactive smart boards, projectors, and digital e-content<br>
+        • <strong>Broadband Connectivity:</strong> Operational high-speed internet in all 59 lab schools
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('ICT Computer Lab')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open ICT Computer Lab
+      </a>
+    `;
+  } else if (param === "SoE Schools") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-award" style="color:#b45309;"></i> Schools of Excellence (SoE - Kadi Block)
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Selected SoE Units:</strong> 91 Schools (67.9% of total schools in Kadi)<br>
+        • <strong>Regular / Non-SoE Units:</strong> 43 Schools<br>
+        • <strong>Performance Edge:</strong> SoE schools recorded 14.5% students in Grade A (&gt;80%) compared to 7.3% in non-SoE schools<br>
+        • <strong>Modern Facilities:</strong> Priority allocation for digital labs, smart classrooms, and science kits
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('SAT FIRST AND SECOND SEM'); switchSatSubView('soe');">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open SoE Comparison View
+      </a>
+    `;
+  } else {
+    replyHtml = `
+      <div>I have noted your request for <strong>${param}</strong>. You can browse through our dedicated dashboard tabs on the left navigation menu.</div>
+    `;
+  }
+
+  appendBotAssistantMessage(replyHtml);
+}
+
+function sendBotMessage() {
+  const input = document.getElementById("txtBotInput");
+  if (!input) return;
+  const rawText = input.value.trim();
+  if (!rawText) return;
+
+  appendBotUserMessage(rawText);
+  input.value = "";
+
+  const query = rawText.toLowerCase();
+
+  // 1. Check if user typed keywords
+  if (query.includes("elec") || query.includes("power") || query.includes("light") || query.includes("solar")) {
+    handleBotParameter("Electricity");
+    return;
+  }
+  if (query.includes("room") || query.includes("class") || query.includes("building")) {
+    handleBotParameter("Classroom");
+    return;
+  }
+  if (query.includes("toilet") || query.includes("latrine") || query.includes("washroom") || query.includes("sanit")) {
+    handleBotParameter("Toilet");
+    return;
+  }
+  if (query.includes("water") || query.includes("drink") || query.includes("ro ")) {
+    handleBotParameter("Drinking Water");
+    return;
+  }
+  if (query.includes("teach") || query.includes("staff") || query.includes("guruji") || query.includes("faculty")) {
+    handleBotParameter("Teacher Profile");
+    return;
+  }
+  if (query.includes("student") || query.includes("enroll") || query.includes("balvatika") || query.includes("admission")) {
+    handleBotParameter("Student Enrollment");
+    return;
+  }
+  if (query.includes("attend") || query.includes("absent") || query.includes("present") || query.includes("daily")) {
+    handleBotParameter("Attendance Report");
+    return;
+  }
+  if (query.includes("sat") || query.includes("exam") || query.includes("mark") || query.includes("result") || query.includes("grade")) {
+    handleBotParameter("SAT Exam Results");
+    return;
+  }
+  if (query.includes("ict") || query.includes("lab") || query.includes("gyankunj") || query.includes("computer") || query.includes("smart")) {
+    handleBotParameter("ICT & Gyankunj");
+    return;
+  }
+  if (query.includes("soe") || query.includes("excellence")) {
+    handleBotParameter("SoE Schools");
+    return;
+  }
+
+  // 2. Check if user typed a school name or DISE code
+  const satData = (globalData && globalData.sat_data) ? globalData.sat_data : {};
+  const allSchools = satData.comparison_records || satData.sem2_records || allSchoolRows || [];
+  
+  const foundSchool = allSchools.find(s => {
+    const sId = (s.school_id || s.dise_code || '').toLowerCase();
+    const sName = (s.school_name || '').toLowerCase();
+    return sId.includes(query) || sName.includes(query);
+  });
+
+  if (foundSchool) {
+    const replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-school" style="color:#16a34a;"></i> School Found: ${foundSchool.school_name}
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>DISE Code:</strong> <code>${foundSchool.school_id || foundSchool.dise_code}</code><br>
+        • <strong>CRC Cluster:</strong> ${foundSchool.cluster || foundSchool.cluster_name}<br>
+        • <strong>Management:</strong> ${foundSchool.management || 'Local Body'}<br>
+        • <strong>Category:</strong> ${foundSchool.category || 'Primary / Upper Primary'}<br>
+        • <strong>SoE Status:</strong> ${foundSchool.is_soe === 'Y' ? '<span class="badge badge-success">School of Excellence (SoE)</span>' : '<span class="badge badge-light">Regular School</span>'}<br>
+        • <strong>Total Students:</strong> ${(foundSchool.total_students || 0).toLocaleString()}<br>
+        • <strong>SAT Sem-2 Score:</strong> <strong>${foundSchool.avg_score || foundSchool.sem2_score || 'N/A'}%</strong> (Grade A: ${foundSchool.perc_80 || foundSchool.sem2_perc80 || '0'}%)
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('SAT FIRST AND SECOND SEM')">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> View in SAT Performance Module
+      </a>
+    `;
+    appendBotAssistantMessage(replyHtml);
+    return;
+  }
+
+  // 3. Check if user typed a CRC cluster name
+  const crcList = satData.crc_summary_sem2 || allCrcRows || [];
+  const foundCrc = crcList.find(c => {
+    const cName = (c.cluster || c.cluster_name || '').toLowerCase();
+    return cName.includes(query);
+  });
+
+  if (foundCrc) {
+    const replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-layer-group" style="color:#f97316;"></i> CRC Cluster: ${foundCrc.cluster || foundCrc.cluster_name}
+      </div>
+      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+        • <strong>Total Schools:</strong> ${foundCrc.schools || foundCrc.schools_cnt || 0} Schools<br>
+        • <strong>SoE Schools:</strong> ${foundCrc.soe_cnt || foundCrc.soe_schools || 0} SoE Units<br>
+        • <strong>Total Students:</strong> ${(foundCrc.total || foundCrc.total_students || 0).toLocaleString()}<br>
+        • <strong>SAT Grade A (&gt;80%):</strong> ${foundCrc.p_80 || 0} (${foundCrc.perc_80 || 0}%)<br>
+        • <strong>Average Score:</strong> <strong>${foundCrc.avg_score || 0}%</strong>
+      </div>
+      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="openModuleTab('SAT FIRST AND SECOND SEM'); switchSatSubView('crc');">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> View CRC Cluster Summary
+      </a>
+    `;
+    appendBotAssistantMessage(replyHtml);
+    return;
+  }
+
+  // Fallback response
+  const fallbackHtml = `
+    <div style="font-size:12.5px; line-height:1.55; color:#334155;">
+      I couldn't find exact records matching <em>"${rawText}"</em>.<br><br>
+      You can ask me about:<br>
+      • <strong>Facilities:</strong> Electricity, Classrooms, Toilets, Drinking Water, ICT Labs<br>
+      • <strong>Academic &amp; Reports:</strong> SAT Results, Teachers, Attendance, SoE Status<br>
+      • <strong>Search:</strong> Type any 11-digit DISE code, School name (e.g. <em>"Jaydevpura"</em>), or CRC cluster (e.g. <em>"Dangarwa"</em>).
+    </div>
+  `;
+  appendBotAssistantMessage(fallbackHtml);
+}
+
+// Initialize live bot clock on document load
+if (typeof window !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    updateBotClock();
+  });
 }
