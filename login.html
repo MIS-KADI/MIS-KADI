@@ -333,7 +333,7 @@
           <label><i class="fa-solid fa-user" style="color:#034433; margin-right:4px;"></i> Username / User ID</label>
           <div class="input-wrap">
             <i class="fa-solid fa-user prefix-icon"></i>
-            <input type="text" id="txtUsername" value="240402" placeholder="Admin User ID (240402)" autocomplete="off" required />
+            <input type="text" id="txtUsername" value="" placeholder="Enter Admin User ID" autocomplete="off" required />
           </div>
         </div>
 
@@ -484,8 +484,9 @@
       if (role === "admin") {
         btnAdmin.classList.add("active");
         btnUser.classList.remove("active");
-        txtUser.value = "240402";
-        txtUser.placeholder = "Admin User ID (240402)";
+        txtUser.value = "";
+        txtUser.placeholder = "Enter Admin User ID";
+        txtUser.focus();
       } else {
         btnUser.classList.add("active");
         btnAdmin.classList.remove("active");
@@ -622,20 +623,24 @@
       }
     }
 
-    // Force clear password on page load and window focus to prevent autofill retention
+    // Force clear username, password, and captcha on page load and window focus
     window.addEventListener("DOMContentLoaded", function() {
+      const userInput = document.getElementById("txtUsername");
       const pwdInput = document.getElementById("txtPassword");
-      if (pwdInput) {
-        pwdInput.value = "";
-      }
+      const capInput = document.getElementById("txtCaptcha");
+      if (userInput) userInput.value = "";
+      if (pwdInput) pwdInput.value = "";
+      if (capInput) capInput.value = "";
       generateCaptcha();
     });
 
     window.addEventListener("pageshow", function() {
+      const userInput = document.getElementById("txtUsername");
       const pwdInput = document.getElementById("txtPassword");
-      if (pwdInput) {
-        pwdInput.value = "";
-      }
+      const capInput = document.getElementById("txtCaptcha");
+      if (userInput) userInput.value = "";
+      if (pwdInput) pwdInput.value = "";
+      if (capInput) capInput.value = "";
       generateCaptcha();
     });
   </script>
