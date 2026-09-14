@@ -185,16 +185,26 @@ if (typeof Chart !== 'undefined') {
 let registeredUsersList = JSON.parse(localStorage.getItem("mis_registered_users")) || [
   { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
   { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+  { username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" },
   { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
   { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
 ];
 
-// Ensure admin password is set to B@240402
+// Ensure admin password is set to B@240402 and CRCKADI is present
 registeredUsersList.forEach(u => {
   if (u.username === "240402" || u.username === "240402-KADI BMIS") {
     u.password = "B@240402";
   }
 });
+
+const foundCrcKadiInApp = registeredUsersList.find(u => u.username.toUpperCase() === "CRCKADI");
+if (!foundCrcKadiInApp) {
+  registeredUsersList.push({ username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" });
+} else {
+  foundCrcKadiInApp.password = "SSA@123";
+  foundCrcKadiInApp.status = "Active";
+}
+
 localStorage.setItem("mis_registered_users", JSON.stringify(registeredUsersList));
 
 document.addEventListener("DOMContentLoaded", () => {
