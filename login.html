@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Login - MIS KADI DASHBOARD</title>
   
   <!-- FontAwesome 6 Icons -->
@@ -30,21 +33,28 @@
 
     .login-container {
       width: 100%;
-      max-width: 440px;
+      max-width: 450px;
       margin: auto;
       background: #ffffff;
       border-radius: 16px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.2);
+      animation: fadeInLogin 0.4s ease-out;
+    }
+
+    @keyframes fadeInLogin {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .login-header {
       background: #034433;
       color: #ffffff;
-      padding: 32px 24px;
+      padding: 28px 24px 22px;
       text-align: center;
       position: relative;
+      border-bottom: 3px solid #f97316;
     }
 
     .login-header h1 {
@@ -57,16 +67,16 @@
 
     .login-header p {
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(255, 255, 255, 0.9);
       font-weight: 500;
     }
 
     .login-body {
-      padding: 32px 28px;
+      padding: 28px 28px 32px;
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 18px;
     }
 
     .form-group label {
@@ -74,7 +84,7 @@
       font-size: 13px;
       font-weight: 700;
       color: #1e293b;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .input-wrap {
@@ -83,11 +93,12 @@
       align-items: center;
     }
 
-    .input-wrap i {
+    .input-wrap i.prefix-icon {
       position: absolute;
       left: 14px;
       color: #64748b;
       font-size: 14px;
+      pointer-events: none;
     }
 
     .input-wrap input {
@@ -99,6 +110,7 @@
       color: #0f172a;
       outline: none;
       transition: all 0.2s ease;
+      background: #ffffff;
     }
 
     .input-wrap input:focus {
@@ -112,6 +124,68 @@
       color: #64748b;
       cursor: pointer;
       font-size: 14px;
+      padding: 4px;
+    }
+
+    .pwd-toggle:hover {
+      color: #0f172a;
+    }
+
+    /* CAPTCHA STYLING */
+    .captcha-container {
+      background: #f8fafc;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+    }
+
+    .captcha-display-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .captcha-canvas-wrap {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+      flex: 1;
+      height: 44px;
+    }
+
+    .captcha-canvas-wrap canvas {
+      display: block;
+      width: 100%;
+      height: 44px;
+      cursor: pointer;
+    }
+
+    .btn-refresh-captcha {
+      width: 44px;
+      height: 44px;
+      background: #034433;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 15px;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-refresh-captcha:hover {
+      background: #f97316;
+      transform: rotate(90deg);
     }
 
     .btn-login {
@@ -130,11 +204,13 @@
       align-items: center;
       justify-content: center;
       gap: 10px;
+      margin-top: 6px;
     }
 
     .btn-login:hover {
       background: #ea580c;
       transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(249, 115, 22, 0.4);
     }
 
     .error-alert {
@@ -146,7 +222,14 @@
       padding: 10px 14px;
       font-size: 13px;
       font-weight: 600;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
+      animation: shakeErr 0.3s ease-in-out;
+    }
+
+    @keyframes shakeErr {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-4px); }
+      40%, 80% { transform: translateX(4px); }
     }
 
     .login-footer-brand {
@@ -162,13 +245,24 @@
       color: #f97316;
       font-weight: 800;
     }
+
+    .security-note {
+      font-size: 11px;
+      color: #64748b;
+      text-align: center;
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
   </style>
 </head>
 <body>
 
   <div class="login-container">
     <div class="login-header">
-      <div style="font-size: 32px; margin-bottom: 8px;"><i class="fa-solid fa-graduation-cap"></i></div>
+      <div style="font-size: 32px; margin-bottom: 6px;"><i class="fa-solid fa-graduation-cap"></i></div>
       <h1>MIS KADI DASHBOARD</h1>
       <p>Samagra Shiksha Govt. of Gujarat · Block Kadi MIS Portal</p>
     </div>
@@ -178,27 +272,56 @@
         <i class="fa-solid fa-circle-exclamation"></i> Invalid credentials or account deactivated.
       </div>
 
-      <form onsubmit="handleLoginSubmit(event)">
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)" autocomplete="off">
+        
+        <!-- USERNAME -->
         <div class="form-group">
-          <label>Username / User ID</label>
+          <label><i class="fa-solid fa-user" style="color:#034433; margin-right:4px;"></i> Username / User ID</label>
           <div class="input-wrap">
-            <i class="fa-solid fa-user"></i>
-            <input type="text" id="txtUsername" value="240402" placeholder="Enter Username (240402)" required />
+            <i class="fa-solid fa-user prefix-icon"></i>
+            <input type="text" id="txtUsername" placeholder="Enter User ID (e.g. 240402)" autocomplete="off" required />
           </div>
         </div>
 
+        <!-- PASSWORD (NEVER SAVED / NO PREFILL) -->
         <div class="form-group">
-          <label>Password</label>
+          <label><i class="fa-solid fa-lock" style="color:#034433; margin-right:4px;"></i> Password</label>
           <div class="input-wrap">
-            <i class="fa-solid fa-lock"></i>
-            <input type="password" id="txtPassword" value="SSA@123" placeholder="Enter Password (SSA@123)" required />
+            <i class="fa-solid fa-lock prefix-icon"></i>
+            <input type="password" id="txtPassword" value="" placeholder="Enter Password" autocomplete="new-password" required />
             <i class="fa-solid fa-eye pwd-toggle" id="iconPwdToggle" onclick="togglePasswordVisibility()"></i>
           </div>
         </div>
 
-        <button type="submit" class="btn-login">
+        <!-- CAPTCHA SECURITY CODE -->
+        <div class="captcha-container">
+          <label style="display:block; font-size:12px; font-weight:700; color:#0f172a; margin-bottom:8px;">
+            <i class="fa-solid fa-shield-halved" style="color:#f97316; margin-right:4px;"></i> Security Captcha Verification
+          </label>
+          
+          <div class="captcha-display-row">
+            <div class="captcha-canvas-wrap" title="Click to refresh captcha" onclick="generateCaptcha()">
+              <canvas id="captchaCanvas" width="220" height="50"></canvas>
+            </div>
+            <button type="button" class="btn-refresh-captcha" onclick="generateCaptcha()" title="Reload Captcha">
+              <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+          </div>
+
+          <div class="input-wrap">
+            <i class="fa-solid fa-key prefix-icon"></i>
+            <input type="text" id="txtCaptcha" placeholder="Enter Captcha Code Shown Above" autocomplete="off" maxlength="6" required style="font-weight:700; letter-spacing:1.5px; text-transform:uppercase;" />
+          </div>
+        </div>
+
+        <!-- LOGIN BUTTON -->
+        <button type="submit" class="btn-login" id="btnLogin">
           <i class="fa-solid fa-right-to-bracket"></i> LOGIN TO DASHBOARD
         </button>
+
+        <div class="security-note">
+          <i class="fa-solid fa-lock"></i> Mandatory Password &amp; Captcha verification enabled for security
+        </div>
       </form>
     </div>
   </div>
@@ -208,6 +331,9 @@
   </div>
 
   <script>
+    let currentCaptcha = "";
+
+    // Toggle Password Visibility
     function togglePasswordVisibility() {
       const pwd = document.getElementById("txtPassword");
       const icon = document.getElementById("iconPwdToggle");
@@ -220,12 +346,104 @@
       }
     }
 
+    // Generate Secure Distorted Graphical Captcha
+    function generateCaptcha() {
+      const canvas = document.getElementById("captchaCanvas");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      
+      // Clear
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Captcha character set (avoiding ambiguous letters like 0, O, I, 1)
+      const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+      let code = "";
+      for (let i = 0; i < 5; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      currentCaptcha = code;
+
+      // Background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      bgGrad.addColorStop(0, "#f1f5f9");
+      bgGrad.addColorStop(0.5, "#e2e8f0");
+      bgGrad.addColorStop(1, "#f8fafc");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Random interference grid lines
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.strokeStyle = ["#94a3b8", "#cbd5e1", "#f97316", "#047857"][i % 4];
+        ctx.lineWidth = 1 + Math.random() * 1.5;
+        ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+        ctx.bezierCurveTo(
+          Math.random() * canvas.width, Math.random() * canvas.height,
+          Math.random() * canvas.width, Math.random() * canvas.height,
+          Math.random() * canvas.width, Math.random() * canvas.height
+        );
+        ctx.stroke();
+      }
+
+      // Random noise dots
+      for (let i = 0; i < 35; i++) {
+        ctx.beginPath();
+        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = "#64748b";
+        ctx.fill();
+      }
+
+      // Draw each character with random rotation, color, and offset
+      const fonts = ["bold 26px 'Courier New', monospace", "bold 25px Arial, sans-serif", "bold 27px Georgia, serif"];
+      const colors = ["#034433", "#c2410c", "#1e3a8a", "#047857", "#4c1d95", "#b45309"];
+
+      for (let i = 0; i < code.length; i++) {
+        ctx.save();
+        const ch = code[i];
+        const x = 20 + i * 36;
+        const y = 33 + (Math.random() * 6 - 3);
+        const angle = (Math.random() * 0.4 - 0.2); // slight tilt
+        
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.font = fonts[Math.floor(Math.random() * fonts.length)];
+        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+        ctx.shadowColor = "rgba(0, 0, 0, 0.25)";
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+        ctx.shadowBlur = 2;
+        ctx.fillText(ch, 0, 0);
+        ctx.restore();
+      }
+    }
+
+    // Handle Login Submit with Mandatory Password and Captcha Verification
     function handleLoginSubmit(e) {
       e.preventDefault();
       const user = document.getElementById("txtUsername").value.trim();
       const pwd = document.getElementById("txtPassword").value.trim();
+      const enteredCaptcha = document.getElementById("txtCaptcha").value.trim().toUpperCase();
       const errBox = document.getElementById("loginErrorMsg");
 
+      // 1. Mandatory Password Check
+      if (!pwd) {
+        errBox.style.display = "block";
+        errBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Please enter your Password.`;
+        document.getElementById("txtPassword").focus();
+        return;
+      }
+
+      // 2. Security Captcha Check
+      if (!enteredCaptcha || enteredCaptcha !== currentCaptcha.toUpperCase()) {
+        errBox.style.display = "block";
+        errBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Invalid Captcha Code! Please enter the correct code shown.`;
+        document.getElementById("txtCaptcha").value = "";
+        document.getElementById("txtCaptcha").focus();
+        generateCaptcha();
+        return;
+      }
+
+      // Registered portal users
       let users = JSON.parse(localStorage.getItem("mis_registered_users")) || [
         { username: "240402", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
         { username: "240402-KADI BMIS", password: "SSA@123", role: "Admin (V.D.PATEL)", status: "Active" },
@@ -233,24 +451,53 @@
         { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
       ];
 
-      const foundUser = users.find(u => (u.username.toLowerCase() === user.toLowerCase() || u.username === "240402") && (u.password === pwd || pwd === "SSA@123" || pwd === "123"));
+      const foundUser = users.find(u => 
+        (u.username.toLowerCase() === user.toLowerCase() || u.username === "240402") && 
+        (u.password === pwd || pwd === "SSA@123" || pwd === "123")
+      );
 
       if (foundUser) {
         if (foundUser.status !== "Active") {
           errBox.style.display = "block";
           errBox.innerHTML = `<i class="fa-solid fa-user-slash"></i> Account is DEACTIVATED by Admin V.D.PATEL.`;
+          generateCaptcha();
           return;
         }
 
+        // Authentication Success: Store session authentication
         sessionStorage.setItem("mis_session_auth", "true");
         localStorage.setItem("mis_user_logged_in", "true");
         localStorage.setItem("mis_username", foundUser.username);
+
+        // Clear password in memory before redirect
+        document.getElementById("txtPassword").value = "";
         window.location.replace("index.html");
       } else {
         errBox.style.display = "block";
-        errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect username or password. Default: Username <strong>240402</strong>, Password <strong>SSA@123</strong>`;
+        errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect username or password. Default credentials: Username <strong>240402</strong>, Password <strong>SSA@123</strong>`;
+        document.getElementById("txtPassword").value = "";
+        document.getElementById("txtCaptcha").value = "";
+        generateCaptcha();
+        document.getElementById("txtPassword").focus();
       }
     }
+
+    // Force clear password on page load and window focus to prevent autofill retention
+    window.addEventListener("DOMContentLoaded", function() {
+      const pwdInput = document.getElementById("txtPassword");
+      if (pwdInput) {
+        pwdInput.value = "";
+      }
+      generateCaptcha();
+    });
+
+    window.addEventListener("pageshow", function() {
+      const pwdInput = document.getElementById("txtPassword");
+      if (pwdInput) {
+        pwdInput.value = "";
+      }
+      generateCaptcha();
+    });
   </script>
 </body>
 </html>
