@@ -541,8 +541,8 @@
         <line x1="47" y1="22.5" x2="55" y2="22.5" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round"/>
         <line x1="47" y1="25.5" x2="52" y2="25.5" stroke="#0284c7" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
-      <div style="font-size: 8px; font-weight: 900; letter-spacing: 0.4px; margin-top: 2px; line-height: 1;">
-        <span style="color: #e05638;">UDISE+</span> <span style="color: #002b49;">BOT</span>
+      <div style="font-size: 8.5px; font-weight: 900; letter-spacing: 0.5px; margin-top: 2px; line-height: 1;">
+        <span style="color: #e05638;">MIS+</span> <span style="color: #002b49;">BOT</span>
       </div>
     </div>
   </div>
@@ -559,19 +559,29 @@
           <line x1="8" y1="16" x2="8.01" y2="16"></line>
           <line x1="16" y1="16" x2="16.01" y2="16"></line>
         </svg>
-        <span>UDISE<span style="color:#f97316;">+</span>Bot</span>
+        <div>
+          <div style="font-size: 15px; font-weight: 800; line-height: 1.1;">
+            MIS<span style="color:#f97316;">+</span> BOT
+          </div>
+          <div style="font-size: 9.5px; color: #94a3b8; font-weight: 500;">
+            Kadi Block MIS Virtual Assistant
+          </div>
+        </div>
       </div>
       <button class="udise-bot-close-btn" onclick="toggleUdiseBot()" title="Close Bot">&times;</button>
     </div>
 
     <!-- Scrollable Body -->
     <div id="udiseBotBody" class="udise-bot-body">
-      <!-- Card 1: Welcome Assistant Message (Matches Image 2) -->
+      <!-- Card 1: Welcome Assistant Message -->
       <div class="udise-bot-card">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+          <span style="background:#002b49; color:#fff; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:4px;">MIS+ BOT</span>
+          <span style="font-size:11px; color:#64748b; font-weight:600;">All-in-One Site Assistant</span>
+        </div>
         <p style="margin:0 0 10px; font-size:12.5px; line-height:1.55; color:#1e293b;">
-          Hi! I'm your virtual assistant to assist you with your enquiries on Reports from Profile / Facility Module.<br><br>
-          Your feedback is valuable; use thumbs up or thumbs down icons to help us improve further.<br>
-          <strong style="color:#002b49;">Thank you!</strong>
+          નમસ્તે! હું <strong>MIS+ BOT</strong> છું. Kadi Block MIS Portal ના તમામ મેનુ, ટેબ, ડ્રોપડાઉન (હાજરી, SAT Exam, UDISE+, Gyankunj, GSQAC, CTS વગેરે) અંગે કોઈપણ પ્રશ્ન પૂછો અથવા સીધી મદદ મેળવો.<br><br>
+          <em>Ask any question or click a tab below to jump straight to that data!</em>
         </p>
         <div style="display:flex; gap:8px; align-items:center;">
           <span class="udise-bot-feedback-btn" onclick="sendBotFeedback('up', this)" title="Helpful"><i class="fa-regular fa-thumbs-up"></i></span>
@@ -580,63 +590,130 @@
         </div>
       </div>
 
-      <!-- Card 2: Interactive Parameter Selector (Matches Image 2) -->
+      <!-- Card 2: Interactive Parameter Selector Covering All Tabs & Dropdowns -->
       <div class="udise-bot-card accent-blue">
-        <div style="font-size:12.5px; font-weight:700; color:#0f172a; margin-bottom:12px;">
-          To help you get started, please select the parameter that best suits you:
+        <div style="font-size:12px; font-weight:800; color:#0f172a; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>તમારો પ્રશ્ન કે મેનુ ટેબ પસંદ કરો:</span>
+          <span style="font-size:10px; color:#0284c7; font-weight:700;">Click to Open</span>
         </div>
 
-        <div style="display:flex; flex-direction:column; gap:2px;">
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('Electricity')">
-            <span><i class="fa-solid fa-bolt" style="color:#eab308; margin-right:8px;"></i> Electricity</span>
+        <!-- Filter Pills for Quick Module Switching -->
+        <div class="mis-bot-pill-row">
+          <button class="mis-bot-pill active" onclick="filterBotCategory('all', this)">બધા (All)</button>
+          <button class="mis-bot-pill" onclick="filterBotCategory('att', this)">હાજરી (Attendance)</button>
+          <button class="mis-bot-pill" onclick="filterBotCategory('sat', this)">SAT પરીક્ષા પરિણામ</button>
+          <button class="mis-bot-pill" onclick="filterBotCategory('udise', this)">UDISE+ / શિક્ષક</button>
+          <button class="mis-bot-pill" onclick="filterBotCategory('ict', this)">ICT / જ્ઞાનકુંજ</button>
+          <button class="mis-bot-pill" onclick="filterBotCategory('other', this)">GSQAC / CTS / CRC</button>
+          <button class="mis-bot-pill" onclick="filterBotCategory('admin', this)">Admin &amp; હેલ્પ</button>
+        </div>
+
+        <div id="botParamContainer" style="display:flex; flex-direction:column; gap:2px; max-height:270px; overflow-y:auto; padding-right:2px;">
+          <!-- 1. ATTENDANCE MODULE BUTTONS -->
+          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Teacher Attendance')">
+            <span><span class="mis-bot-param-category mis-cat-att">Attendance</span><i class="fa-solid fa-user-tie" style="color:#15803d; margin-right:6px;"></i> Teacher Attendance (શિક્ષક હાજરી)</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('Classroom')">
-            <span><i class="fa-solid fa-chalkboard" style="color:#0284c7; margin-right:8px;"></i> Classroom</span>
+          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Student Attendance')">
+            <span><span class="mis-bot-param-category mis-cat-att">Attendance</span><i class="fa-solid fa-user-graduate" style="color:#15803d; margin-right:6px;"></i> Student Attendance (વિદ્યાર્થી હાજરી)</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('Toilet')">
-            <span><i class="fa-solid fa-restroom" style="color:#16a34a; margin-right:8px;"></i> Toilet</span>
+          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Not Submitted Attendance')">
+            <span><span class="mis-bot-param-category mis-cat-att">Alert</span><i class="fa-solid fa-file-circle-xmark" style="color:#dc2626; margin-right:6px;"></i> Not Submitted Attendance (બાકી શાળાઓ)</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('Drinking Water')">
-            <span><i class="fa-solid fa-faucet-drip" style="color:#0ea5e9; margin-right:8px;"></i> Drinking Water</span>
+          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Attendance Pivot')">
+            <span><span class="mis-bot-param-category mis-cat-att">Pivot</span><i class="fa-solid fa-table-cells" style="color:#0284c7; margin-right:6px;"></i> Attendance Pivot Analytics (પિવોટ વિશ્લેષણ)</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('Teacher Profile')">
-            <span><i class="fa-solid fa-chalkboard-user" style="color:#7c3aed; margin-right:8px;"></i> Teacher Profile</span>
+
+          <!-- 2. SAT EXAM MODULE BUTTONS -->
+          <button class="udise-bot-param-btn" data-cat="sat" onclick="handleBotParameter('SAT Exam Results')">
+            <span><span class="mis-bot-param-category mis-cat-sat">SAT Exam</span><i class="fa-solid fa-file-signature" style="color:#ea580c; margin-right:6px;"></i> SAT Sem 1 &amp; Sem 2 Results (પરીક્ષા પરિણામ)</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('Student Enrollment')">
-            <span><i class="fa-solid fa-user-graduate" style="color:#2563eb; margin-right:8px;"></i> Student Enrollment</span>
+          <button class="udise-bot-param-btn" data-cat="sat" onclick="handleBotParameter('SoE Schools')">
+            <span><span class="mis-bot-param-category mis-cat-sat">SoE</span><i class="fa-solid fa-award" style="color:#b45309; margin-right:6px;"></i> Schools of Excellence (SoE તુલના)</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('Attendance Report')">
-            <span><i class="fa-solid fa-calendar-check" style="color:#15803d; margin-right:8px;"></i> Attendance Report</span>
+          <button class="udise-bot-param-btn" data-cat="sat" onclick="handleBotParameter('SAT Pivot')">
+            <span><span class="mis-bot-param-category mis-cat-sat">Pivot</span><i class="fa-solid fa-chart-column" style="color:#c2410c; margin-right:6px;"></i> SAT Performance Pivot &amp; CRC Rank</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('SAT Exam Results')">
-            <span><i class="fa-solid fa-file-signature" style="color:#ea580c; margin-right:8px;"></i> SAT Exam Results</span>
+
+          <!-- 3. UDISE+ MODULE BUTTONS -->
+          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Teacher Profile')">
+            <span><span class="mis-bot-param-category mis-cat-udise">UDISE+</span><i class="fa-solid fa-chalkboard-user" style="color:#7c3aed; margin-right:6px;"></i> Teacher Profile (2,109 શિક્ષકો, લાયકાત)</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('ICT & Gyankunj')">
-            <span><i class="fa-solid fa-laptop-code" style="color:#0284c7; margin-right:8px;"></i> ICT &amp; Gyankunj Labs</span>
+          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('School Profile')">
+            <span><span class="mis-bot-param-category mis-cat-udise">UDISE+</span><i class="fa-solid fa-school" style="color:#2563eb; margin-right:6px;"></i> School Profile &amp; Infrastructure</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
-          <button class="udise-bot-param-btn" onclick="handleBotParameter('SoE Schools')">
-            <span><i class="fa-solid fa-award" style="color:#b45309; margin-right:8px;"></i> Schools of Excellence (SoE)</span>
+          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Electricity')">
+            <span><span class="mis-bot-param-category mis-cat-udise">Facility</span><i class="fa-solid fa-bolt" style="color:#eab308; margin-right:6px;"></i> Electricity &amp; Solar Rooftop</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Drinking Water')">
+            <span><span class="mis-bot-param-category mis-cat-udise">Facility</span><i class="fa-solid fa-faucet-drip" style="color:#0ea5e9; margin-right:6px;"></i> Drinking Water &amp; RO System</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Toilet')">
+            <span><span class="mis-bot-param-category mis-cat-udise">Facility</span><i class="fa-solid fa-restroom" style="color:#16a34a; margin-right:6px;"></i> Toilets &amp; CWSN Facilities</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Student Enrollment')">
+            <span><span class="mis-bot-param-category mis-cat-udise">Enrollment</span><i class="fa-solid fa-users" style="color:#0284c7; margin-right:6px;"></i> Student Enrollment &amp; Balvatika</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+
+          <!-- 4. ICT & GYANKUNJ BUTTONS -->
+          <button class="udise-bot-param-btn" data-cat="ict" onclick="handleBotParameter('ICT Computer Lab')">
+            <span><span class="mis-bot-param-category mis-cat-ict">ICT</span><i class="fa-solid fa-desktop" style="color:#0284c7; margin-right:6px;"></i> ICT Computer Lab (59 શાળાઓ લેબ)</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="ict" onclick="handleBotParameter('Gyankunj Smart Class')">
+            <span><span class="mis-bot-param-category mis-cat-ict">Gyankunj</span><i class="fa-solid fa-tv" style="color:#0284c7; margin-right:6px;"></i> Gyankunj Smart Class (105 વર્ગખંડો)</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+
+          <!-- 5. OTHER SITE MODULES BUTTONS -->
+          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('Child Tracking System (CTS)')">
+            <span><span class="mis-bot-param-category mis-cat-other">SSA</span><i class="fa-solid fa-chart-line" style="color:#854d0e; margin-right:6px;"></i> Child Tracking System (CTS)</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('GSQAC')">
+            <span><span class="mis-bot-param-category mis-cat-other">GSQAC</span><i class="fa-solid fa-award" style="color:#854d0e; margin-right:6px;"></i> GSQAC (School Accreditation Stars)</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('CRC School Visit')">
+            <span><span class="mis-bot-param-category mis-cat-other">Monitor</span><i class="fa-solid fa-person-walking-luggage" style="color:#854d0e; margin-right:6px;"></i> CRC School Visit (શાળા મુલાકાત)</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('All School Information')">
+            <span><span class="mis-bot-param-category mis-cat-other">Directory</span><i class="fa-solid fa-school" style="color:#854d0e; margin-right:6px;"></i> All School Information (184 શાળાઓ)</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+
+          <!-- 6. ADMIN & HELP BUTTONS -->
+          <button class="udise-bot-param-btn" data-cat="admin" onclick="handleBotParameter('Users Management')">
+            <span><span class="mis-bot-param-category mis-cat-admin">Admin</span><i class="fa-solid fa-users-gear" style="color:#b91c1c; margin-right:6px;"></i> Users Management &amp; Username Edit</span>
+            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
+          </button>
+          <button class="udise-bot-param-btn" data-cat="admin" onclick="handleBotParameter('Excel CSV Download')">
+            <span><span class="mis-bot-param-category mis-cat-admin">Guide</span><i class="fa-solid fa-file-excel" style="color:#15803d; margin-right:6px;"></i> How to Download Excel/CSV Data</span>
             <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
           </button>
         </div>
       </div>
-
+      
       <!-- Container for dynamic conversation turns -->
       <div id="udiseBotChatHistory" style="display:flex; flex-direction:column; gap:12px;"></div>
     </div>
 
     <!-- Input Box Area -->
     <div class="udise-bot-input-area">
-      <input id="txtBotInput" type="text" class="udise-bot-input" placeholder="Ask about school, facility, or DISE code..." onkeydown="if(event.key==='Enter') sendBotMessage();" />
+      <input id="txtBotInput" type="text" class="udise-bot-input" placeholder="મેનુ, ટેબ, ડેટા કે શાળાનું નામ લખો (e.g. હાજરી, SAT, 240402...)" onkeydown="if(event.key==='Enter') sendBotMessage();" />
       <button class="udise-bot-send-btn" onclick="sendBotMessage()" title="Send query">
         <i class="fa-solid fa-paper-plane" style="font-size:12px;"></i>
       </button>
