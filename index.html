@@ -18,6 +18,8 @@
   <script src="chart.min.js"></script>
   <!-- SheetJS Excel Library Local -->
   <script src="xlsx.full.min.js"></script>
+  <!-- Local html2pdf Library for Instant School Profile PDF Generation -->
+  <script src="html2pdf.bundle.min.js"></script>
   <!-- Stylesheet -->
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -596,15 +598,16 @@
           💡 ઝડપી પ્રશ્નો (Quick Questions):
         </div>
         <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          <button class="mis-quick-chip" onclick="askQuickBot('કડી ની કુલ કેટલી શાળાઓ છે?')">🏫 કેટલી શાળાઓ છે?</button>
-          <button class="mis-quick-chip" onclick="askQuickBot('કડી માં કેટલા સીઆરસી છે?')">📍 કેટલા CRC છે?</button>
-          <button class="mis-quick-chip" onclick="askQuickBot('મેનેજમેન્ટ મુજબ શાળાઓ કેટલી છે?')">🏢 મેનેજમેન્ટ મુજબ શાળાઓ</button>
-          <button class="mis-quick-chip" onclick="askQuickBot('કુલ કેટલા વિદ્યાર્થીઓ છે?')">👥 કુલ કેટલા વિદ્યાર્થીઓ?</button>
-          <button class="mis-quick-chip" onclick="askQuickBot('શિક્ષકો કેટલા છે?')">👨‍🏫 શિક્ષકો અને લાયકાત</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('24040207501')">🏫 કુંડળ શાળા પ્રોફાઇલ &amp; PDF</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('મેનેજમેન્ટ વાઈઝ કેટલી શાળાઓ છે?')">🏢 મેનેજમેન્ટ વાઈઝ શાળાઓ</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('કડી માં કેટલા સીઆરસી છે?')">📍 14 CRC ક્લસ્ટર્સ</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('કડી ની કુલ કેટલી શાળાઓ છે?')">🏫 કુલ શાળાઓ</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('કુલ કેટલા વિદ્યાર્થીઓ છે?')">👥 વિદ્યાર્થીઓ &amp; જાતિવાર</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('શિક્ષકો કેટલા છે?')">👨‍🏫 શિક્ષકો &amp; લાયકાત</button>
           <button class="mis-quick-chip" onclick="askQuickBot('SAT પરીક્ષા નું પરિણામ કેવું રહ્યું?')">📊 SAT પરીક્ષા પરિણામ</button>
           <button class="mis-quick-chip" onclick="askQuickBot('SoE શાળાઓ કેટલી છે?')">🌟 SoE શાળાઓ (91)</button>
-          <button class="mis-quick-chip" onclick="askQuickBot('CWSN દિવ્યાંગ બાળકો કેટલા છે?')">♿ CWSN દિવ્યાંગ બાળકો</button>
-          <button class="mis-quick-chip" onclick="askQuickBot('બધી એક્સેલ ફાઇલો ડાઉનલોડ કરવી છે')">📁 Excel ફાઇલો ડાઉનલોડ</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('CWSN દિવ્યાંગ બાળકો કેટલા છે?')">♿ CWSN દિવ્યાંગ</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('બધી એક્સેલ ફાઇલો ડાઉનલોડ કરવી છે')">📁 Excel ફાઇલો</button>
         </div>
       </div>
       
@@ -614,7 +617,7 @@
 
     <!-- Input Box Area -->
     <div class="udise-bot-input-area">
-      <input id="txtBotInput" type="text" class="udise-bot-input" placeholder="પ્રશ્ન પૂછો: દા.ત. કેટલી શાળાઓ છે, કેટલા CRC, મેનેજમેન્ટ મુજબ શાળાઓ..." onkeydown="if(event.key==='Enter') sendBotMessage();" />
+      <input id="txtBotInput" type="text" class="udise-bot-input" placeholder="કોઈપણ શાળાનો DISE કોડ (દા.ત. 24040207501), મેનેજમેન્ટ વાઈઝ શાળાઓ કે પ્રશ્ન લખો..." onkeydown="if(event.key==='Enter') sendBotMessage();" />
       <button class="udise-bot-send-btn" onclick="sendBotMessage()" title="Send query">
         <i class="fa-solid fa-paper-plane" style="font-size:12px;"></i>
       </button>
