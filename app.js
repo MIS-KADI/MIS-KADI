@@ -523,6 +523,11 @@ function openModuleTab(tabName) {
       return;
     }
 
+    if (tabName === "Student Information" || tabName === "Student Info" || tabName === "વિદ્યાર્થીઓની માહિતી") {
+      renderStudentInformationModuleView();
+      return;
+    }
+
     if (tabName === "CRC School Visit" || tabName === "CRC Visit") {
       renderCrcVisitModuleView();
       return;
@@ -2268,6 +2273,1631 @@ function initCtsAnalyticsCharts() {
     }
   });
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// STUDENT INFORMATION PORTAL MODULE (વિદ્યાર્થીઓની માહિતી - 68,397 STUDENTS)
+// Powered by Total Students-240402 (6).csv
+// Features: 8 KPI Cards, Dynamic Pivot Table, 5 Interactive Charts, Live Student Search & Official CTS Profile PDF
+// ═════════════════════════════════════════════════════════════════════════════
+
+let activeStudentSubView = 'pivot'; // 'pivot', 'charts', 'directory', 'schools'
+let studentPivotRowDim = 'cluster'; // 'cluster', 'management', 'social'
+let studentPivotColDim = 'class'; // 'class', 'gender'
+let studentDirectorySearchQuery = '';
+let studentDirectoryClusterFilter = '';
+let studentDirectoryClassFilter = '';
+let studentDirectoryCurrentPage = 1;
+const studentDirectoryPageSize = 25;
+let studentDirectoryRecords = [];
+
+let chartStudentClassObj = null;
+let chartStudentGenderObj = null;
+let chartStudentSocialObj = null;
+let chartStudentMgtObj = null;
+let chartStudentClusterObj = null;
+
+function getStudentAnalytics() {
+  if (window.studentAnalyticsData && window.studentAnalyticsData.kpis) {
+    return window.studentAnalyticsData;
+  }
+  return {
+    kpis: {
+      total_students: 68397,
+      total_schools: 244,
+      total_clusters: 14,
+      boys: 37049,
+      girls: 31348,
+      boys_percentage: 54.17,
+      girls_percentage: 45.83,
+      balvatika: 4729,
+      primary_1_5: 25966,
+      upper_primary_6_8: 18622,
+      secondary_9_10: 11639,
+      higher_sec_11_12: 7441,
+      sec_higher_sec_9_12: 19080,
+      cwsn: 308
+    },
+    class_order: ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"],
+    class_counts: {
+      "Balvatika": 4729, "1": 5811, "2": 5869, "3": 5930, "4": 1546, "5": 6810,
+      "6": 6209, "7": 5799, "8": 6614, "9": 6413, "10": 5226, "11": 4022, "12": 3419
+    },
+    clusters_list: [
+      "ALDESAN", "CHANDRASAN", "INDRAD", "JASALPUR", "KADI KANYA SHALA - 4",
+      "KADI KUMAR SHALA - 2", "KADI KUMAR SHALA - 3", "KALYANPURA", "KARAN NAGAR",
+      "KASVA", "KUNDAL", "NANI KADI", "THOL", "VISATPURA"
+    ],
+    social_counts: { "OBC": 45295, "General": 17013, "SC": 4869, "ST": 1220 },
+    management_counts: {
+      "Local Body": 29624, "Private Unaided": 22224, "Government Aided": 16011,
+      "RMSA School": 264, "Tribal Welfare Department": 110, "Social Welfare Department": 92, "Department of Education": 72
+    },
+    cluster_class_pivot: {},
+    mgt_class_pivot: {},
+    social_class_pivot: {},
+    schools_summary: [],
+    initial_students: []
+  };
+}
+
+function renderStudentInformationModuleView() {
+  const wrapper = document.getElementById("moduleTabDedicatedContainer");
+  if (!wrapper) return;
+
+  const data = getStudentAnalytics();
+  const kpis = data.kpis;
+
+  let html = `
+    <!-- TOP HEADER BANNER -->
+    <div style="background:linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color:#fff; border-radius:12px; padding:18px 24px; margin-bottom:20px; box-shadow:0 4px 14px rgba(0,0,0,0.18);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:40px; height:40px; background:#f97316; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px;">
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+            <div>
+              <h2 style="font-size:20px; font-weight:900; color:#fff; margin:0; letter-spacing:0.3px;">
+                STUDENT INFORMATION PORTAL (વિદ્યાર્થીઓની માહિતી)
+              </h2>
+              <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">
+                Total Students Enrollment (240402) · Complete Child Analytics &amp; CTS Profile Engine
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="background:#16a34a; color:#fff; font-size:12px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-users"></i> ${kpis.total_students.toLocaleString()} Students
+          </span>
+          <span style="background:#0284c7; color:#fff; font-size:12px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-school"></i> ${kpis.total_schools} Schools
+          </span>
+          <span style="background:#8b5cf6; color:#fff; font-size:12px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-layer-group"></i> ${kpis.total_clusters} CRCs
+          </span>
+        </div>
+      </div>
+
+      <!-- Quick Search Bar in Banner -->
+      <div style="margin-top:16px; background:rgba(255,255,255,0.08); padding:10px 14px; border-radius:8px; display:flex; gap:10px; align-items:center; border:1px solid rgba(255,255,255,0.15);">
+        <i class="fa-solid fa-magnifying-glass" style="color:#f97316; font-size:15px;"></i>
+        <input id="txtStudentQuickSearch" type="text" placeholder="ઝડપી સર્ચ: ૧૮ અંકનો AadhaarUID, વિદ્યાર્થીનું નામ, પિતાનું નામ, GR નંબર કે શાળા લખો..." style="flex:1; background:transparent; border:none; color:#ffffff; font-size:13px; outline:none;" onkeydown="if(event.key==='Enter') triggerStudentQuickSearch();" />
+        <button onclick="triggerStudentQuickSearch()" style="background:#f97316; color:#ffffff; border:none; border-radius:6px; padding:6px 14px; font-size:12px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-search"></i> સર્ચ કરો
+        </button>
+      </div>
+    </div>
+
+    <!-- 8 RICH KPI CARDS -->
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:14px;">
+      
+      <div class="cts-card">
+        <div class="cts-card-head navy"><span>TOTAL ENROLLED STUDENTS</span></div>
+        <div class="cts-card-body navy">
+          <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
+          <div class="card-text-wrap">
+            <strong>કુલ વિદ્યાર્થીઓ (Enrollment)</strong>
+            <div class="card-count-num">${kpis.total_students.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head green"><span>BOYS / કુમાર વિદ્યાર્થીઓ</span></div>
+        <div class="cts-card-body green">
+          <div class="card-icon-avatar"><i class="fa-solid fa-mars"></i></div>
+          <div class="card-text-wrap">
+            <strong>Boys Enrolled (${kpis.boys_percentage}%)</strong>
+            <div class="card-count-num" style="color:#16a34a;">${kpis.boys.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head" style="background:#db2777; color:#fff;"><span>GIRLS / કન્યા વિદ્યાર્થીઓ</span></div>
+        <div class="cts-card-body" style="border:1px solid #fce7f3;">
+          <div class="card-icon-avatar" style="background:#fdf2f8; color:#db2777;"><i class="fa-solid fa-venus"></i></div>
+          <div class="card-text-wrap">
+            <strong>Girls Enrolled (${kpis.girls_percentage}%)</strong>
+            <div class="card-count-num" style="color:#db2777;">${kpis.girls.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head" style="background:#0891b2; color:#fff;"><span>BALVATIKA &amp; PRE-PRIMARY</span></div>
+        <div class="cts-card-body" style="border:1px solid #cffafe;">
+          <div class="card-icon-avatar" style="background:#ecfeff; color:#0891b2;"><i class="fa-solid fa-child-reaching"></i></div>
+          <div class="card-text-wrap">
+            <strong>બાલવાટિકા (Pre-Primary)</strong>
+            <div class="card-count-num" style="color:#0891b2;">${kpis.balvatika.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:20px;">
+      
+      <div class="cts-card">
+        <div class="cts-card-head blue"><span>PRIMARY (ધોરણ ૧ થી ૫)</span></div>
+        <div class="cts-card-body blue">
+          <div class="card-icon-avatar"><i class="fa-solid fa-book-open-reader"></i></div>
+          <div class="card-text-wrap">
+            <strong>Primary Section (Std 1-5)</strong>
+            <div class="card-count-num" style="color:#0284c7;">${kpis.primary_1_5.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head purple"><span>UPPER PRIMARY (ધોરણ ૬ થી ૮)</span></div>
+        <div class="cts-card-body purple">
+          <div class="card-icon-avatar"><i class="fa-solid fa-graduation-cap"></i></div>
+          <div class="card-text-wrap">
+            <strong>Upper Primary (Std 6-8)</strong>
+            <div class="card-count-num" style="color:#6b21a8;">${kpis.upper_primary_6_8.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head brown"><span>SECONDARY &amp; H.SEC (૯ થી ૧૨)</span></div>
+        <div class="cts-card-body brown">
+          <div class="card-icon-avatar"><i class="fa-solid fa-school"></i></div>
+          <div class="card-text-wrap">
+            <strong>Sec &amp; Higher Sec (9-12)</strong>
+            <div class="card-count-num" style="color:#a14e13;">${kpis.sec_higher_sec_9_12.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cts-card">
+        <div class="cts-card-head" style="background:#e11d48; color:#fff;"><span>CWSN DIVYANG STUDENTS</span></div>
+        <div class="cts-card-body" style="border:1px solid #ffe4e6;">
+          <div class="card-icon-avatar" style="background:#fff1f2; color:#e11d48;"><i class="fa-solid fa-wheelchair"></i></div>
+          <div class="card-text-wrap">
+            <strong>દિવ્યાંગ બાળકો (CWSN)</strong>
+            <div class="card-count-num" style="color:#e11d48;">${kpis.cwsn} Students</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4 SUB-NAVIGATION BUTTON TABS -->
+    <div style="background:#0f172a; border-radius:10px; padding:8px 12px; margin-bottom:20px; display:flex; gap:10px; overflow-x:auto;">
+      
+      <button class="btn" onclick="switchStudentSubView('pivot')" style="background:${activeStudentSubView === 'pivot' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
+        <i class="fa-solid fa-table-cells"></i> 1. Pivot Table Analytics (પીવટ વિશ્લેષણ)
+      </button>
+
+      <button class="btn" onclick="switchStudentSubView('charts')" style="background:${activeStudentSubView === 'charts' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
+        <i class="fa-solid fa-chart-column"></i> 2. Interactive Charts (ચાર્ટ્સ અને ગ્રાફ્સ)
+      </button>
+
+      <button class="btn" onclick="switchStudentSubView('directory')" style="background:${activeStudentSubView === 'directory' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
+        <i class="fa-solid fa-address-book"></i> 3. Live Student Directory &amp; PDF (વિદ્યાર્થી ડિરેક્ટરી અને પ્રોફાઈલ PDF)
+      </button>
+
+      <button class="btn" onclick="switchStudentSubView('schools')" style="background:${activeStudentSubView === 'schools' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
+        <i class="fa-solid fa-building-columns"></i> 4. School-wise Summary (શાળા મુજબ પત્રક)
+      </button>
+
+    </div>
+
+    <!-- SUBVIEW CONTENT CONTAINER -->
+    <div id="studentSubViewPanelContainer"></div>
+  `;
+
+  wrapper.innerHTML = html;
+  renderStudentSubViewContent();
+}
+
+function switchStudentSubView(subViewName) {
+  activeStudentSubView = subViewName;
+  renderStudentInformationModuleView();
+}
+
+function renderStudentSubViewContent() {
+  const panel = document.getElementById("studentSubViewPanelContainer");
+  if (!panel) return;
+
+  if (activeStudentSubView === "pivot") {
+    renderStudentPivotSection(panel);
+  } else if (activeStudentSubView === "charts") {
+    renderStudentChartsSection(panel);
+  } else if (activeStudentSubView === "directory") {
+    renderStudentDirectorySection(panel);
+  } else if (activeStudentSubView === "schools") {
+    renderStudentSchoolMasterSection(panel);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 1. INTERACTIVE PIVOT TABLE SECTION
+// ═════════════════════════════════════════════════════════════════════════════
+function renderStudentPivotSection(container) {
+  const data = getStudentAnalytics();
+  const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+
+  let html = `
+    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:16px 20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+        
+        <div>
+          <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-table-cells" style="color:#2563eb;"></i> INTERACTIVE PIVOT TABLE ANALYTICS (પીવટ વિશ્લેષણ)
+          </h3>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">
+            Customize Rows and Columns to cross-tabulate 68,397 student enrollment records dynamically
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:12px; font-weight:700; color:#475569;">Row Dimension:</label>
+            <select id="selStudentPivotRow" onchange="onStudentPivotDimensionChange()" style="padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; outline:none; background:#f8fafc;">
+              <option value="cluster" ${studentPivotRowDim === 'cluster' ? 'selected' : ''}>Cluster / CRC (14 Clusters)</option>
+              <option value="management" ${studentPivotRowDim === 'management' ? 'selected' : ''}>Management Type</option>
+              <option value="social" ${studentPivotRowDim === 'social' ? 'selected' : ''}>Social Category (General, OBC, SC, ST)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:12px; font-weight:700; color:#475569;">Column Dimension:</label>
+            <select id="selStudentPivotCol" onchange="onStudentPivotDimensionChange()" style="padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; outline:none; background:#f8fafc;">
+              <option value="class" ${studentPivotColDim === 'class' ? 'selected' : ''}>Studying Class (Balvatika, Std 1 to 12)</option>
+              <option value="gender" ${studentPivotColDim === 'gender' ? 'selected' : ''}>Gender (Boys, Girls, Total)</option>
+            </select>
+          </div>
+
+          <button onclick="exportStudentPivotToCsv()" style="background:#10b981; color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <i class="fa-solid fa-file-excel"></i> Export Pivot to CSV
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PIVOT TABLE DISPLAY -->
+    <div id="studentPivotTableContentArea" style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <!-- Injected via buildStudentPivotTableHtml() -->
+    </div>
+  `;
+
+  container.innerHTML = html;
+  buildStudentPivotTableHtml();
+}
+
+function onStudentPivotDimensionChange() {
+  const selRow = document.getElementById("selStudentPivotRow");
+  const selCol = document.getElementById("selStudentPivotCol");
+  if (selRow) studentPivotRowDim = selRow.value;
+  if (selCol) studentPivotColDim = selCol.value;
+  buildStudentPivotTableHtml();
+}
+
+function buildStudentPivotTableHtml() {
+  const container = document.getElementById("studentPivotTableContentArea");
+  if (!container) return;
+
+  const data = getStudentAnalytics();
+  const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+
+  let rowKeys = [];
+  let rowTitle = "";
+  let pivotMatrix = {};
+
+  if (studentPivotRowDim === "cluster") {
+    rowTitle = "Cluster (CRC)";
+    rowKeys = data.clusters_list || Object.keys(data.cluster_class_pivot || {});
+    pivotMatrix = data.cluster_class_pivot || {};
+  } else if (studentPivotRowDim === "management") {
+    rowTitle = "Management";
+    rowKeys = Object.keys(data.management_counts || {});
+    pivotMatrix = data.mgt_class_pivot || {};
+  } else if (studentPivotRowDim === "social") {
+    rowTitle = "Social Category";
+    rowKeys = ["General", "OBC", "SC", "ST"];
+    pivotMatrix = data.social_class_pivot || {};
+  }
+
+  let colKeys = [];
+  if (studentPivotColDim === "class") {
+    colKeys = classOrder;
+  } else if (studentPivotColDim === "gender") {
+    colKeys = ["Male", "Female"];
+  }
+
+  let tableHtml = `
+    <div style="overflow-x:auto; max-height:650px;">
+      <table id="tblStudentPivotData" style="width:100%; border-collapse:collapse; font-size:12px; text-align:right;">
+        <thead>
+          <tr style="background:#0f172a; color:#ffffff; position:sticky; top:0; z-index:5;">
+            <th style="padding:10px 14px; text-align:left; font-weight:800; border-right:1px solid #334155;">#</th>
+            <th style="padding:10px 14px; text-align:left; font-weight:800; border-right:1px solid #334155; min-width:180px;">${rowTitle}</th>
+  `;
+
+  colKeys.forEach(col => {
+    const label = col === "Balvatika" ? "Balvatika" : (studentPivotColDim === "class" ? `Std ${col}` : (col === "Male" ? "Boys (કુમાર)" : "Girls (કન્યા)"));
+    tableHtml += `<th style="padding:10px 10px; font-weight:800; border-right:1px solid #334155; white-space:nowrap;">${label}</th>`;
+  });
+
+  tableHtml += `
+            <th style="padding:10px 14px; font-weight:900; background:#1e293b; color:#f97316;">ROW TOTAL</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  let colTotals = {};
+  colKeys.forEach(c => { colTotals[c] = 0; });
+  let grandTotal = 0;
+
+  rowKeys.forEach((rowKey, idx) => {
+    let rowSum = 0;
+    const isEven = idx % 2 === 0;
+    tableHtml += `
+      <tr style="background:${isEven ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0;">
+        <td style="padding:8px 14px; text-align:left; font-weight:700; color:#64748b; border-right:1px solid #e2e8f0;">${idx + 1}</td>
+        <td style="padding:8px 14px; text-align:left; font-weight:800; color:#0f172a; border-right:1px solid #e2e8f0;">${rowKey}</td>
+    `;
+
+    colKeys.forEach(col => {
+      let val = 0;
+      if (studentPivotColDim === "gender") {
+        if (studentPivotRowDim === "cluster" && data.cluster_gender && data.cluster_gender[rowKey]) {
+          val = col === "Male" ? (data.cluster_gender[rowKey].boys || 0) : (data.cluster_gender[rowKey].girls || 0);
+        } else if (studentPivotRowDim === "management" && data.mgt_gender_pivot && data.mgt_gender_pivot[rowKey]) {
+          val = data.mgt_gender_pivot[rowKey][col] || 0;
+        } else {
+          val = 0;
+        }
+      } else {
+        val = (pivotMatrix[rowKey] && pivotMatrix[rowKey][col]) ? pivotMatrix[rowKey][col] : 0;
+      }
+
+      rowSum += val;
+      colTotals[col] = (colTotals[col] || 0) + val;
+
+      tableHtml += `
+        <td style="padding:8px 10px; border-right:1px solid #e2e8f0; color:${val > 0 ? '#0f172a' : '#94a3b8'}; font-weight:${val > 0 ? '600' : '400'};">
+          ${val > 0 ? val.toLocaleString() : '-'}
+        </td>
+      `;
+    });
+
+    grandTotal += rowSum;
+    tableHtml += `
+        <td style="padding:8px 14px; font-weight:800; color:#0284c7; background:${isEven ? '#f0f9ff' : '#e0f2fe'};">
+          ${rowSum.toLocaleString()}
+        </td>
+      </tr>
+    `;
+  });
+
+  // GRAND TOTAL FOOTER ROW
+  tableHtml += `
+        </tbody>
+        <tfoot>
+          <tr style="background:#0f172a; color:#ffffff; font-weight:900; position:sticky; bottom:0; z-index:4;">
+            <td style="padding:10px 14px; text-align:center;" colspan="2">GRAND TOTAL (કુલ)</td>
+  `;
+
+  colKeys.forEach(col => {
+    tableHtml += `<td style="padding:10px 10px; border-right:1px solid #334155;">${(colTotals[col] || 0).toLocaleString()}</td>`;
+  });
+
+  tableHtml += `
+            <td style="padding:10px 14px; background:#f97316; color:#ffffff; font-size:13px; font-weight:900;">${grandTotal.toLocaleString()}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = tableHtml;
+}
+
+function exportStudentPivotToCsv() {
+  const table = document.getElementById("tblStudentPivotData");
+  if (!table) return;
+
+  let csvContent = "data:text/csv;charset=utf-8,";
+  const rows = table.querySelectorAll("tr");
+  rows.forEach(row => {
+    const cols = row.querySelectorAll("th, td");
+    const rowData = [];
+    cols.forEach(col => {
+      let text = col.innerText.replace(/"/g, '""').trim();
+      rowData.push(`"${text}"`);
+    });
+    csvContent += rowData.join(",") + "\r\n";
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Student_Pivot_${studentPivotRowDim}_vs_${studentPivotColDim}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 2. INTERACTIVE CHARTS SECTION
+// ═════════════════════════════════════════════════════════════════════════════
+function renderStudentChartsSection(container) {
+  const data = getStudentAnalytics();
+
+  let html = `
+    <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px;">
+      
+      <!-- Chart 1: Class-wise Enrollment -->
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-chart-column" style="color:#2563eb;"></i> ધોરણ મુજબ વિદ્યાર્થી નોંધણી (Class-wise Enrollment)
+          </h4>
+          <span style="font-size:11px; font-weight:700; color:#64748b;">Balvatika to Class 12</span>
+        </div>
+        <div style="position:relative; height:280px;">
+          <canvas id="canvasStudentClassChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Gender Distribution -->
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-chart-pie" style="color:#db2777;"></i> જાતિ ગુણોત્તર (Gender Ratio)
+          </h4>
+          <span style="font-size:11px; font-weight:700; color:#64748b;">Boys vs Girls</span>
+        </div>
+        <div style="position:relative; height:280px;">
+          <canvas id="canvasStudentGenderChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+      
+      <!-- Chart 3: Social Category Breakdown -->
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-users-line" style="color:#f59e0b;"></i> સામાજિક વર્ગ મુજબ વિતરણ (Social Category)
+          </h4>
+          <span style="font-size:11px; font-weight:700; color:#64748b;">OBC, General, SC, ST</span>
+        </div>
+        <div style="position:relative; height:260px;">
+          <canvas id="canvasStudentSocialChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 4: Management-wise Breakdown -->
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-sitemap" style="color:#10b981;"></i> શાળા વ્યવસ્થાપન મુજબ (School Management)
+          </h4>
+          <span style="font-size:11px; font-weight:700; color:#64748b;">Govt, Private, Aided</span>
+        </div>
+        <div style="position:relative; height:260px;">
+          <canvas id="canvasStudentMgtChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Chart 5: Cluster Enrollment -->
+    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-layer-group" style="color:#8b5cf6;"></i> ક્લસ્ટર (CRC) વાઈઝ વિદ્યાર્થીઓની સંખ્યા (Cluster-wise Enrollment)
+        </h4>
+        <span style="font-size:11px; font-weight:700; color:#64748b;">All 14 Clusters in Kadi</span>
+      </div>
+      <div style="position:relative; height:320px;">
+        <canvas id="canvasStudentClusterChart"></canvas>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+  setTimeout(initStudentCharts, 50);
+}
+
+function initStudentCharts() {
+  const data = getStudentAnalytics();
+  if (typeof Chart === 'undefined') return;
+
+  // Destroy previous charts
+  if (chartStudentClassObj) { chartStudentClassObj.destroy(); chartStudentClassObj = null; }
+  if (chartStudentGenderObj) { chartStudentGenderObj.destroy(); chartStudentGenderObj = null; }
+  if (chartStudentSocialObj) { chartStudentSocialObj.destroy(); chartStudentSocialObj = null; }
+  if (chartStudentMgtObj) { chartStudentMgtObj.destroy(); chartStudentMgtObj = null; }
+  if (chartStudentClusterObj) { chartStudentClusterObj.destroy(); chartStudentClusterObj = null; }
+
+  // 1. Class-wise Chart
+  const ctxClass = document.getElementById("canvasStudentClassChart");
+  if (ctxClass) {
+    const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+    const classValues = classOrder.map(c => data.class_counts[c] || 0);
+    chartStudentClassObj = new Chart(ctxClass, {
+      type: 'bar',
+      data: {
+        labels: classOrder.map(c => c === 'Balvatika' ? 'Balvatika' : `Std ${c}`),
+        datasets: [{
+          label: 'Students Enrolled',
+          data: classValues,
+          backgroundColor: '#2563eb',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // 2. Gender Donut Chart
+  const ctxGender = document.getElementById("canvasStudentGenderChart");
+  if (ctxGender) {
+    const boys = data.kpis.boys || 37049;
+    const girls = data.kpis.girls || 31348;
+    chartStudentGenderObj = new Chart(ctxGender, {
+      type: 'doughnut',
+      data: {
+        labels: [`Boys (${data.kpis.boys_percentage || 54.2}%)`, `Girls (${data.kpis.girls_percentage || 45.8}%)`],
+        datasets: [{
+          data: [boys, girls],
+          backgroundColor: ['#2563eb', '#db2777'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold' } } }
+        }
+      }
+    });
+  }
+
+  // 3. Social Category Chart
+  const ctxSocial = document.getElementById("canvasStudentSocialChart");
+  if (ctxSocial) {
+    const sc = data.social_counts || {};
+    const labels = Object.keys(sc);
+    const values = Object.values(sc);
+    chartStudentSocialObj = new Chart(ctxSocial, {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { boxWidth: 12, font: { weight: 'bold' } } }
+        }
+      }
+    });
+  }
+
+  // 4. Management Chart
+  const ctxMgt = document.getElementById("canvasStudentMgtChart");
+  if (ctxMgt) {
+    const mc = data.management_counts || {};
+    const labels = Object.keys(mc);
+    const values = Object.values(mc);
+    chartStudentMgtObj = new Chart(ctxMgt, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Students',
+          data: values,
+          backgroundColor: '#10b981',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // 5. Cluster Chart
+  const ctxCluster = document.getElementById("canvasStudentClusterChart");
+  if (ctxCluster) {
+    const cc = data.cluster_counts || {};
+    const clusters = Object.keys(cc);
+    const values = Object.values(cc);
+    chartStudentClusterObj = new Chart(ctxCluster, {
+      type: 'bar',
+      data: {
+        labels: clusters,
+        datasets: [{
+          label: 'Enrolled Students',
+          data: values,
+          backgroundColor: '#8b5cf6',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10 } } }
+        }
+      }
+    });
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 3. LIVE STUDENT SEARCH & DIRECTORY WITH PROFILE PDF
+// ═════════════════════════════════════════════════════════════════════════════
+function triggerStudentQuickSearch() {
+  const input = document.getElementById("txtStudentQuickSearch");
+  if (input) {
+    studentDirectorySearchQuery = input.value.trim();
+  }
+  switchStudentSubView('directory');
+}
+
+function renderStudentDirectorySection(container) {
+  const data = getStudentAnalytics();
+  const clusters = data.clusters_list || [];
+
+  let html = `
+    <!-- SEARCH & FILTER BAR -->
+    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:16px 20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-address-book" style="color:#f97316;"></i> LIVE STUDENT DIRECTORY (વિદ્યાર્થી ડિરેક્ટરી અને પ્રોફાઈલ)
+        </h3>
+        <span id="lblStudentResultCount" style="font-size:12px; font-weight:700; color:#64748b;">
+          Searching records...
+        </span>
+      </div>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        
+        <div style="flex:2; min-width:260px; position:relative;">
+          <i class="fa-solid fa-search" style="position:absolute; left:12px; top:11px; color:#94a3b8; font-size:13px;"></i>
+          <input id="txtStudentDirectoryQuery" type="text" value="${studentDirectorySearchQuery}" placeholder="સર્ચ: ૧૮ અંકનો AadhaarUID, વિદ્યાર્થીનું નામ, પિતાનું નામ, GR No, શાળા..." style="width:100%; padding:8px 12px 8px 34px; font-size:12.5px; border-radius:6px; border:1px solid #cbd5e1; outline:none; box-sizing:border-box;" onkeydown="if(event.key==='Enter') executeStudentDirectorySearch();" />
+        </div>
+
+        <div style="flex:1; min-width:160px;">
+          <select id="selStudentDirectoryCluster" onchange="executeStudentDirectorySearch()" style="width:100%; padding:8px 10px; font-size:12.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:600; color:#0f172a; background:#f8fafc; outline:none;">
+            <option value="">All Clusters (બધા ક્લસ્ટર)</option>
+            ${clusters.map(c => `<option value="${c}" ${studentDirectoryClusterFilter === c ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+
+        <div style="flex:1; min-width:130px;">
+          <select id="selStudentDirectoryClass" onchange="executeStudentDirectorySearch()" style="width:100%; padding:8px 10px; font-size:12.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:600; color:#0f172a; background:#f8fafc; outline:none;">
+            <option value="">All Classes (બધા ધોરણ)</option>
+            <option value="Balvatika">Balvatika</option>
+            ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i => `<option value="${i}" ${studentDirectoryClassFilter === String(i) ? 'selected' : ''}>Class ${i}</option>`).join('')}
+          </select>
+        </div>
+
+        <button onclick="executeStudentDirectorySearch()" style="background:#2563eb; color:#ffffff; border:none; padding:8px 16px; border-radius:6px; font-size:12.5px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-filter"></i> Search Records
+        </button>
+
+      </div>
+    </div>
+
+    <!-- TABLE CONTAINER -->
+    <div id="studentDirectoryTableContainer" style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+      <div style="text-align:center; padding:30px; color:#64748b;">
+        <i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:#2563eb;"></i>
+        <div style="margin-top:8px; font-weight:700;">Loading student directory...</div>
+      </div>
+    </div>
+
+    <!-- PAGINATION -->
+    <div id="studentDirectoryPaginationArea" style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; flex-wrap:wrap; gap:10px;">
+      <!-- Dynamic pagination controls -->
+    </div>
+  `;
+
+  container.innerHTML = html;
+  fetchStudentDirectoryData();
+}
+
+async function fetchStudentDirectoryData() {
+  const query = studentDirectorySearchQuery;
+  const cluster = studentDirectoryClusterFilter;
+  const stdClass = studentDirectoryClassFilter;
+
+  let records = [];
+  try {
+    const url = `/api/student_search?q=${encodeURIComponent(query)}&cluster=${encodeURIComponent(cluster)}&class=${encodeURIComponent(stdClass)}&limit=150`;
+    const resp = await fetch(url);
+    if (resp.ok) {
+      const json = await resp.json();
+      if (json.success && json.records) {
+        records = json.records;
+      }
+    }
+  } catch (e) {
+    console.warn("Server search offline, fallback to initial students:", e);
+  }
+
+  // Fallback to offline initial students
+  if (records.length === 0) {
+    const data = getStudentAnalytics();
+    let initial = data.initial_students || [];
+    if (query) {
+      const q = query.toLowerCase();
+      initial = initial.filter(s => 
+        (s.AadhaarUID || '').toLowerCase().includes(q) ||
+        (s.StudentName || '').toLowerCase().includes(q) ||
+        (s.FatherName || '').toLowerCase().includes(q) ||
+        (s.SurName || '').toLowerCase().includes(q) ||
+        (s.GRNo || '').toLowerCase().includes(q) ||
+        (s.School || '').toLowerCase().includes(q)
+      );
+    }
+    if (cluster) initial = initial.filter(s => s.Cluster === cluster);
+    if (stdClass) initial = initial.filter(s => s.StudyingClass === stdClass || s.NormalizedClass === stdClass);
+    records = initial;
+  }
+
+  studentDirectoryRecords = records;
+  studentDirectoryCurrentPage = 1;
+  renderStudentDirectoryTable();
+}
+
+function executeStudentDirectorySearch() {
+  const txt = document.getElementById("txtStudentDirectoryQuery");
+  const selC = document.getElementById("selStudentDirectoryCluster");
+  const selCls = document.getElementById("selStudentDirectoryClass");
+  if (txt) studentDirectorySearchQuery = txt.value.trim();
+  if (selC) studentDirectoryClusterFilter = selC.value;
+  if (selCls) studentDirectoryClassFilter = selCls.value;
+
+  fetchStudentDirectoryData();
+}
+
+function renderStudentDirectoryTable() {
+  const container = document.getElementById("studentDirectoryTableContainer");
+  const lblCount = document.getElementById("lblStudentResultCount");
+  const pagArea = document.getElementById("studentDirectoryPaginationArea");
+  if (!container) return;
+
+  const total = studentDirectoryRecords.length;
+  if (lblCount) {
+    lblCount.innerText = `Showing ${Math.min(total, studentDirectoryPageSize)} of ${total} matched students`;
+  }
+
+  if (total === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:40px 20px; color:#64748b;">
+        <i class="fa-solid fa-user-slash" style="font-size:32px; color:#cbd5e1; margin-bottom:10px;"></i>
+        <div style="font-size:15px; font-weight:800; color:#0f172a;">કોઈ વિદ્યાર્થી મળ્યો નથી (No Students Found)</div>
+        <div style="font-size:12px; margin-top:4px;">કૃપા કરીને AadhaarUID, નામ અથવા ફિલ્ટર બદલીને ફરી સર્ચ કરો.</div>
+      </div>
+    `;
+    if (pagArea) pagArea.innerHTML = "";
+    return;
+  }
+
+  const startIdx = (studentDirectoryCurrentPage - 1) * studentDirectoryPageSize;
+  const pageRecords = studentDirectoryRecords.slice(startIdx, startIdx + studentDirectoryPageSize);
+  const totalPages = Math.ceil(total / studentDirectoryPageSize);
+
+  let html = `
+    <div style="overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+        <thead>
+          <tr style="background:#0f172a; color:#ffffff;">
+            <th style="padding:10px 12px; font-weight:800; width:45px;">#</th>
+            <th style="padding:10px 12px; font-weight:800;">AadhaarUID (18 Digits)</th>
+            <th style="padding:10px 12px; font-weight:800;">Student Name &amp; Parents</th>
+            <th style="padding:10px 12px; font-weight:800;">Class / Section</th>
+            <th style="padding:10px 12px; font-weight:800;">Gender</th>
+            <th style="padding:10px 12px; font-weight:800;">GR No</th>
+            <th style="padding:10px 12px; font-weight:800;">School Name &amp; Cluster</th>
+            <th style="padding:10px 12px; font-weight:800; text-align:center;">Official Report</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  pageRecords.forEach((st, i) => {
+    const idx = startIdx + i + 1;
+    const isEven = i % 2 === 0;
+    const uid = st.AadhaarUID || '-';
+    const fullName = `${st.StudentName || ''} ${st.FatherName || ''} ${st.SurName || ''}`.trim() || 'Student';
+    const mother = st.MotherName ? `M: ${st.MotherName}` : '';
+    const stdClass = st.StudyingClass === '0' ? 'Balvatika' : `Std ${st.StudyingClass}`;
+    const sec = st.Section ? `(${st.Section})` : '';
+    const isMale = (st.Gender || '').toLowerCase() === 'male';
+
+    html += `
+      <tr style="background:${isEven ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0;">
+        <td style="padding:9px 12px; color:#64748b; font-weight:700;">${idx}</td>
+        <td style="padding:9px 12px;">
+          <span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:11px; font-weight:900; padding:3px 7px; border-radius:4px; font-family:monospace; letter-spacing:0.3px;">
+            ${uid}
+          </span>
+        </td>
+        <td style="padding:9px 12px;">
+          <strong style="color:#0b2545; font-size:12.5px;">${fullName}</strong>
+          ${mother ? `<div style="font-size:10.5px; color:#64748b;">${mother}</div>` : ''}
+        </td>
+        <td style="padding:9px 12px; font-weight:700; color:#0284c7;">
+          ${stdClass} ${sec}
+        </td>
+        <td style="padding:9px 12px;">
+          <span style="display:inline-flex; align-items:center; gap:4px; font-weight:700; color:${isMale ? '#2563eb' : '#db2777'};">
+            <i class="fa-solid ${isMale ? 'fa-mars' : 'fa-venus'}"></i> ${st.Gender || 'N/A'}
+          </span>
+        </td>
+        <td style="padding:9px 12px; font-weight:800; color:#334155;">
+          ${st.GRNo || '-'}
+        </td>
+        <td style="padding:9px 12px;">
+          <div style="font-weight:700; color:#0f172a; max-width:240px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${st.School || ''}">
+            ${st.School || '-'}
+          </div>
+          <div style="font-size:10.5px; color:#64748b;">${st.Cluster || ''}</div>
+        </td>
+        <td style="padding:9px 12px; text-align:center;">
+          <button id="btnPdf_${uid}" onclick="downloadStudentProfilePDF('${uid}', this)" style="background:#ea580c; color:#ffffff; border:none; padding:5px 10px; border-radius:5px; font-size:11px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:5px; box-shadow:0 2px 4px rgba(234,88,12,0.2);">
+            <i class="fa-solid fa-file-pdf"></i> Profile PDF
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  // Pagination controls
+  if (pagArea) {
+    pagArea.innerHTML = `
+      <div style="font-size:12px; color:#64748b; font-weight:700;">
+        Page ${studentDirectoryCurrentPage} of ${totalPages} (${total} total records)
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button onclick="changeStudentDirectoryPage(-1)" ${studentDirectoryCurrentPage <= 1 ? 'disabled' : ''} style="background:#ffffff; border:1px solid #cbd5e1; padding:5px 12px; border-radius:5px; font-size:12px; font-weight:700; cursor:${studentDirectoryCurrentPage <= 1 ? 'not-allowed' : 'pointer'}; opacity:${studentDirectoryCurrentPage <= 1 ? '0.5' : '1'};">
+          <i class="fa-solid fa-chevron-left"></i> Previous
+        </button>
+        <button onclick="changeStudentDirectoryPage(1)" ${studentDirectoryCurrentPage >= totalPages ? 'disabled' : ''} style="background:#ffffff; border:1px solid #cbd5e1; padding:5px 12px; border-radius:5px; font-size:12px; font-weight:700; cursor:${studentDirectoryCurrentPage >= totalPages ? 'not-allowed' : 'pointer'}; opacity:${studentDirectoryCurrentPage >= totalPages ? '0.5' : '1'};">
+          Next <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    `;
+  }
+}
+
+function changeStudentDirectoryPage(delta) {
+  const total = studentDirectoryRecords.length;
+  const totalPages = Math.ceil(total / studentDirectoryPageSize);
+  const newPage = studentDirectoryCurrentPage + delta;
+  if (newPage >= 1 && newPage <= totalPages) {
+    studentDirectoryCurrentPage = newPage;
+    renderStudentDirectoryTable();
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 4. SCHOOL-WISE STUDENT ENROLLMENT MASTER (244 SCHOOLS)
+// ═════════════════════════════════════════════════════════════════════════════
+function renderStudentSchoolMasterSection(container) {
+  const data = getStudentAnalytics();
+  const schools = data.schools_summary || [];
+
+  let html = `
+    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:16px 20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-building-columns" style="color:#0284c7;"></i> SCHOOL-WISE STUDENT ENROLLMENT MASTER (૨૪૪ શાળાઓનું પત્રક)
+          </h3>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">
+            Complete School-wise breakdown of Total Students, Boys, Girls, Balvatika &amp; Management
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input id="txtStudentSchoolFilter" type="text" placeholder="શાળા અથવા DISE કોડ ફિલ્ટર કરો..." onkeyup="filterStudentSchoolTable()" style="padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1; outline:none;" />
+          <button onclick="exportStudentSchoolsToCsv()" style="background:#10b981; color:#ffffff; border:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px;">
+            <i class="fa-solid fa-file-excel"></i> Export CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.04); max-height:650px; overflow-y:auto;">
+      <table id="tblStudentSchoolData" style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+        <thead>
+          <tr style="background:#0f172a; color:#ffffff; position:sticky; top:0; z-index:5;">
+            <th style="padding:10px 12px; font-weight:800; width:45px;">#</th>
+            <th style="padding:10px 12px; font-weight:800;">DISE Code</th>
+            <th style="padding:10px 12px; font-weight:800;">School Name</th>
+            <th style="padding:10px 12px; font-weight:800;">Cluster</th>
+            <th style="padding:10px 12px; font-weight:800;">Management</th>
+            <th style="padding:10px 12px; font-weight:800; text-align:right;">Boys</th>
+            <th style="padding:10px 12px; font-weight:800; text-align:right;">Girls</th>
+            <th style="padding:10px 12px; font-weight:800; text-align:right;">Balvatika</th>
+            <th style="padding:10px 12px; font-weight:900; text-align:right; background:#1e293b; color:#f97316;">TOTAL STUDENTS</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  schools.forEach((sc, i) => {
+    const isEven = i % 2 === 0;
+    html += `
+      <tr style="background:${isEven ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0;" class="school-row">
+        <td style="padding:8px 12px; color:#64748b; font-weight:700;">${i + 1}</td>
+        <td style="padding:8px 12px; font-family:monospace; font-weight:800; color:#ea580c;">${sc.school_id}</td>
+        <td style="padding:8px 12px; font-weight:800; color:#0b2545;">${sc.school_name}</td>
+        <td style="padding:8px 12px; color:#475569; font-weight:600;">${sc.cluster}</td>
+        <td style="padding:8px 12px; color:#475569;">${sc.management}</td>
+        <td style="padding:8px 12px; text-align:right; font-weight:700; color:#2563eb;">${sc.boys.toLocaleString()}</td>
+        <td style="padding:8px 12px; text-align:right; font-weight:700; color:#db2777;">${sc.girls.toLocaleString()}</td>
+        <td style="padding:8px 12px; text-align:right; font-weight:700; color:#0891b2;">${sc.balvatika.toLocaleString()}</td>
+        <td style="padding:8px 12px; text-align:right; font-weight:900; color:#0284c7; background:${isEven ? '#f0f9ff' : '#e0f2fe'};">
+          ${sc.total.toLocaleString()}
+        </td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+function filterStudentSchoolTable() {
+  const input = document.getElementById("txtStudentSchoolFilter");
+  if (!input) return;
+  const filter = input.value.toLowerCase();
+  const rows = document.querySelectorAll("#tblStudentSchoolData tbody tr");
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = text.includes(filter) ? "" : "none";
+  });
+}
+
+function exportStudentSchoolsToCsv() {
+  const table = document.getElementById("tblStudentSchoolData");
+  if (!table) return;
+  let csvContent = "data:text/csv;charset=utf-8,";
+  const rows = table.querySelectorAll("tr");
+  rows.forEach(row => {
+    if (row.style.display !== "none") {
+      const cols = row.querySelectorAll("th, td");
+      const rowData = [];
+      cols.forEach(col => {
+        let text = col.innerText.replace(/"/g, '""').trim();
+        rowData.push(`"${text}"`);
+      });
+      csvContent += rowData.join(",") + "\r\n";
+    }
+  });
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `School_Student_Enrollment_Master.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 5. OFFICIAL CTS STUDENT PROFILE REPORT HTML GENERATOR (MATCHING EXACT IMAGE)
+// ═════════════════════════════════════════════════════════════════════════════
+function generateOfficialCtsStudentReportHTML(student) {
+  const s = student || {};
+  const uid = s.AadhaarUID || '240402065031820020';
+  const studentName = s.StudentName || 'STUDENT';
+  const fatherName = s.FatherName || '-';
+  const motherName = s.MotherName || '-';
+  const surName = s.SurName || '';
+  const grNo = s.GRNo || '-';
+  const gender = s.Gender || 'Male';
+  const isMale = gender.toLowerCase() === 'male';
+
+  const schoolName = s.School || 'PRIMARY SCHOOL';
+  const schoolId = s.SchoolId || '24040200000';
+  const cluster = s.Cluster || 'KADI';
+  const village = s.Village || 'KADI';
+  const management = s.Management || 'Government';
+  const schoolCategory = s.SchoolCategory || 'Primary with Upper Primary';
+
+  const dob = s.DOB || 'X/X/X';
+  const religion = s.Religion || 'Hindu';
+  const socialCategory = s.SocialCategory || 'General';
+  const subCaste = s.SubCaste || socialCategory;
+  const disability = s.DisabilityName || 'NA';
+  const homeless = s.WhetherHomeLess || 'With Parents';
+  const stdClass = s.StudyingClass === '0' ? 'Balvatika' : (s.StudyingClass || '1');
+  const section = s.Section || 'A';
+  const studentAge = s.StudentAge || '-';
+  const aadhaarId = s.AadhaarID || 'XXXXXXXXXXXX';
+
+  return `
+    <div id="ctsStudentPrintableArea" style="font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a; line-height:1.35; background:#ffffff; padding:0; width:794px; margin:0 auto; box-sizing:border-box;">
+      
+      <!-- 1. TOP HEADER BANNER (GOVT OF GUJARAT - CHILD TRACKING SYSTEM) -->
+      <div style="background:#132f6b; color:#ffffff; border-radius:8px 8px 0 0; padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
+        
+        <!-- Left Logo Badge -->
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="background:#ffffff; border-radius:6px; padding:4px 10px; display:flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+            <i class="fa-solid fa-children" style="color:#f97316; font-size:16px;"></i>
+            <div style="line-height:1.1; text-align:left;">
+              <div style="font-size:7px; font-weight:800; color:#64748b; text-transform:uppercase;">Learning Outcome Based</div>
+              <div style="font-size:11px; font-weight:900; color:#0b2545; letter-spacing:0.5px;">CHILD</div>
+              <div style="font-size:6.5px; font-weight:700; color:#ea580c;">Tracking System</div>
+            </div>
+          </div>
+
+          <!-- Header Text -->
+          <div>
+            <div style="font-size:9.5px; font-weight:900; color:#f97316; letter-spacing:0.8px; text-transform:uppercase;">
+              GOVT. OF GUJARAT
+            </div>
+            <div style="font-size:18px; font-weight:900; color:#ffffff; letter-spacing:0.3px; margin:1px 0;">
+              Child Tracking System
+            </div>
+            <div style="font-size:10px; color:#cbd5e1; font-weight:600;">
+              Samagra Shiksha · GCSE · Official Student Profile Record
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Header Badges -->
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          <div style="background:rgba(255,255,255,0.12); color:#ffffff; border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:3px 10px; font-size:9.5px; font-weight:800; display:flex; align-items:center; gap:5px; text-transform:uppercase; letter-spacing:0.4px;">
+            <i class="fa-solid fa-id-card-clip" style="color:#38bdf8;"></i> STUDENT REPORT CARD
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:16px; font-weight:900; color:#ffffff; letter-spacing:0.2px;">Student Profile Report</span>
+            <span style="background:#ea580c; color:#ffffff; border-radius:14px; padding:2px 8px; font-size:9px; font-weight:800;">
+              AY 2026-27
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. STUDENT IDENTIFIER HERO BANNER -->
+      <div style="background:#ffffff; border:1px solid #cbd5e1; border-top:none; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; gap:14px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
+        
+        <!-- Left: Photo Box & Basic Info -->
+        <div style="display:flex; align-items:center; gap:14px; flex:1;">
+          <!-- Photo Placeholder Frame -->
+          <div style="width:72px; height:82px; background:#f8fafc; border:1.5px dashed #cbd5e1; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8; flex-shrink:0;">
+            <i class="fa-solid fa-graduation-cap" style="font-size:28px; color:#cbd5e1;"></i>
+            <span style="font-size:8px; font-weight:800; color:#94a3b8; margin-top:4px; letter-spacing:0.5px;">PHOTO</span>
+          </div>
+
+          <!-- Student Name & Parentage -->
+          <div>
+            <div style="font-size:20px; font-weight:900; color:#0b2545; letter-spacing:0.3px; text-transform:uppercase;">
+              ${studentName}
+            </div>
+            <div style="font-size:10px; color:#475569; margin:4px 0 6px; display:flex; flex-wrap:wrap; gap:10px; text-transform:uppercase;">
+              <div><strong style="color:#64748b;">FATHER:</strong> <span style="font-weight:800; color:#0f172a;">${fatherName}</span></div>
+              <div><strong style="color:#64748b;">MOTHER:</strong> <span style="font-weight:800; color:#0f172a;">${motherName}</span></div>
+              <div><strong style="color:#64748b;">SURNAME:</strong> <span style="font-weight:800; color:#0f172a;">${surName}</span></div>
+              <div><strong style="color:#64748b;">GR NO:</strong> <span style="font-weight:900; color:#0284c7;">${grNo}</span></div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <span style="display:inline-flex; align-items:center; gap:4px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:9.5px; font-weight:800; padding:2px 8px; border-radius:12px;">
+                <i class="fa-solid fa-circle-check"></i> IN-SCHOOL ACTIVE
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:4px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:9.5px; font-weight:800; padding:2px 8px; border-radius:12px;">
+                <i class="fa-solid fa-graduation-cap"></i> CLASS ${stdClass} ${section ? '(' + section + ')' : ''}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Orange Gradient Unique ID Card -->
+        <div style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; border-radius:8px; padding:12px 18px; min-width:210px; text-align:left; box-shadow:0 3px 8px rgba(234, 88, 12, 0.25);">
+          <div style="font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; display:flex; align-items:center; gap:5px;">
+            <i class="fa-solid fa-id-card"></i> CHILD UNIQUE ID
+          </div>
+          <div style="font-size:20px; font-weight:900; letter-spacing:0.8px; margin:4px 0 2px; font-family:monospace;">
+            ${uid}
+          </div>
+          <div style="font-size:8.5px; opacity:0.95; font-weight:600;">18-digit Unique Identifier</div>
+        </div>
+
+      </div>
+
+      <!-- 3. SECTION 1: SCHOOL INFORMATION -->
+      <div style="background:#132f6b; color:#ffffff; border-radius:4px; padding:6px 14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:900;">1</span>
+          <i class="fa-solid fa-school" style="font-size:11px;"></i>
+          <span style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">SCHOOL INFORMATION</span>
+        </div>
+        <span style="font-size:10.5px; font-weight:700; color:#cbd5e1;">શાળાની માહિતી</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
+        <div style="grid-column:span 2; background:#fffdf0; border:1px solid #fed7aa; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-school"></i> SCHOOL NAME શાળાનું નામ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${schoolName}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-barcode"></i> SCHOOL ID</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px; font-family:monospace;">${schoolId}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-building-columns"></i> DISTRICT જિલ્લો</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">MAHESANA</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-map-location-dot"></i> BLOCK તાલુકો</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">KADI</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-diagram-project"></i> CLUSTER ક્લસ્ટર</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${cluster}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-house-chimney"></i> VILLAGE ગામ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${village}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-sitemap"></i> MANAGEMENT વ્યવસ્થાપન</div>
+          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:2px;">${management}</div>
+        </div>
+        <div style="grid-column:span 4; background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-layer-group"></i> SCHOOL CATEGORY શાળા કેટેગરી</div>
+          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${schoolCategory}</div>
+        </div>
+      </div>
+
+      <!-- 4. SECTION 2: PERSONAL INFORMATION -->
+      <div style="background:#132f6b; color:#ffffff; border-radius:4px; padding:6px 14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:900;">2</span>
+          <i class="fa-solid fa-user" style="font-size:11px;"></i>
+          <span style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">PERSONAL INFORMATION</span>
+        </div>
+        <span style="font-size:10.5px; font-weight:700; color:#cbd5e1;">વ્યક્તિગત માહિતી</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-calendar-days"></i> DATE OF BIRTH જન્મ તારીખ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${dob}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid ${isMale ? 'fa-mars' : 'fa-venus'}"></i> GENDER જાતિ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${gender}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-om"></i> RELIGION ધર્મ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${religion}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-users"></i> SOCIAL CATEGORY સામાજિક વર્ગ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${socialCategory}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-house"></i> BPL STATUS બીપીએલ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">No</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-hand-holding-hand"></i> DISADVANTAGED GROUP</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">No</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-wheelchair"></i> DISABILITY દિવ્યાંગતા</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${disability}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-person-shelter"></i> HOMELESS ઘરવિહોણા</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${homeless}</div>
+        </div>
+      </div>
+
+      <!-- 5. SECTION 3: ACADEMIC & ENROLLMENT DETAILS -->
+      <div style="background:#132f6b; color:#ffffff; border-radius:4px; padding:6px 14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:900;">3</span>
+          <i class="fa-solid fa-book-open" style="font-size:11px;"></i>
+          <span style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">ACADEMIC &amp; ENROLLMENT DETAILS</span>
+        </div>
+        <span style="font-size:10.5px; font-weight:700; color:#cbd5e1;">શૈક્ષણિક વિગતો</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-graduation-cap"></i> STUDYING CLASS ધોરણ</div>
+          <div style="font-size:12px; font-weight:900; color:#0284c7; margin-top:2px;">Class ${stdClass}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-table-cells"></i> SECTION વર્ગ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">Section ${section}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-id-badge"></i> GR NO રજીસ્ટર નંબર</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${grNo}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-hourglass-half"></i> STUDENT AGE ઉંમર</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${studentAge} Years</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-address-card"></i> AADHAAR ID આધાર નંબર</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px; font-family:monospace;">${aadhaarId}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-tag"></i> SUB CASTE પેટા જાતિ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${subCaste}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-lines-leaning"></i> STREAM પ્રવાહ</div>
+          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${s.Stream_Desc || 'General'}</div>
+        </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
+          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-circle-check"></i> STUDENT STATUS સ્થિતિ</div>
+          <div style="font-size:12px; font-weight:900; color:#15803d; margin-top:2px;">In School Active</div>
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 6. DOWNLOAD STUDENT PROFILE PDF (PROVEN HIDDEN IFRAME ZERO-BLANK-PAGE ENGINE)
+// ═════════════════════════════════════════════════════════════════════════════
+async function downloadStudentProfilePDF(aadhaarUid, btn) {
+  let originalContent = "";
+  if (btn) {
+    originalContent = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PDF તૈયાર થાય છે...';
+    btn.disabled = true;
+  }
+
+  try {
+    // 1. Fetch complete student details
+    let student = null;
+    try {
+      const resp = await fetch(`/api/student_by_uid?uid=${aadhaarUid}`);
+      if (resp.ok) {
+        const json = await resp.json();
+        if (json.success && json.student) {
+          student = json.student;
+        }
+      }
+    } catch (e) {
+      console.warn("Server student lookup failed, checking local data:", e);
+    }
+
+    if (!student) {
+      const data = getStudentAnalytics();
+      student = (data.initial_students || []).find(s => s.AadhaarUID === aadhaarUid);
+    }
+
+    if (!student) {
+      student = {
+        AadhaarUID: aadhaarUid,
+        StudentName: 'STUDENT RECORD',
+        School: 'KADI BLOCK SCHOOL',
+        SchoolId: '24040200000',
+        Cluster: 'KADI',
+        StudyingClass: '1'
+      };
+    }
+
+    const html = generateOfficialCtsStudentReportHTML(student);
+
+    // 2. Create isolated background rendering iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.top = '0';
+    iframe.style.width = '794px';
+    iframe.style.height = '1123px';
+    iframe.style.border = 'none';
+    iframe.style.zIndex = '-9999';
+    iframe.style.opacity = '0.01';
+    iframe.style.pointerEvents = 'none';
+    document.body.appendChild(iframe);
+
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Student Profile - ${aadhaarUid}</title>
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+          <style>
+            * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #ffffff; }
+          </style>
+        </head>
+        <body>
+          <div style="width: 794px; background: #ffffff;">
+            ${html}
+          </div>
+        </body>
+      </html>
+    `);
+    iframe.contentDocument.close();
+
+    await new Promise(r => setTimeout(r, 450));
+
+    const opt = {
+      margin: 4,
+      filename: `CTS_Student_Profile_${aadhaarUid}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (window.html2pdf) {
+      const targetElement = iframe.contentDocument.body.firstElementChild || iframe.contentDocument.body;
+      const worker = window.html2pdf().set(opt).from(targetElement);
+      const blob = await worker.output('blob');
+      iframe.remove();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CTS_Student_Profile_${aadhaarUid}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        a.remove();
+        URL.revokeObjectURL(url);
+      }, 1500);
+
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> PDF ડાઉનલોડ સફળ!';
+        setTimeout(() => {
+          btn.innerHTML = originalContent || '<i class="fa-solid fa-file-pdf"></i> Profile PDF';
+          btn.disabled = false;
+        }, 3000);
+      }
+    } else {
+      iframe.remove();
+      executeNativeVectorPrintStudent(aadhaarUid);
+      if (btn) {
+        btn.innerHTML = originalContent;
+        btn.disabled = false;
+      }
+    }
+  } catch (err) {
+    console.error("PDF generation error for student:", err);
+    if (btn) {
+      btn.innerHTML = originalContent;
+      btn.disabled = false;
+    }
+    alert("PDF જનરેટ કરવામાં સમસ્યા આવી. કૃપા કરીને પ્રિન્ટ વિકલ્પનો ઉપયોગ કરો.");
+  }
+}
+
+function executeNativeVectorPrintStudent(aadhaarUid) {
+  let student = (getStudentAnalytics().initial_students || []).find(s => s.AadhaarUID === aadhaarUid) || {
+    AadhaarUID: aadhaarUid, StudentName: 'STUDENT', School: 'KADI SCHOOL'
+  };
+  const html = generateOfficialCtsStudentReportHTML(student);
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Student Profile - ${aadhaarUid}</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+        <style>
+          * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 10px; background: #ffffff; }
+          @page { size: A4 portrait; margin: 5mm; }
+        </style>
+      </head>
+      <body>
+        <div style="width: 794px; margin: 0 auto;">
+          ${html}
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); window.close(); }, 500);
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+
+
+function renderStudentBotCard(student) {
+  const s = student || {};
+  const uid = s.AadhaarUID || '';
+  const fullName = `${s.StudentName || ''} ${s.FatherName || ''} ${s.SurName || ''}`.trim() || 'Student';
+  const mother = s.MotherName ? `માતા: <strong>${s.MotherName}</strong>` : '';
+  const stdClass = s.StudyingClass === '0' ? 'Balvatika' : `ધોરણ ${s.StudyingClass}`;
+  const sec = s.Section ? `(${s.Section})` : '';
+  const isMale = (s.Gender || '').toLowerCase() === 'male';
+
+  const replyHtml = `
+    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-bottom:8px;">
+      
+      <!-- Top Student Header with Orange ID badge -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; border-bottom:1px solid #f1f5f9; padding-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:42px; height:42px; background:#eff6ff; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#2563eb; font-size:20px; border:1px solid #bfdbfe;">
+            <i class="fa-solid fa-user-graduate"></i>
+          </div>
+          <div>
+            <div style="font-size:15px; font-weight:900; color:#0b2545;">${fullName}</div>
+            <div style="font-size:11px; color:#64748b; margin-top:2px;">
+              ${stdClass} ${sec} · GR No: <strong style="color:#0284c7;">${s.GRNo || '-'}</strong> ${mother ? '· ' + mother : ''}
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; font-size:11px; font-weight:900; padding:4px 8px; border-radius:6px; font-family:monospace; display:inline-block;">
+            ${uid}
+          </span>
+          <div style="font-size:9.5px; color:#15803d; font-weight:800; margin-top:3px;">
+            <i class="fa-solid fa-circle-check"></i> IN-SCHOOL ACTIVE
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Info Grid -->
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin:10px 0; font-size:11px;">
+        <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="color:#64748b; font-size:9.5px;">શાળાનું નામ (School)</div>
+          <div style="font-weight:800; color:#0f172a; font-size:11.5px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${s.School}">${s.School || '-'}</div>
+        </div>
+        <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="color:#64748b; font-size:9.5px;">ક્લસ્ટર / CRC</div>
+          <div style="font-weight:800; color:#0f172a; font-size:11.5px;">${s.Cluster || '-'}</div>
+        </div>
+        <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="color:#64748b; font-size:9.5px;">જાતિ / સામાજિક વર્ગ</div>
+          <div style="font-weight:800; color:#0f172a; font-size:11.5px;">
+            ${s.Gender || 'N/A'} · ${s.SocialCategory || 'General'}
+          </div>
+        </div>
+        <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+          <div style="color:#64748b; font-size:9.5px;">જન્મ તારીખ / ઉંમર</div>
+          <div style="font-weight:800; color:#0f172a; font-size:11.5px;">
+            ${s.DOB || '-'} (${s.StudentAge || '-'} Years)
+          </div>
+        </div>
+      </div>
+
+      <!-- 1-Click PDF Download Button matching user design -->
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+        <button id="btnBotPdf_${uid}" class="udise-bot-pdf-btn" style="width:100%; padding:9px 12px; font-size:12.5px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; border:none; border-radius:6px; box-shadow:0 3px 8px rgba(234,88,12,0.25);" onclick="downloadStudentProfilePDF('${uid}', this)">
+          <i class="fa-solid fa-file-pdf"></i> Download Official Student Profile (PDF)
+        </button>
+        <div style="display:flex; gap:6px;">
+          <button class="udise-bot-download-btn" style="flex:1; padding:6px 10px; font-size:11px; background:#0284c7; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="executeNativeVectorPrintStudent('${uid}')">
+            <i class="fa-solid fa-print"></i> Print / Quick Preview
+          </button>
+          <button class="udise-bot-download-btn" style="padding:6px 10px; font-size:11px; background:#475569; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="botNavigateTo('Student Information')">
+            <i class="fa-solid fa-arrow-right"></i> Open Portal Tab
+          </button>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  appendBotAiMessage(replyHtml);
+}
+
+function renderStudentBotSearchResults(records, query) {
+  let listHtml = `
+    <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px; box-shadow:0 2px 6px rgba(0,0,0,0.04); margin-bottom:8px;">
+      <div style="font-size:12.5px; font-weight:800; color:#0b2545; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <i class="fa-solid fa-users" style="color:#2563eb;"></i> "${query}" માટે મળેલ વિદ્યાર્થીઓ (${records.length}):
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+  `;
+
+  records.forEach(s => {
+    const uid = s.AadhaarUID || '';
+    const name = `${s.StudentName || ''} ${s.FatherName || ''} ${s.SurName || ''}`.trim();
+    const stdClass = s.StudyingClass === '0' ? 'Balvatika' : `Std ${s.StudyingClass}`;
+    listHtml += `
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center; gap:10px;">
+        <div>
+          <div style="font-size:12px; font-weight:800; color:#0f172a;">${name}</div>
+          <div style="font-size:10.5px; color:#64748b;">
+            UID: <strong style="color:#ea580c;">${uid}</strong> · ${stdClass} · ${s.School || ''}
+          </div>
+        </div>
+        <button onclick="downloadStudentProfilePDF('${uid}', this)" style="background:#ea580c; color:#ffffff; border:none; padding:5px 9px; border-radius:5px; font-size:11px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;">
+          <i class="fa-solid fa-file-pdf"></i> PDF
+        </button>
+      </div>
+    `;
+  });
+
+  listHtml += `
+      </div>
+    </div>
+  `;
+
+  appendBotAiMessage(listHtml);
+}
+
 
 // ═════════════════════════════════════════════════════════════════════════════
 // GSQAC SCHOOL QUALITY ACCREDITATION & ASSESSMENT MODULE (YEAR DROPDOWN + KPI + CHARTS + FILTERS)
@@ -9311,6 +10941,10 @@ function appendBotAssistantMessage(htmlContent) {
   scrollBotToBottom();
 }
 
+function appendBotAiMessage(htmlContent) {
+  appendBotAssistantMessage(htmlContent);
+}
+
 function scrollBotToBottom() {
   const body = document.getElementById("udiseBotBody");
   if (body) {
@@ -9337,6 +10971,70 @@ function sendBotMessage() {
   const satData = g.sat_data || {};
   const allSchools = g.school_records || [];
   const satSchools = satData.comparison_records || satData.sem2_records || [];
+
+  // =========================================================================
+  // 0. STUDENT SEARCH BY 18-DIGIT AADHAAR UID OR STUDENT QUERY
+  // =========================================================================
+  const studentUidMatch = rawText.match(/\b(24\d{16}|\d{18})\b/);
+  const searchedStudentUid = studentUidMatch ? studentUidMatch[1] : null;
+
+  if (searchedStudentUid) {
+    (async () => {
+      let student = null;
+      try {
+        const resp = await fetch(`/api/student_by_uid?uid=${searchedStudentUid}`);
+        if (resp.ok) {
+          const json = await resp.json();
+          if (json.success && json.student) {
+            student = json.student;
+          }
+        }
+      } catch (e) {
+        console.warn('Server student lookup:', e);
+      }
+      if (!student) {
+        const data = getStudentAnalytics();
+        student = (data.initial_students || []).find(s => s.AadhaarUID === searchedStudentUid);
+      }
+      if (student) {
+        renderStudentBotCard(student);
+      } else {
+        appendBotAiMessage(`
+          <div style="background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; padding:10px 12px; color:#9f1239; font-size:12px;">
+            <i class="fa-solid fa-triangle-exclamation" style="margin-right:6px;"></i>
+            વિદ્યાર્થી AadhaarUID <strong>${searchedStudentUid}</strong> મળેલ નથી. કૃપા કરીને ૧૮ અંકનો સાચો UID ચકાસો.
+          </div>
+        `);
+      }
+    })();
+    return;
+  }
+
+  // Student name search intent
+  const isStudentIntent = /(વિદ્યાર્થી|student|બાળક|aadhaar|આધાર|uid)/i.test(query);
+  if (isStudentIntent) {
+    const qClean = query.replace(/(વિદ્યાર્થી|student|બાળક|ની|વિગત|profile|પ્રોફાઈલ|માહિતી|રિપોર્ટ|report|pdf|આધાર|aadhaar|uid|શોધો|search)/gi, '').trim();
+    if (qClean.length >= 2) {
+      (async () => {
+        try {
+          const resp = await fetch(`/api/student_search?q=${encodeURIComponent(qClean)}&limit=5`);
+          if (resp.ok) {
+            const json = await resp.json();
+            if (json.success && json.records && json.records.length > 0) {
+              renderStudentBotSearchResults(json.records, qClean);
+              return;
+            }
+          }
+        } catch (e) {}
+        appendBotAiMessage(`
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; font-size:12px; color:#334155;">
+            "${qClean}" માટે કોઈ વિદ્યાર્થી રેકોર્ડ મળ્યો નથી. આપ ૧૮ અંકનો AadhaarUID (દા.ત. <strong>240402065031820020</strong>) અથવા પૂરું નામ લખી શકો છો.
+          </div>
+        `);
+      })();
+      return;
+    }
+  }
 
   // =========================================================================
   // 1. SPECIFIC SCHOOL SEARCH BY 11-DIGIT DISE CODE OR FULL/PARTIAL NAME

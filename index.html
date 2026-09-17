@@ -57,6 +57,7 @@
           </a>
           <ul class="sub-nav">
             <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Child Tracking System (CTS)')"><i class="fa-solid fa-chart-line"></i> Child Tracking System (CTS)</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Student Information')"><i class="fa-solid fa-user-graduate"></i> Student Information (વિદ્યાર્થીઓની માહિતી)</a></li>
           </ul>
         </li>
 
@@ -509,6 +510,7 @@
   </div>
 
   <script src="data/dashboard_data.js?v=20260821_RESTORED"></script>
+  <script src="data/student_analytics.js"></script>
   <script src="app.js?v=20260821_RESTORED"></script>
   <!-- ========================================================== -->
   <!-- UDISE+ / MIS KADI VIRTUAL ASSISTANT CHATBOT (FLOATING UI) -->
@@ -617,7 +619,7 @@
 
     <!-- Input Box Area -->
     <div class="udise-bot-input-area">
-      <input id="txtBotInput" type="text" class="udise-bot-input" placeholder="કોઈપણ શાળાનો DISE કોડ (દા.ત. 24040207501), મેનેજમેન્ટ વાઈઝ શાળાઓ કે પ્રશ્ન લખો..." onkeydown="if(event.key==='Enter') sendBotMessage();" />
+      <input id="txtBotInput" type="text" class="udise-bot-input" placeholder="કોઈપણ શાળાનો DISE કોડ, ૧૮ અંકનો AadhaarUID (દા.ત. 240402065031820020), વિદ્યાર્થીનું નામ કે પ્રશ્ન લખો..." onkeydown="if(event.key==='Enter') sendBotMessage();" />
       <button class="udise-bot-send-btn" onclick="sendBotMessage()" title="Send query">
         <i class="fa-solid fa-paper-plane" style="font-size:12px;"></i>
       </button>
