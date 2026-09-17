@@ -573,192 +573,38 @@
 
     <!-- Scrollable Body -->
     <div id="udiseBotBody" class="udise-bot-body">
-      <!-- Card 1: Welcome Assistant Message -->
+      <!-- Clean Welcome Assistant Message -->
       <div class="udise-bot-card">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <span style="background:#002b49; color:#fff; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:4px;">MIS+ BOT</span>
-          <span style="font-size:11px; color:#64748b; font-weight:600;">All-in-One Site Assistant</span>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="background:#002b49; color:#fff; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:4px;">MIS+ BOT</span>
+            <span style="font-size:11px; color:#16a34a; font-weight:700;"><i class="fa-solid fa-circle" style="font-size:8px;"></i> Online AI Assistant</span>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span class="udise-bot-feedback-btn" onclick="sendBotFeedback('up', this)" title="Helpful"><i class="fa-regular fa-thumbs-up"></i></span>
+            <span class="udise-bot-feedback-btn" onclick="sendBotFeedback('down', this)" title="Not helpful"><i class="fa-regular fa-thumbs-down"></i></span>
+            <span id="txtBotFeedbackNotice" style="font-size:10px; color:#16a34a; font-weight:700; display:none;">Thank you!</span>
+          </div>
         </div>
+
         <p style="margin:0 0 10px; font-size:12.5px; line-height:1.55; color:#1e293b;">
-          નમસ્તે! હું <strong>MIS+ BOT</strong> છું. Kadi Block MIS Portal ના તમામ મેનુ, ટેબ, ડ્રોપડાઉન (હાજરી, SAT Exam, UDISE+, Gyankunj, GSQAC, CTS વગેરે) અંગે કોઈપણ પ્રશ્ન પૂછો અથવા સીધી મદદ મેળવો.<br><br>
-          <em>Ask any question or click a tab below to jump straight to that data!</em>
+          નમસ્તે! હું <strong>MIS+ BOT</strong> છું. કડી તાલુકાની તમામ શાળાઓ, શિક્ષકો, વિદ્યાર્થીઓ, SAT પરિણામ, CWSN, જ્ઞાનકુંજ કે એક્સેલ ફાઇલો અંગે મને કોઈપણ પ્રશ્ન પૂછો.<br>
+          <span style="font-size:11.5px; color:#64748b;"><em>Ask any question about schools, students, teachers, SAT results, or download Excel files!</em></span>
         </p>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span class="udise-bot-feedback-btn" onclick="sendBotFeedback('up', this)" title="Helpful"><i class="fa-regular fa-thumbs-up"></i></span>
-          <span class="udise-bot-feedback-btn" onclick="sendBotFeedback('down', this)" title="Not helpful"><i class="fa-regular fa-thumbs-down"></i></span>
-          <span id="txtBotFeedbackNotice" style="font-size:11px; color:#16a34a; font-weight:700; display:none;">Thank you for your feedback!</span>
+
+        <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin:10px 0 6px;">
+          💡 ઝડપી પ્રશ્નો (Quick Questions):
+        </div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <button class="mis-quick-chip" onclick="askQuickBot('કડી ની કુલ કેટલી શાળાઓ છે?')">🏫 કડી માં કુલ કેટલી શાળાઓ છે?</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('કુલ કેટલા વિદ્યાર્થીઓ છે?')">👥 કુલ કેટલા વિદ્યાર્થીઓ છે?</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('શિક્ષકો કેટલા છે?')">👨‍🏫 શિક્ષકો કેટલા છે?</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('SAT પરીક્ષા નું પરિણામ કેવું રહ્યું?')">📊 SAT પરીક્ષા પરિણામ</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('CWSN દિવ્યાંગ બાળકો કેટલા છે?')">♿ CWSN દિવ્યાંગ બાળકો</button>
+          <button class="mis-quick-chip" onclick="askQuickBot('બધી એક્સેલ ફાઇલો ડાઉનલોડ કરવી છે')">📁 Excel ફાઇલો ડાઉનલોડ</button>
         </div>
       </div>
 
-      <!-- Card 2: Interactive Parameter Selector Covering All Tabs & Dropdowns -->
-      <div class="udise-bot-card accent-blue">
-        <div style="font-size:12px; font-weight:800; color:#0f172a; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
-          <span>તમારો પ્રશ્ન કે મેનુ ટેબ પસંદ કરો:</span>
-          <span style="font-size:10px; color:#0284c7; font-weight:700;">Click to Open</span>
-        </div>
-
-        <!-- Filter Pills for Quick Module Switching -->
-        <div class="mis-bot-pill-row">
-          <button class="mis-bot-pill active" onclick="filterBotCategory('all', this)">બધા (All)</button>
-          <button class="mis-bot-pill" onclick="filterBotCategory('att', this)">હાજરી (Attendance)</button>
-          <button class="mis-bot-pill" onclick="filterBotCategory('sat', this)">SAT પરીક્ષા પરિણામ</button>
-          <button class="mis-bot-pill" onclick="filterBotCategory('udise', this)">UDISE+ / શિક્ષક</button>
-          <button class="mis-bot-pill" onclick="filterBotCategory('ict', this)">ICT / જ્ઞાનકુંજ</button>
-          <button class="mis-bot-pill" onclick="filterBotCategory('other', this)">GSQAC / CTS / CRC</button>
-          <button class="mis-bot-pill" onclick="filterBotCategory('excel', this)" style="color:#15803d; font-weight:800;"><i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Excel &amp; ડાઉનલોડ</button>
-          <button class="mis-bot-pill" onclick="filterBotCategory('admin', this)">Admin &amp; હેલ્પ</button>
-        </div>
-
-        <div id="botParamContainer" style="display:flex; flex-direction:column; gap:2px; max-height:270px; overflow-y:auto; padding-right:2px;">
-          <!-- 0. EXCEL & DATASETS DOWNLOAD BUTTONS (13 OFFICIAL DATASETS) -->
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download SAT 2022-23')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> SAT 2022-23 Exam Results (Excel)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download CWSN Details')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> CWSN Student Details (દિવ્યાંગ બાળકો)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download Balvatika Entry')">
-            <span><span class="mis-bot-param-category mis-cat-excel">CSV</span><i class="fa-solid fa-file-csv" style="color:#0284c7; margin-right:6px;"></i> School Wise Balvatika Entry (CSV)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#0284c7;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download Total GSOS')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> Total GSOS Students (ઓપન સ્કૂલ)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download Total Students')">
-            <span><span class="mis-bot-param-category mis-cat-excel">CSV</span><i class="fa-solid fa-file-csv" style="color:#0284c7; margin-right:6px;"></i> Total Students 68K Master Database (CSV)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#0284c7;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download Teacher Profile')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> UDISE Teacher Profile 2,109 Details (Excel)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download School Master')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> School Master &amp; School List (Excel)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download GSQAC Results')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> GSQAC All Results &amp; Star Accreditation (Excel)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download ICT Support')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> ICT Support System School List (Excel)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download CRC Visits')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> CRC &amp; BRC School Visits (AUG/JULY/JUNE)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download Daily Attendance')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Excel</span><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:6px;"></i> Date-Wise Attendance Reports 2026-27</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#16a34a;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="excel" onclick="handleBotParameter('Download Indicator Data')">
-            <span><span class="mis-bot-param-category mis-cat-excel">Data</span><i class="fa-solid fa-chart-pie" style="color:#eab308; margin-right:6px;"></i> Educational Indicators Reports (GER/NER)</span>
-            <i class="fa-solid fa-download" style="font-size:11px; color:#eab308;"></i>
-          </button>
-
-          <!-- 1. ATTENDANCE MODULE BUTTONS -->
-          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Teacher Attendance')">
-            <span><span class="mis-bot-param-category mis-cat-att">Attendance</span><i class="fa-solid fa-user-tie" style="color:#15803d; margin-right:6px;"></i> Teacher Attendance (શિક્ષક હાજરી)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Student Attendance')">
-            <span><span class="mis-bot-param-category mis-cat-att">Attendance</span><i class="fa-solid fa-user-graduate" style="color:#15803d; margin-right:6px;"></i> Student Attendance (વિદ્યાર્થી હાજરી)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Not Submitted Attendance')">
-            <span><span class="mis-bot-param-category mis-cat-att">Alert</span><i class="fa-solid fa-file-circle-xmark" style="color:#dc2626; margin-right:6px;"></i> Not Submitted Attendance (બાકી શાળાઓ)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="att" onclick="handleBotParameter('Attendance Pivot')">
-            <span><span class="mis-bot-param-category mis-cat-att">Pivot</span><i class="fa-solid fa-table-cells" style="color:#0284c7; margin-right:6px;"></i> Attendance Pivot Analytics (પિવોટ વિશ્લેષણ)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-
-          <!-- 2. SAT EXAM MODULE BUTTONS -->
-          <button class="udise-bot-param-btn" data-cat="sat" onclick="handleBotParameter('SAT Exam Results')">
-            <span><span class="mis-bot-param-category mis-cat-sat">SAT Exam</span><i class="fa-solid fa-file-signature" style="color:#ea580c; margin-right:6px;"></i> SAT Sem 1 &amp; Sem 2 Results (પરીક્ષા પરિણામ)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="sat" onclick="handleBotParameter('SoE Schools')">
-            <span><span class="mis-bot-param-category mis-cat-sat">SoE</span><i class="fa-solid fa-award" style="color:#b45309; margin-right:6px;"></i> Schools of Excellence (SoE તુલના)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="sat" onclick="handleBotParameter('SAT Pivot')">
-            <span><span class="mis-bot-param-category mis-cat-sat">Pivot</span><i class="fa-solid fa-chart-column" style="color:#c2410c; margin-right:6px;"></i> SAT Performance Pivot &amp; CRC Rank</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-
-          <!-- 3. UDISE+ MODULE BUTTONS -->
-          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Teacher Profile')">
-            <span><span class="mis-bot-param-category mis-cat-udise">UDISE+</span><i class="fa-solid fa-chalkboard-user" style="color:#7c3aed; margin-right:6px;"></i> Teacher Profile (2,109 શિક્ષકો, લાયકાત)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('School Profile')">
-            <span><span class="mis-bot-param-category mis-cat-udise">UDISE+</span><i class="fa-solid fa-school" style="color:#2563eb; margin-right:6px;"></i> School Profile &amp; Infrastructure</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Electricity')">
-            <span><span class="mis-bot-param-category mis-cat-udise">Facility</span><i class="fa-solid fa-bolt" style="color:#eab308; margin-right:6px;"></i> Electricity &amp; Solar Rooftop</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Drinking Water')">
-            <span><span class="mis-bot-param-category mis-cat-udise">Facility</span><i class="fa-solid fa-faucet-drip" style="color:#0ea5e9; margin-right:6px;"></i> Drinking Water &amp; RO System</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Toilet')">
-            <span><span class="mis-bot-param-category mis-cat-udise">Facility</span><i class="fa-solid fa-restroom" style="color:#16a34a; margin-right:6px;"></i> Toilets &amp; CWSN Facilities</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="udise" onclick="handleBotParameter('Student Enrollment')">
-            <span><span class="mis-bot-param-category mis-cat-udise">Enrollment</span><i class="fa-solid fa-users" style="color:#0284c7; margin-right:6px;"></i> Student Enrollment &amp; Balvatika</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-
-          <!-- 4. ICT & GYANKUNJ BUTTONS -->
-          <button class="udise-bot-param-btn" data-cat="ict" onclick="handleBotParameter('ICT Computer Lab')">
-            <span><span class="mis-bot-param-category mis-cat-ict">ICT</span><i class="fa-solid fa-desktop" style="color:#0284c7; margin-right:6px;"></i> ICT Computer Lab (59 શાળાઓ લેબ)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="ict" onclick="handleBotParameter('Gyankunj Smart Class')">
-            <span><span class="mis-bot-param-category mis-cat-ict">Gyankunj</span><i class="fa-solid fa-tv" style="color:#0284c7; margin-right:6px;"></i> Gyankunj Smart Class (105 વર્ગખંડો)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-
-          <!-- 5. OTHER SITE MODULES BUTTONS -->
-          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('Child Tracking System (CTS)')">
-            <span><span class="mis-bot-param-category mis-cat-other">SSA</span><i class="fa-solid fa-chart-line" style="color:#854d0e; margin-right:6px;"></i> Child Tracking System (CTS)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('GSQAC')">
-            <span><span class="mis-bot-param-category mis-cat-other">GSQAC</span><i class="fa-solid fa-award" style="color:#854d0e; margin-right:6px;"></i> GSQAC (School Accreditation Stars)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('CRC School Visit')">
-            <span><span class="mis-bot-param-category mis-cat-other">Monitor</span><i class="fa-solid fa-person-walking-luggage" style="color:#854d0e; margin-right:6px;"></i> CRC School Visit (શાળા મુલાકાત)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="other" onclick="handleBotParameter('All School Information')">
-            <span><span class="mis-bot-param-category mis-cat-other">Directory</span><i class="fa-solid fa-school" style="color:#854d0e; margin-right:6px;"></i> All School Information (184 શાળાઓ)</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-
-          <!-- 6. ADMIN & HELP BUTTONS -->
-          <button class="udise-bot-param-btn" data-cat="admin" onclick="handleBotParameter('Users Management')">
-            <span><span class="mis-bot-param-category mis-cat-admin">Admin</span><i class="fa-solid fa-users-gear" style="color:#b91c1c; margin-right:6px;"></i> Users Management &amp; Username Edit</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-          <button class="udise-bot-param-btn" data-cat="admin" onclick="handleBotParameter('Excel CSV Download')">
-            <span><span class="mis-bot-param-category mis-cat-admin">Guide</span><i class="fa-solid fa-file-excel" style="color:#15803d; margin-right:6px;"></i> How to Download Excel/CSV Data</span>
-            <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Container for dynamic conversation turns -->
       <div id="udiseBotChatHistory" style="display:flex; flex-direction:column; gap:12px;"></div>
     </div>
 
