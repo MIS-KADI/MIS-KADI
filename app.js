@@ -8820,374 +8820,275 @@ function generateOfficialCtsReportHTML(schoolId) {
   const balvatika = sc.balvatika || 0;
   const smartRoomsCount = scGyan.reduce((a, c) => a + (c.quantity || 1), 0);
 
-  // Teachers table rows (up to 12 teachers in printable view)
+  // Teachers table rows (showing top 7 certified teachers to fit perfectly on official A4)
   let teacherRows = "";
-  scTeachers.slice(0, 12).forEach((t, i) => {
+  scTeachers.slice(0, 7).forEach((t, i) => {
     teacherRows += `
-      <tr style="border-bottom:1px solid #e2e8f0; font-size:9.5px;">
-        <td style="padding:4px 6px; text-align:center; font-weight:bold;">${i + 1}</td>
-        <td style="padding:4px 8px; font-weight:700; color:#0f172a;">${t.teacher_name || 'N/A'}</td>
-        <td style="padding:4px 8px; color:#475569;">${t.designation || 'Teacher'}</td>
-        <td style="padding:4px 8px; text-align:center;">${t.gender || 'N/A'}</td>
-        <td style="padding:4px 8px; color:#0284c7; font-weight:600;">${t.professional_qualification || 'N/A'}</td>
-        <td style="padding:4px 8px; color:#64748b;">${t.academic_qualification || 'N/A'}</td>
+      <tr style="border-bottom:1px solid #e2e8f0; font-size:9px;">
+        <td style="padding:3px 5px; text-align:center; font-weight:bold;">${i + 1}</td>
+        <td style="padding:3px 6px; font-weight:700; color:#0f172a;">${t.teacher_name || 'N/A'}</td>
+        <td style="padding:3px 6px; color:#475569;">${t.designation || 'Teacher'}</td>
+        <td style="padding:3px 6px; text-align:center;">${t.gender || 'N/A'}</td>
+        <td style="padding:3px 6px; color:#0284c7; font-weight:600;">${t.professional_qualification || 'N/A'}</td>
+        <td style="padding:3px 6px; color:#64748b;">${t.academic_qualification || 'N/A'}</td>
       </tr>
     `;
   });
-  if (scTeachers.length > 12) {
-    teacherRows += `<tr><td colspan="6" style="padding:5px; text-align:center; font-size:9px; color:#64748b; background:#f8fafc;">... and ${scTeachers.length - 12} more teachers (Total: ${scTeachers.length} Certified Teachers)</td></tr>`;
+  if (scTeachers.length > 7) {
+    teacherRows += `<tr><td colspan="6" style="padding:3px; text-align:center; font-size:8.5px; color:#64748b; background:#f8fafc;">... and ${scTeachers.length - 7} more teachers (Total: ${scTeachers.length} Certified Teachers in UDISE+)</td></tr>`;
   }
 
   return `
-    <div id="ctsPrintableArea" style="font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a; line-height:1.4; background:#ffffff;">
+    <div id="ctsPrintableArea" style="font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a; line-height:1.35; background:#ffffff; padding:2px;">
       <!-- 1. OFFICIAL CTS HEADER BAR (EXACT IMAGE 2) -->
-      <div style="background:#0b2545; color:#ffffff; border-radius:8px 8px 0 0; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(11,37,69,0.25);">
-        <div style="display:flex; align-items:center; gap:12px;">
+      <div style="background:#0b2545; color:#ffffff; border-radius:6px 6px 0 0; padding:8px 16px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
           <!-- Logo Badge -->
-          <div style="background:#ffffff; padding:4px 8px; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,0.15); min-width:70px;">
-            <div style="font-size:7.5px; font-weight:900; color:#0b2545; line-height:1.1; text-align:center;">
-              Learning Outcome Based
-            </div>
-            <div style="font-size:13px; font-weight:900; color:#0284c7; letter-spacing:0.5px; line-height:1.1;">
-              CHILD
-            </div>
-            <div style="font-size:7.5px; font-weight:800; color:#ea580c; line-height:1.1;">
-              Tracking System
-            </div>
+          <div style="background:#ffffff; padding:3px 6px; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:65px;">
+            <div style="font-size:7px; font-weight:900; color:#0b2545; line-height:1.1; text-align:center;">Learning Outcome Based</div>
+            <div style="font-size:12px; font-weight:900; color:#0284c7; letter-spacing:0.5px; line-height:1.1;">CHILD</div>
+            <div style="font-size:7px; font-weight:800; color:#ea580c; line-height:1.1;">Tracking System</div>
           </div>
           <div>
-            <div style="font-size:10px; font-weight:800; color:#f59e0b; text-transform:uppercase; letter-spacing:0.8px;">
-              GOVT. OF GUJARAT
-            </div>
-            <div style="font-size:18px; font-weight:900; color:#ffffff; line-height:1.2; letter-spacing:0.3px;">
-              Child Tracking System
-            </div>
-            <div style="font-size:10.5px; color:#94a3b8; margin-top:2px;">
-              Samagra Shiksha · GCSE · Official School Profile Record
-            </div>
+            <div style="font-size:9.5px; font-weight:800; color:#f59e0b; text-transform:uppercase; letter-spacing:0.8px;">GOVT. OF GUJARAT</div>
+            <div style="font-size:16px; font-weight:900; color:#ffffff; line-height:1.2;">Child Tracking System</div>
+            <div style="font-size:9.5px; color:#94a3b8; margin-top:1px;">Samagra Shiksha · GCSE · Official School Profile Record</div>
           </div>
         </div>
 
         <div style="text-align:right;">
-          <div style="display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#ffffff; padding:3px 10px; border-radius:6px; font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
+          <div style="display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#ffffff; padding:2px 8px; border-radius:4px; font-size:8.5px; font-weight:800; text-transform:uppercase;">
             <i class="fa-solid fa-address-card"></i> SCHOOL REPORT CARD
           </div>
-          <div style="font-size:15px; font-weight:900; color:#ffffff; margin:3px 0 2px;">
-            School Profile Report
-          </div>
-          <div style="display:inline-flex; align-items:center; gap:4px; background:#f59e0b; color:#ffffff; padding:2px 8px; border-radius:12px; font-size:9.5px; font-weight:800;">
+          <div style="font-size:13.5px; font-weight:900; color:#ffffff; margin:2px 0 1px;">School Profile Report</div>
+          <div style="display:inline-flex; align-items:center; gap:4px; background:#f59e0b; color:#ffffff; padding:1px 6px; border-radius:10px; font-size:8.5px; font-weight:800;">
             <i class="fa-regular fa-calendar-days"></i> AY 2026-27
           </div>
         </div>
       </div>
 
       <!-- 2. TOP BANNER / IDENTIFIER CARD (EXACT IMAGE 2) -->
-      <div style="background:#ffffff; border:1px solid #e2e8f0; border-top:none; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; gap:16px;">
-        <div style="display:flex; align-items:center; gap:14px; flex:1;">
-          <div style="width:72px; height:80px; background:#f8fafc; border:1.5px dashed #cbd5e1; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#64748b;">
-            <i class="fa-solid fa-school" style="font-size:28px; color:#0284c7;"></i>
-            <span style="font-size:8px; font-weight:800; margin-top:3px; color:#64748b;">SCHOOL</span>
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-top:none; padding:8px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px; flex:1;">
+          <div style="width:60px; height:68px; background:#f8fafc; border:1.5px dashed #cbd5e1; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#64748b;">
+            <i class="fa-solid fa-school" style="font-size:24px; color:#0284c7;"></i>
+            <span style="font-size:7.5px; font-weight:800; margin-top:2px; color:#64748b;">SCHOOL</span>
           </div>
           <div>
-            <div style="font-size:16px; font-weight:900; color:#0b2545; letter-spacing:0.3px;">
-              ${schoolName}
-            </div>
-            <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:10.5px; color:#475569; margin:4px 0 6px;">
+            <div style="font-size:14.5px; font-weight:900; color:#0b2545;">${schoolName}</div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; font-size:9.5px; color:#475569; margin:3px 0 4px;">
               <div><strong style="color:#64748b;">CLUSTER:</strong> <span style="font-weight:700; color:#0f172a;">${clusterName}</span></div>
               <div><strong style="color:#64748b;">MANAGEMENT:</strong> <span style="font-weight:700; color:#0f172a;">${mgt}</span></div>
             </div>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <span style="display:inline-flex; align-items:center; gap:4px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:9.5px; font-weight:800; padding:2px 8px; border-radius:12px;">
+            <div style="display:flex; gap:5px; flex-wrap:wrap;">
+              <span style="display:inline-flex; align-items:center; gap:3px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:8.5px; font-weight:800; padding:1px 6px; border-radius:10px;">
                 <i class="fa-solid fa-circle-check"></i> IN-SCHOOL ACTIVE (UDISE+ VERIFIED)
               </span>
-              ${isSoe ? '<span style="display:inline-flex; align-items:center; gap:4px; background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:9.5px; font-weight:800; padding:2px 8px; border-radius:12px;"><i class="fa-solid fa-star"></i> SCHOOL OF EXCELLENCE</span>' : ''}
-              ${isPmShri ? '<span style="display:inline-flex; align-items:center; gap:4px; background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; font-size:9.5px; font-weight:800; padding:2px 8px; border-radius:12px;"><i class="fa-solid fa-award"></i> PM SHRI</span>' : ''}
+              ${isSoe ? '<span style="display:inline-flex; align-items:center; gap:3px; background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:8.5px; font-weight:800; padding:1px 6px; border-radius:10px;"><i class="fa-solid fa-star"></i> SOE</span>' : ''}
+              ${isPmShri ? '<span style="display:inline-flex; align-items:center; gap:3px; background:#dbeafe; color:#1d4ed8; border:1px solid #bfdbfe; font-size:8.5px; font-weight:800; padding:1px 6px; border-radius:10px;"><i class="fa-solid fa-award"></i> PM SHRI</span>' : ''}
             </div>
           </div>
         </div>
 
         <!-- Orange Gradient Identifier Card on Right (Exact match to Image 2!) -->
-        <div style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; border-radius:10px; padding:10px 16px; min-width:200px; text-align:left; box-shadow:0 4px 10px rgba(234, 88, 12, 0.25);">
-          <div style="font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; opacity:0.95; display:flex; align-items:center; gap:5px;">
+        <div style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; border-radius:8px; padding:8px 14px; min-width:180px; text-align:left;">
+          <div style="font-size:8px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:4px;">
             <i class="fa-solid fa-id-card"></i> SCHOOL UDISE CODE
           </div>
-          <div style="font-size:20px; font-weight:900; letter-spacing:0.5px; margin:3px 0 1px;">
-            ${schoolId}
-          </div>
-          <div style="font-size:9px; opacity:0.85;">
-            11-digit Unique Identifier
-          </div>
+          <div style="font-size:18px; font-weight:900; letter-spacing:0.5px; margin:2px 0 1px;">${schoolId}</div>
+          <div style="font-size:8px; opacity:0.9;">11-digit Unique Identifier</div>
         </div>
       </div>
 
-      <!-- 3. SECTION 1: SCHOOL INFORMATION / શાળાની માહિતી (EXACT IMAGE 2) -->
-      <div style="background:#0b2545; color:#ffffff; border-radius:6px; padding:7px 12px; margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:900;">1</span>
-          <i class="fa-solid fa-school" style="color:#ffffff; font-size:11.5px;"></i>
-          <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">SCHOOL INFORMATION</span>
+      <!-- 3. SECTION 1: SCHOOL INFORMATION -->
+      <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 10px; margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="background:#f59e0b; color:#ffffff; width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:900;">1</span>
+          <i class="fa-solid fa-school" style="font-size:10px;"></i>
+          <span style="font-size:10px; font-weight:800; text-transform:uppercase;">SCHOOL INFORMATION</span>
         </div>
-        <div style="font-size:11px; font-weight:700; color:#cbd5e1;">શાળાની માહિતી</div>
+        <div style="font-size:10px; font-weight:700; color:#cbd5e1;">શાળાની માહિતી</div>
       </div>
-
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
-        <div style="grid-column: span 2; background:#fffbeb; border:1px solid #fed7aa; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-school"></i> SCHOOL NAME <span style="font-weight:500; color:#78350f; font-size:8.5px;">શાળાનું નામ</span>
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${schoolName}</div>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-top:4px;">
+        <div style="grid-column: span 2; background:#fffbeb; border:1px solid #fed7aa; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-school"></i> SCHOOL NAME</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${schoolName}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-barcode"></i> SCHOOL ID
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${schoolId}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-barcode"></i> SCHOOL ID</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${schoolId}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-building-columns"></i> DISTRICT <span style="font-weight:500; color:#78350f; font-size:8.5px;">જિલ્લો</span>
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">MAHESANA</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-building-columns"></i> DISTRICT</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">MAHESANA</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-map-location-dot"></i> BLOCK <span style="font-weight:500; color:#78350f; font-size:8.5px;">તાલુકો</span>
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">KADI</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-map-location-dot"></i> BLOCK</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">KADI</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-diagram-project"></i> CLUSTER <span style="font-weight:500; color:#78350f; font-size:8.5px;">ક્લસ્ટર</span>
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${clusterName}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-diagram-project"></i> CLUSTER</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${clusterName}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-house-chimney"></i> VILLAGE <span style="font-weight:500; color:#78350f; font-size:8.5px;">ગામ / વોર્ડ</span>
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${sc.village || 'KADI WORD'}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-house-chimney"></i> VILLAGE</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${sc.village || 'KADI WORD'}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-sitemap"></i> MANAGEMENT <span style="font-weight:500; color:#78350f; font-size:8.5px;">વ્યવસ્થાપન</span>
-          </div>
-          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:2px;">${mgt}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-sitemap"></i> MANAGEMENT</div>
+          <div style="font-size:10.5px; font-weight:800; color:#0f172a; margin-top:1px;">${mgt}</div>
         </div>
-
-        <div style="grid-column: span 4; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-layer-group"></i> SCHOOL CATEGORY <span style="font-weight:500; color:#78350f; font-size:8.5px;">શાળા કેટેગરી</span>
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${cat}</div>
+        <div style="grid-column: span 4; background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-layer-group"></i> SCHOOL CATEGORY</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${cat}</div>
         </div>
       </div>
 
-      <!-- 4. SECTION 2: STUDENT ENROLLMENT & DEMOGRAPHICS (EXACT IMAGE 2 STYLE) -->
-      <div style="background:#0b2545; color:#ffffff; border-radius:6px; padding:7px 12px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:900;">2</span>
-          <i class="fa-solid fa-users" style="color:#ffffff; font-size:11.5px;"></i>
-          <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">STUDENT ENROLLMENT &amp; DEMOGRAPHICS</span>
+      <!-- 4. SECTION 2: STUDENT ENROLLMENT & DEMOGRAPHICS -->
+      <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 10px; margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="background:#f59e0b; color:#ffffff; width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:900;">2</span>
+          <i class="fa-solid fa-users" style="font-size:10px;"></i>
+          <span style="font-size:10px; font-weight:800; text-transform:uppercase;">STUDENT ENROLLMENT &amp; DEMOGRAPHICS</span>
         </div>
-        <div style="font-size:11px; font-weight:700; color:#cbd5e1;">વિદ્યાર્થીઓની માહિતી</div>
+        <div style="font-size:10px; font-weight:700; color:#cbd5e1;">વિદ્યાર્થીઓની માહિતી</div>
       </div>
-
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-users"></i> TOTAL STUDENTS <span style="font-weight:500; color:#78350f; font-size:8.5px;">કુલ સંખ્યા</span>
-          </div>
-          <div style="font-size:13.5px; font-weight:900; color:#0284c7; margin-top:2px;">${totalStudents.toLocaleString()}</div>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-top:4px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-users"></i> TOTAL STUDENTS</div>
+          <div style="font-size:12.5px; font-weight:900; color:#0284c7; margin-top:1px;">${totalStudents.toLocaleString()}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-person"></i> BOYS (KUMAR) <span style="font-weight:500; color:#78350f; font-size:8.5px;">કુમાર</span>
-          </div>
-          <div style="font-size:12.5px; font-weight:800; color:#0f172a; margin-top:2px;">${boys.toLocaleString()}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-person"></i> BOYS</div>
+          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${boys.toLocaleString()}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-person-dress"></i> GIRLS (KANYA) <span style="font-weight:500; color:#78350f; font-size:8.5px;">કન્યા</span>
-          </div>
-          <div style="font-size:12.5px; font-weight:800; color:#0f172a; margin-top:2px;">${girls.toLocaleString()}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-person-dress"></i> GIRLS</div>
+          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${girls.toLocaleString()}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-child"></i> BALVATIKA <span style="font-weight:500; color:#78350f; font-size:8.5px;">બાલવાટિકા</span>
-          </div>
-          <div style="font-size:12.5px; font-weight:800; color:#15803d; margin-top:2px;">${balvatika}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-child"></i> BALVATIKA</div>
+          <div style="font-size:11.5px; font-weight:800; color:#15803d; margin-top:1px;">${balvatika}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-id-card"></i> OBC CATEGORY
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${sc.obc || 0}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-id-card"></i> OBC</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${sc.obc || 0}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-id-card"></i> GENERAL CATEGORY
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${sc.general || 0}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-id-card"></i> GENERAL</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${sc.general || 0}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-id-card"></i> SC CATEGORY
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${sc.sc || 0}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-id-card"></i> SC</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${sc.sc || 0}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-wheelchair"></i> CWSN <span style="font-weight:500; color:#78350f; font-size:8.5px;">દિવ્યાંગ</span>
-          </div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${scCwsn.length} Students</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-wheelchair"></i> CWSN દિવ્યાંગ</div>
+          <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${scCwsn.length} Students</div>
         </div>
       </div>
 
       <!-- 5. SECTION 3: ACADEMIC PERFORMANCE (SAT EVALUATION) -->
-      <div style="background:#0b2545; color:#ffffff; border-radius:6px; padding:7px 12px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:900;">3</span>
-          <i class="fa-solid fa-chart-line" style="color:#ffffff; font-size:11.5px;"></i>
-          <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">ACADEMIC PERFORMANCE (SAT 2022-23)</span>
+      <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 10px; margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="background:#f59e0b; color:#ffffff; width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:900;">3</span>
+          <i class="fa-solid fa-chart-line" style="font-size:10px;"></i>
+          <span style="font-size:10px; font-weight:800; text-transform:uppercase;">ACADEMIC PERFORMANCE (SAT 2022-23)</span>
         </div>
-        <div style="font-size:11px; font-weight:700; color:#cbd5e1;">પરીક્ષા પરિણામ મૂલ્યાંકન</div>
+        <div style="font-size:10px; font-weight:700; color:#cbd5e1;">પરીક્ષા પરિણામ મૂલ્યાંકન</div>
       </div>
-
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-percent"></i> SEM-1 SCORE
-          </div>
-          <div style="font-size:12.5px; font-weight:800; color:#0f172a; margin-top:2px;">${sat.sem1_score ? sat.sem1_score + '%' : 'N/A'}</div>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-top:4px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-percent"></i> SEM-1 SCORE</div>
+          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${sat.sem1_score ? sat.sem1_score + '%' : 'N/A'}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-award"></i> SEM-2 SCORE
-          </div>
-          <div style="font-size:13.5px; font-weight:900; color:#0284c7; margin-top:2px;">${sat.sem2_score || sat.avg_score ? (sat.sem2_score || sat.avg_score) + '%' : 'N/A'}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-award"></i> SEM-2 SCORE</div>
+          <div style="font-size:12.5px; font-weight:900; color:#0284c7; margin-top:1px;">${sat.sem2_score || sat.avg_score ? (sat.sem2_score || sat.avg_score) + '%' : 'N/A'}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-arrow-trend-up"></i> GROWTH RATE
-          </div>
-          <div style="font-size:12.5px; font-weight:800; color:${(sat.score_change||0) >= 0 ? '#15803d' : '#dc2626'}; margin-top:2px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-arrow-trend-up"></i> GROWTH RATE</div>
+          <div style="font-size:11.5px; font-weight:800; color:${(sat.score_change||0) >= 0 ? '#15803d' : '#dc2626'}; margin-top:1px;">
             ${sat.score_change ? (sat.score_change > 0 ? '+' : '') + sat.score_change + '%' : 'N/A'}
           </div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-star"></i> GRADE A (>80%)
-          </div>
-          <div style="font-size:12.5px; font-weight:800; color:#15803d; margin-top:2px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-star"></i> GRADE A (>80%)</div>
+          <div style="font-size:11.5px; font-weight:800; color:#15803d; margin-top:1px;">
             ${sat.p_80 || sat.sem2_p80 || 0} (${sat.perc_80 || sat.sem2_perc80 || 0}%)
           </div>
         </div>
       </div>
 
       <!-- 6. SECTION 4: INFRASTRUCTURE & DIGITAL CLASSROOMS -->
-      <div style="background:#0b2545; color:#ffffff; border-radius:6px; padding:7px 12px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:900;">4</span>
-          <i class="fa-solid fa-laptop-code" style="color:#ffffff; font-size:11.5px;"></i>
-          <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">INFRASTRUCTURE &amp; DIGITAL CLASSROOMS</span>
+      <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 10px; margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="background:#f59e0b; color:#ffffff; width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:900;">4</span>
+          <i class="fa-solid fa-laptop-code" style="font-size:10px;"></i>
+          <span style="font-size:10px; font-weight:800; text-transform:uppercase;">INFRASTRUCTURE &amp; DIGITAL CLASSROOMS</span>
         </div>
-        <div style="font-size:11px; font-weight:700; color:#cbd5e1;">સુવિધાઓ અને લેબ</div>
+        <div style="font-size:10px; font-weight:700; color:#cbd5e1;">સુવિધાઓ અને લેબ</div>
       </div>
-
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-desktop"></i> ICT LAB <span style="font-weight:500; color:#78350f; font-size:8.5px;">કોમ્પ્યુટર લેબ</span>
-          </div>
-          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:2px;">
-            ${scIct.length > 0 ? 'Equipped (' + (scIct[0].lab_phase || 'Phase II') + ')' : 'General Lab Access'}
-          </div>
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-top:4px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-desktop"></i> ICT LAB</div>
+          <div style="font-size:10.5px; font-weight:800; color:#0f172a; margin-top:1px;">${scIct.length > 0 ? 'Equipped (' + (scIct[0].lab_phase || 'Phase II') + ')' : 'Available'}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-tv"></i> GYANKUNJ <span style="font-weight:500; color:#78350f; font-size:8.5px;">સ્માર્ટ ક્લાસ</span>
-          </div>
-          <div style="font-size:11.5px; font-weight:800; color:#15803d; margin-top:2px;">
-            ${smartRoomsCount > 0 ? smartRoomsCount + ' Smart Classrooms' : 'Under Plan'}
-          </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-tv"></i> GYANKUNJ</div>
+          <div style="font-size:10.5px; font-weight:800; color:#15803d; margin-top:1px;">${smartRoomsCount > 0 ? smartRoomsCount + ' Smart Rooms' : 'Under Plan'}</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-faucet-drip"></i> R.O. WATER <span style="font-weight:500; color:#78350f; font-size:8.5px;">પીવાનું પાણી</span>
-          </div>
-          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:2px;">Functional R.O. Available</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-faucet-drip"></i> R.O. WATER</div>
+          <div style="font-size:10.5px; font-weight:800; color:#0f172a; margin-top:1px;">Functional R.O.</div>
         </div>
-
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px;">
-          <div style="font-size:9px; font-weight:800; color:#ea580c; text-transform:uppercase; display:flex; align-items:center; gap:4px;">
-            <i class="fa-solid fa-medal"></i> GSQAC RATING
-          </div>
-          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:2px;">
-            ${scGsqac.length > 0 ? scGsqac[0].score + '% (' + scGsqac[0].grade + ')' : 'Quality Accredited'}
-          </div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:4px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-medal"></i> GSQAC RATING</div>
+          <div style="font-size:10.5px; font-weight:800; color:#0f172a; margin-top:1px;">${scGsqac.length > 0 ? scGsqac[0].score + '% (' + scGsqac[0].grade + ')' : 'Accredited'}</div>
         </div>
       </div>
 
-      <!-- 7. SECTION 5: TEACHING STAFF (UDISE+ AY 2026-27) -->
-      <div style="background:#0b2545; color:#ffffff; border-radius:6px; padding:7px 12px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:900;">5</span>
-          <i class="fa-solid fa-chalkboard-user" style="color:#ffffff; font-size:11.5px;"></i>
-          <span style="font-size:11.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">TEACHING STAFF PROFILE (${scTeachers.length} TEACHERS)</span>
+      <!-- 7. SECTION 5: TEACHING STAFF -->
+      <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 10px; margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="background:#f59e0b; color:#ffffff; width:16px; height:16px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:900;">5</span>
+          <i class="fa-solid fa-chalkboard-user" style="font-size:10px;"></i>
+          <span style="font-size:10px; font-weight:800; text-transform:uppercase;">TEACHING STAFF PROFILE (${scTeachers.length} TEACHERS)</span>
         </div>
-        <div style="font-size:11px; font-weight:700; color:#cbd5e1;">શિક્ષકોની વિગત</div>
+        <div style="font-size:10px; font-weight:700; color:#cbd5e1;">શિક્ષકોની વિગત</div>
       </div>
-
-      <div style="margin-top:6px; border:1px solid #e2e8f0; border-radius:6px; overflow:hidden; background:#ffffff;">
-        <table style="width:100%; border-collapse:collapse; font-size:9.5px;">
-          <thead style="background:#f1f5f9; color:#0f172a; border-bottom:1.5px solid #cbd5e1;">
-            <tr>
-              <th style="padding:4px 6px; text-align:center; width:26px;">#</th>
-              <th style="padding:4px 8px; text-align:left;">Teacher Name</th>
-              <th style="padding:4px 8px; text-align:left;">Designation</th>
-              <th style="padding:4px 8px; text-align:center;">Gender</th>
-              <th style="padding:4px 8px; text-align:left;">Prof. Qualification</th>
-              <th style="padding:4px 8px; text-align:left;">Academic Qual.</th>
+      <div style="margin-top:4px; border:1px solid #e2e8f0; border-radius:4px; overflow:hidden; background:#ffffff;">
+        <table style="width:100%; border-collapse:collapse;">
+          <thead style="background:#f1f5f9; color:#0f172a; border-bottom:1px solid #cbd5e1;">
+            <tr style="font-size:9px;">
+              <th style="padding:3px 5px; text-align:center; width:24px;">#</th>
+              <th style="padding:3px 6px; text-align:left;">Teacher Name</th>
+              <th style="padding:3px 6px; text-align:left;">Designation</th>
+              <th style="padding:3px 6px; text-align:center;">Gender</th>
+              <th style="padding:3px 6px; text-align:left;">Prof. Qualification</th>
+              <th style="padding:3px 6px; text-align:left;">Academic Qual.</th>
             </tr>
           </thead>
           <tbody>
-            ${teacherRows || '<tr><td colspan="6" style="padding:8px; text-align:center; color:#64748b;">Staff records maintained at block UDISE+ directory</td></tr>'}
+            ${teacherRows || '<tr><td colspan="6" style="padding:6px; text-align:center; color:#64748b; font-size:9px;">Staff records maintained at block UDISE+ directory</td></tr>'}
           </tbody>
         </table>
       </div>
 
       <!-- 8. VERIFICATION SIGNATURES & OFFICIAL STAMP -->
-      <div style="margin-top:14px; border-top:1px dashed #cbd5e1; padding-top:10px; display:flex; justify-content:space-between; align-items:flex-end;">
-        <div style="font-size:8.5px; color:#64748b;">
-          <div>Report Generated: ${new Date().toLocaleString()} · Block MIS Kadi (Mehsana)</div>
-          <div style="font-weight:bold; color:#0f172a; margin-top:2px;">Official SSA Gujarat System Verification: CTS-KADI-${schoolId}</div>
+      <div style="margin-top:8px; border-top:1px dashed #cbd5e1; padding-top:6px; display:flex; justify-content:space-between; align-items:flex-end;">
+        <div style="font-size:8px; color:#64748b;">
+          <div>Report Generated: ${new Date().toLocaleDateString()} · Block MIS Kadi (Mehsana)</div>
+          <div style="font-weight:bold; color:#0f172a; margin-top:1px;">Official Verification: CTS-KADI-${schoolId}</div>
         </div>
-        <div style="display:flex; gap:36px;">
-          <div style="text-align:center; min-width:125px; border-top:1px solid #0f172a; padding-top:4px;">
-            <div style="font-size:9px; font-weight:bold; color:#0f172a;">Principal / Head Teacher</div>
-            <div style="font-size:7.5px; color:#64748b;">Signature &amp; Official Seal</div>
+        <div style="display:flex; gap:28px;">
+          <div style="text-align:center; min-width:115px; border-top:1px solid #0f172a; padding-top:3px;">
+            <div style="font-size:8.5px; font-weight:bold; color:#0f172a;">Principal / Head Teacher</div>
+            <div style="font-size:7px; color:#64748b;">Signature &amp; Official Seal</div>
           </div>
-          <div style="text-align:center; min-width:125px; border-top:1px solid #0f172a; padding-top:4px;">
-            <div style="font-size:9px; font-weight:bold; color:#0f172a;">CRC / BRC Co-ordinator</div>
-            <div style="font-size:7.5px; color:#64748b;">Inspection &amp; Verification Seal</div>
+          <div style="text-align:center; min-width:115px; border-top:1px solid #0f172a; padding-top:3px;">
+            <div style="font-size:8.5px; font-weight:bold; color:#0f172a;">CRC / BRC Co-ordinator</div>
+            <div style="font-size:7px; color:#64748b;">Inspection &amp; Verification Seal</div>
           </div>
         </div>
       </div>
@@ -9196,95 +9097,105 @@ function generateOfficialCtsReportHTML(schoolId) {
 }
 
 // ===========================================================================
-// DOWNLOAD SCHOOL PROFILE PDF & OPEN FULLSCREEN PRINT PREVIEW MODAL
+// DOWNLOAD SCHOOL PROFILE PDF (SILENT BACKGROUND GENERATION & BROWSER DOWNLOAD)
 // ===========================================================================
-function downloadSchoolProfilePDF(schoolId) {
-  // Remove any previous modal
-  const existingModal = document.getElementById("ctsPdfPreviewModal");
-  if (existingModal) existingModal.remove();
+async function downloadSchoolProfilePDF(schoolId, btnElement) {
+  let btn = btnElement || null;
+  if (!btn && typeof event !== 'undefined' && event && event.target) {
+    btn = event.target.closest('button');
+  }
 
-  const reportHtml = generateOfficialCtsReportHTML(schoolId);
-
-  // Create on-screen modal so element is visibly rendered with positive viewport coordinates
-  const modal = document.createElement("div");
-  modal.id = "ctsPdfPreviewModal";
-  modal.className = "cts-pdf-modal-overlay";
-
-  modal.innerHTML = `
-    <div class="cts-pdf-modal-header">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="background:#f59e0b; color:#fff; font-size:11px; font-weight:900; padding:2px 8px; border-radius:4px;">OFFICIAL REPORT</span>
-        <span style="font-size:13.5px; font-weight:800;">Child Tracking System · School Profile (${schoolId})</span>
-      </div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <button id="btnTriggerPdfDirect" class="udise-bot-pdf-btn" style="padding:6px 14px; font-size:11.5px; cursor:pointer;" onclick="executeDirectPdfDownload('${schoolId}')">
-          <i class="fa-solid fa-file-pdf"></i> Download PDF Directly
-        </button>
-        <button class="udise-bot-download-btn" style="padding:6px 14px; font-size:11.5px; background:#0284c7; cursor:pointer;" onclick="executeNativeVectorPrint('${schoolId}')">
-          <i class="fa-solid fa-print"></i> Print / Save as PDF (Vector HD)
-        </button>
-        <button onclick="document.getElementById('ctsPdfPreviewModal').remove()" style="background:#334155; color:#fff; border:none; padding:6px 12px; border-radius:6px; font-weight:bold; cursor:pointer; font-size:12px;">
-          ✕ Close
-        </button>
-      </div>
-    </div>
-    <div id="ctsPdfRenderContainer" class="cts-pdf-modal-body">
-      ${reportHtml}
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  // Automatically start direct PDF generation after DOM paint
-  setTimeout(() => {
-    executeDirectPdfDownload(schoolId);
-  }, 400);
-}
-
-// Direct PDF generation using html2pdf on the visible rendered container
-function executeDirectPdfDownload(schoolId) {
-  const container = document.getElementById("ctsPdfRenderContainer");
-  if (!container) return;
-
-  const btn = document.getElementById("btnTriggerPdfDirect");
+  const originalContent = btn ? btn.innerHTML : '';
   if (btn) {
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PDF તૈયાર થઈ રહી છે...';
     btn.disabled = true;
   }
 
-  const opt = {
-    margin: [6, 6, 6, 6],
-    filename: `CTS_School_Profile_${schoolId}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      scrollY: 0
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
+  try {
+    const html = generateOfficialCtsReportHTML(schoolId);
 
-  if (window.html2pdf) {
-    window.html2pdf().set(opt).from(container).save().then(() => {
+    // Render inside a hidden iframe so the parent screen is never cluttered
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.top = '0';
+    iframe.style.left = '0';
+    iframe.style.width = '820px';
+    iframe.style.height = '1200px';
+    iframe.style.zIndex = '-9999';
+    iframe.style.opacity = '0.01';
+    iframe.style.pointerEvents = 'none';
+    document.body.appendChild(iframe);
+
+    iframe.contentDocument.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>CTS School Profile - ${schoolId}</title>
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #ffffff; }
+          </style>
+        </head>
+        <body>
+          <div style="width: 794px; background: #ffffff;">
+            ${html}
+          </div>
+        </body>
+      </html>
+    `);
+    iframe.contentDocument.close();
+
+    // Allow resources to compute
+    await new Promise(r => setTimeout(r, 450));
+
+    const opt = {
+      margin: 4,
+      filename: `CTS_School_Profile_${schoolId}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    if (window.html2pdf) {
+      const targetElement = iframe.contentDocument.body.firstElementChild || iframe.contentDocument.body;
+      const worker = window.html2pdf().set(opt).from(targetElement);
+      const blob = await worker.output('blob');
+      iframe.remove();
+
+      // Trigger standard browser download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CTS_School_Profile_${schoolId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        a.remove();
+        URL.revokeObjectURL(url);
+      }, 1500);
+
       if (btn) {
-        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> PDF Downloaded!';
+        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> PDF ડાઉનલોડ સફળ!';
         setTimeout(() => {
-          if (btn) {
-            btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download PDF Directly';
-            btn.disabled = false;
-          }
+          btn.innerHTML = originalContent || '<i class="fa-solid fa-file-pdf"></i> Download Official PDF';
+          btn.disabled = false;
         }, 3000);
       }
-    }).catch(err => {
-      console.error("html2pdf failed, falling back to native print:", err);
+    } else {
+      iframe.remove();
+      executeNativeVectorPrint(schoolId);
       if (btn) {
-        btn.innerHTML = '<i class="fa-solid fa-file-pdf"></i> Download PDF Directly';
+        btn.innerHTML = originalContent;
         btn.disabled = false;
       }
-      executeNativeVectorPrint(schoolId);
-    });
-  } else {
+    }
+  } catch (err) {
+    console.error("PDF generation error:", err);
+    if (btn) {
+      btn.innerHTML = originalContent;
+      btn.disabled = false;
+    }
     executeNativeVectorPrint(schoolId);
   }
 }
@@ -9304,15 +9215,16 @@ function executeNativeVectorPrint(schoolId) {
         <title>CTS School Profile - ${schoolId}</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
         <style>
-          @page { size: A4 portrait; margin: 8mm; }
-          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
+          @page { size: A4 portrait; margin: 6mm; }
+          * { box-sizing: border-box; }
+          body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
           @media print {
             body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           }
         </style>
       </head>
       <body>
-        <div style="padding: 10px;">
+        <div style="padding: 6px; width: 794px; margin: 0 auto;">
           ${reportHtml}
         </div>
       </body>
@@ -9324,8 +9236,6 @@ function executeNativeVectorPrint(schoolId) {
     printWin.print();
   }, 450);
 }
-
-// Download Management-wise Summary CSV
 function downloadManagementCSV() {
   const headers = ["Management Type", "School Units", "Total Students", "Boys", "Girls", "Balvatika", "Percentage %"];
   const rows = [
@@ -9488,41 +9398,72 @@ function sendBotMessage() {
 
   if (foundSchool) {
     const schoolId = foundSchool.school_id || foundSchool.dise_code;
-    const officialCardHtml = generateOfficialCtsReportHTML(schoolId);
+    const scTeachers = (g.udise_teacher_profiles || []).filter(t => String(t.udise_code) === String(schoolId));
+    const sat = (satData.comparison_records || []).find(s => String(s.school_id) === String(schoolId)) || {};
+    const totalStudents = foundSchool.total || sat.total_students || 0;
+    const boys = foundSchool.boys || 0;
+    const girls = foundSchool.girls || 0;
+    const schoolName = foundSchool.school_name || sat.school_name || "School";
+    const clusterName = foundSchool.cluster_name || sat.cluster || "-";
+    const mgt = foundSchool.management || sat.management || "-";
 
     const replyHtml = `
-      <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-        <div style="font-size:13.5px; font-weight:800; color:#002b49;">
-          <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> સત્તાવાર શાળા પ્રોફાઇલ (CTS Gujarat AY 2026-27)
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.04); margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+          <div>
+            <div style="font-size:14px; font-weight:900; color:#0b2545;">${schoolName}</div>
+            <div style="font-size:11px; color:#64748b; margin-top:2px;">
+              DISE: <strong style="color:#ea580c; font-size:12px;">${schoolId}</strong> · ક્લસ્ટર: <strong>${clusterName}</strong>
+            </div>
+          </div>
+          <span style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:10px; white-space:nowrap;">
+            <i class="fa-solid fa-circle-check"></i> ACTIVE
+          </span>
         </div>
-        <div style="display:flex; gap:6px;">
-          <button class="udise-bot-pdf-btn" onclick="downloadSchoolProfilePDF('${schoolId}')">
-            <i class="fa-solid fa-file-pdf"></i> Download PDF
-          </button>
-          <button class="udise-bot-download-btn" onclick="downloadSchoolSummaryCSV('${schoolId}')">
-            <i class="fa-solid fa-file-csv"></i> Excel (CSV)
-          </button>
+
+        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin:8px 0; font-size:11px;">
+          <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="color:#64748b; font-size:9.5px;">કુલ વિદ્યાર્થીઓ</div>
+            <div style="font-weight:900; color:#0284c7; font-size:13px;">${totalStudents.toLocaleString()} <span style="font-size:9.5px; font-weight:600; color:#64748b;">(કુમાર: ${boys}, કન્યા: ${girls})</span></div>
+          </div>
+          <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="color:#64748b; font-size:9.5px;">શિક્ષકોની સંખ્યા</div>
+            <div style="font-weight:900; color:#0f172a; font-size:13px;">${scTeachers.length} Certified Staff</div>
+          </div>
+          <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="color:#64748b; font-size:9.5px;">વ્યવસ્થાપન (Management)</div>
+            <div style="font-weight:800; color:#0f172a; font-size:11px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${mgt}</div>
+          </div>
+          <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; border:1px solid #e2e8f0;">
+            <div style="color:#64748b; font-size:9.5px;">SAT પરીક્ષા પરિણામ</div>
+            <div style="font-weight:900; color:#15803d; font-size:13px;">${sat.sem2_score || sat.avg_score ? (sat.sem2_score || sat.avg_score) + '%' : 'N/A'} <span style="font-size:9.5px; color:#64748b;">(Grade A: ${sat.perc_80 || 0}%)</span></div>
+          </div>
         </div>
-      </div>
 
-      <!-- Preview of Image 2 Official Report Card directly inside the chat! -->
-      <div style="border:1px solid #cbd5e1; border-radius:8px; overflow:hidden; box-shadow:0 3px 10px rgba(0,0,0,0.06); max-height:450px; overflow-y:auto;">
-        ${officialCardHtml}
-      </div>
-
-      <div class="udise-bot-action-row" style="margin-top:10px;">
-        <button class="udise-bot-pdf-btn" onclick="downloadSchoolProfilePDF('${schoolId}')">
-          <i class="fa-solid fa-file-pdf"></i> Download Official PDF
-        </button>
-        <button class="udise-bot-download-btn" style="background:#0284c7;" onclick="executeNativeVectorPrint('${schoolId}')">
-          <i class="fa-solid fa-print"></i> Print / Save as PDF
-        </button>
-        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM')">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Portal
-        </a>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-top:10px;">
+          <button id="btnDlPdf_${schoolId}" class="udise-bot-pdf-btn" style="width:100%; padding:9px 12px; font-size:12.5px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;" onclick="downloadSchoolProfilePDF('${schoolId}', this)">
+            <i class="fa-solid fa-file-pdf"></i> Download Official School Profile (PDF)
+          </button>
+          <div style="display:flex; gap:6px;">
+            <button class="udise-bot-download-btn" style="flex:1; padding:6px 10px; font-size:11px; background:#0284c7; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="executeNativeVectorPrint('${schoolId}')">
+              <i class="fa-solid fa-print"></i> Print / Save as PDF
+            </button>
+            <button class="udise-bot-download-btn" style="padding:6px 10px; font-size:11px; display:flex; align-items:center; justify-content:center; gap:6px;" onclick="downloadSchoolSummaryCSV('${schoolId}')">
+              <i class="fa-solid fa-file-csv"></i> Excel
+            </button>
+          </div>
+        </div>
       </div>
     `;
     appendBotAssistantMessage(replyHtml);
+
+    // If the user explicitly asked for PDF, automatically trigger download
+    if (query.includes("pdf") || query.includes("ડાઉનલોડ") || query.includes("download") || query.includes("પ્રિન્ટ") || query.includes("print")) {
+      setTimeout(() => {
+        const btn = document.getElementById("btnDlPdf_" + schoolId);
+        downloadSchoolProfilePDF(schoolId, btn);
+      }, 350);
+    }
     return;
   }
 
