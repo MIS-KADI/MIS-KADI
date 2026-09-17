@@ -8623,6 +8623,7 @@ function exportSatCSV() {
 // ==========================================================
 // ==========================================================
 // MIS+ BOT / ALL-IN-ONE MIS KADI VIRTUAL ASSISTANT ENGINE
+// SMART UNIVERSAL EXCEL SEARCH & 1-CLICK DOWNLOADS
 // ==========================================================
 let isUdiseBotOpen = false;
 let botClockTimer = null;
@@ -8724,6 +8725,72 @@ function botNavigateTo(tabName) {
   setTimeout(() => toast.remove(), 2500);
 }
 
+// Client-side dynamic CSV / Excel generator with UTF-8 BOM
+function downloadCustomDatasetCSV(fileName, headers, rows) {
+  let csv = "\uFEFF"; // UTF-8 BOM for Excel compatibility
+  csv += headers.map(h => `"${h}"`).join(",") + "\n";
+  rows.forEach(r => {
+    csv += r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(",") + "\n";
+  });
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", fileName.endsWith(".csv") ? fileName : `${fileName}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Download Comprehensive School Profile Excel
+function downloadSchoolSummaryCSV(schoolId) {
+  const g = globalData || {};
+  const satData = g.sat_data || {};
+  const allSchools = g.school_records || [];
+  const teachers = g.udise_teacher_profiles || [];
+  const cwsnList = g.cwsn_student_records || [];
+  const gsqacList = g.gsqac_records || [];
+  const ictList = g.ict_labs_records || [];
+  const gsosList = g.gsos_student_records || [];
+
+  const sc = allSchools.find(s => String(s.school_id || s.dise_code) === String(schoolId)) || {};
+  const sat = (satData.comparison_records || []).find(s => String(s.school_id) === String(schoolId)) || {};
+  const schoolTeachers = teachers.filter(t => String(t.udise_code) === String(schoolId));
+  const schoolCwsn = cwsnList.filter(c => String(c.school || '').toLowerCase().includes(String(sc.school_name || '').toLowerCase()));
+  const schoolGsqac = gsqacList.filter(q => String(q.school_id) === String(schoolId));
+  const schoolIct = ictList.filter(i => String(i.school_id) === String(schoolId));
+  const schoolGsos = gsosList.filter(gs => String(gs.school || '').toLowerCase().includes(String(sc.school_name || '').toLowerCase()));
+
+  const headers = ["Category / Section", "Field / Attribute", "Value / Details"];
+  const rows = [
+    ["School Info", "DISE Code", sc.school_id || schoolId],
+    ["School Info", "School Name", sc.school_name || sat.school_name || "N/A"],
+    ["School Info", "CRC Cluster", sc.cluster_name || sat.cluster || "N/A"],
+    ["School Info", "School Management", sc.management || sat.management || "Local Body"],
+    ["School Info", "Category", sc.category || sat.category || "Primary / Upper Primary"],
+    ["School Info", "SoE Status", (sat.is_soe === 'Y' || sc.is_soe === 'Y') ? "School of Excellence (SoE)" : "Regular School"],
+    ["Enrollment", "Total Students", sc.total || sat.total_students || 0],
+    ["Enrollment", "Boys", sc.boys || 0],
+    ["Enrollment", "Girls", sc.girls || 0],
+    ["Enrollment", "Balvatika Admissions", sc.balvatika || 0],
+    ["Enrollment", "CWSN (Special Needs) Count", schoolCwsn.length],
+    ["Enrollment", "GSOS (Open School) Count", schoolGsos.length],
+    ["Staff", "Total UDISE Teachers", schoolTeachers.length],
+    ["Staff", "B.Ed Qualified Teachers", schoolTeachers.filter(t => (t.professional_qualification || '').includes('B.Ed')).length],
+    ["Staff", "PTC / D.El.Ed Qualified", schoolTeachers.filter(t => (t.professional_qualification || '').includes('D.El.Ed') || (t.professional_qualification || '').includes('PTC')).length],
+    ["Academic Performance", "SAT Sem-1 Score", sat.sem1_score ? `${sat.sem1_score}%` : "N/A"],
+    ["Academic Performance", "SAT Sem-2 Score", sat.sem2_score ? `${sat.sem2_score}%` : "N/A"],
+    ["Academic Performance", "SAT Growth %", sat.p80_change ? `${sat.p80_change}%` : "N/A"],
+    ["Infrastructure", "ICT Computer Lab", schoolIct.length > 0 ? "Equipped with Computer Lab" : "No Dedicated Lab"],
+    ["Accreditation", "GSQAC Latest Rating", schoolGsqac.length > 0 ? `${schoolGsqac[0].score}% (Grade ${schoolGsqac[0].grade})` : "N/A"]
+  ];
+
+  const sNameClean = (sc.school_name || "School").replace(/[^a-zA-Z0-9_-]/g, "_");
+  downloadCustomDatasetCSV(`Report_${sNameClean}_${schoolId}.csv`, headers, rows);
+}
+
 function appendBotUserMessage(text) {
   const history = document.getElementById("udiseBotChatHistory");
   if (!history) return;
@@ -8762,348 +8829,368 @@ function handleBotParameter(param) {
 
   let replyHtml = "";
 
-  // 1. ATTENDANCE PARAMS
-  if (param === "Teacher Attendance") {
+  // -------------------------------------------------------------------------
+  // 0. EXCEL & DATASET DOWNLOAD PARAMETERS (13 OFFICIAL FILES)
+  // -------------------------------------------------------------------------
+  if (param === "Download SAT 2022-23") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> SAT 2022-23 Exam Results (1st & 2nd Sem)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/SAT 2022-23.xlsx</code> (57.5 KB)<br>
+        • <strong>ડેટા:</strong> 134 શાળાઓ, 22,560 વિદ્યાર્થીઓનું પરિણામ.<br>
+        • <strong>ગ્રેડ A (>80%):</strong> સેમ-1 (1,547) vs સેમ-2 (2,687) - <strong>+5.2% ગ્રોથ</strong>.<br>
+        • <strong>તુલના:</strong> 91 SoE શાળાઓ vs 43 નોન-SoE શાળાઓ અને 14 CRC ક્લસ્ટર સમરી.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/SAT 2022-23.xlsx" download="SAT_2022-23.xlsx">
+          <i class="fa-solid fa-file-arrow-down"></i> Download SAT 2022-23.xlsx
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open SAT Dashboard
+        </a>
+      </div>
+    `;
+  } else if (param === "Download CWSN Details") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> CWSN Student Details (દિવ્યાંગ બાળકો)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/CWSN Student Details (3).xls</code> (231.8 KB)<br>
+        • <strong>કુલ દિવ્યાંગ વિદ્યાર્થીઓ:</strong> કડી તાલુકાની શાળાઓમાં <strong>308 વિદ્યાર્થીઓ</strong> નોંધાયેલા છે.<br>
+        • <strong>વિગતો:</strong> બાળકની વિકલાંગતા પ્રકાર (Locomotor, Hearing, Visual, Intellectual વગેરે), સાધન સહાય અને શૈક્ષણિક સ્થિતિ.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/CWSN Student Details (3).xls" download="CWSN_Student_Details.xls">
+          <i class="fa-solid fa-file-arrow-down"></i> Download CWSN Details.xls
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Child Tracking System (CTS)')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open CTS Portal
+        </a>
+      </div>
+    `;
+  } else if (param === "Download Balvatika Entry") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-csv" style="color:#0284c7;"></i> School Wise Balvatika Entry (બાલવાટિકા)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/SchoolWiseStudentEntry_240402 BALVATKA 19-8-2026.csv</code> (20.4 KB)<br>
+        • <strong>કુલ બાલવાટિકા પ્રવેશ:</strong> <strong>4,007 બાળકો</strong>.<br>
+        • <strong>શાળાવાર વિગત:</strong> કડી તાલુકાની તમામ પ્રાથમિક શાળાઓમાં બાલવાટિકા એન્ટ્રીનું શાળાવાર પત્રક.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/SchoolWiseStudentEntry_240402 BALVATKA 19-8-2026.csv" download="Balvatika_Entry_240402.csv">
+          <i class="fa-solid fa-file-arrow-down"></i> Download Balvatika Entry.csv
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Home Dashboard')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> View in Dashboard
+        </a>
+      </div>
+    `;
+  } else if (param === "Download Total GSOS") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Total GSOS Students (ગુજરાત ઓપન સ્કૂલ)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/Total_GSOS_Students.xlsx</code> (691.9 KB)<br>
+        • <strong>કુલ GSOS વિદ્યાર્થીઓ:</strong> <strong>2,864 વિદ્યાર્થીઓ</strong>.<br>
+        • <strong>વિગતો:</strong> ગુજરાત સ્ટેટ ઓપન સ્કૂલ હેઠળ નોંધાયેલ વિદ્યાર્થીઓ, ક્લસ્ટરવાર અને શાળાવાર આંકડા.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/Total_GSOS_Students.xlsx" download="Total_GSOS_Students.xlsx">
+          <i class="fa-solid fa-file-arrow-down"></i> Download Total_GSOS_Students.xlsx
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Child Tracking System (CTS)')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open CTS View
+        </a>
+      </div>
+    `;
+  } else if (param === "Download Total Students") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-csv" style="color:#0284c7;"></i> Total Students 68K Master Database (CSV)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/Total Students-240402 (6).csv</code> (22.0 MB)<br>
+        • <strong>કુલ રેકોર્ડ્સ:</strong> કડી તાલુકાના તમામ <strong>68,397 વિદ્યાર્થીઓ</strong> નો સંપૂર્ણ ડેટાબેઝ.<br>
+        • <strong>વિગતો:</strong> કુમાર (35,843), કન્યા (32,554), સામાજિક વર્ગ (OBC, SC, ST, General) અને ધોરણ 1 થી 12.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/Total Students-240402 (6).csv" download="Total_Students_240402.csv">
+          <i class="fa-solid fa-file-arrow-down"></i> Download Total Students.csv
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Home Dashboard')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Dashboard
+        </a>
+      </div>
+    `;
+  } else if (param === "Download Teacher Profile") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> UDISE Teacher Profile 2,109 Details (Excel)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/UDISE/KADI_School_Teacher_Profile_Details_AY_2026-27.xlsx</code> (501.7 KB)<br>
+        • <strong>કુલ શિક્ષકો:</strong> કડી તાલુકાના તમામ <strong>2,109 શિક્ષકો</strong> નો વેરિફાઇડ ડેટાબેઝ.<br>
+        • <strong>વિગતો:</strong> સામાજિક વર્ગ (General 1,597, OBC 334, SC 177), શૈક્ષણિક અને વ્યાવસાયિક લાયકાત (B.Ed 1,244, PTC 488) તથા શાળા સંચાલન.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/UDISE/KADI_School_Teacher_Profile_Details_AY_2026-27.xlsx" download="KADI_Teacher_Profiles.xlsx">
+          <i class="fa-solid fa-file-arrow-down"></i> Download Teacher Profiles.xlsx
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('UDISE+ Teacher Profile')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Teacher Table
+        </a>
+      </div>
+    `;
+  } else if (param === "Download School Master") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> School Master & School List Directory (Excel)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલો:</strong> <code>SchoolList-240402 (32).xls</code> &amp; <code>SchoolMaster (2).xls</code><br>
+        • <strong>શાળાઓ:</strong> કડી તાલુકાની તમામ 184 પ્રાથમિક, ઉચ્ચ પ્રાથમિક અને માધ્યમિક શાળાઓ.<br>
+        • <strong>વિગતો:</strong> શાળાનું નામ, 11-અંકનો DISE કોડ, ગામ, પીનકોડ, આચાર્યનું નામ, ક્લસ્ટર અને મેનેજમેન્ટ.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/SchoolList-240402 (32).xls" download="SchoolList_240402.xls">
+          <i class="fa-solid fa-file-arrow-down"></i> Download SchoolList.xls
+        </a>
+        <a class="udise-bot-download-btn" href="CTS DATA/SchoolMaster (2).xls" download="SchoolMaster.xls" style="background:#0284c7;">
+          <i class="fa-solid fa-file-arrow-down"></i> Download SchoolMaster.xls
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('All School Information')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Directory
+        </a>
+      </div>
+    `;
+  } else if (param === "Download GSQAC Results") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> GSQAC All Results & School Accreditation (Excel)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/GSQAC All Result.xlsx</code> (937.6 KB)<br>
+        • <strong>કુલ રેકોર્ડ્સ:</strong> 679 શાળાઓનું બહુ-વર્ષીય મૂલ્યાંકન પરિણામ.<br>
+        • <strong>વિગતો:</strong> સ્ટાર રેટિંગ (5-સ્ટાર, 4-સ્ટાર), ડોમેન 1 થી 4 ના સ્કોર્સ, ગ્રેડ અને PM-SHRI / SoE હોદ્દો.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/GSQAC All Result.xlsx" download="GSQAC_All_Result.xlsx">
+          <i class="fa-solid fa-file-arrow-down"></i> Download GSQAC All Result.xlsx
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('GSQAC')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open GSQAC Tab
+        </a>
+      </div>
+    `;
+  } else if (param === "Download ICT Support") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> ICT Support System School List (Excel)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફાઇલ:</strong> <code>CTS DATA/ICT_SUPPORT_SYSTEM_SchoolList_2026-08-19_13-35-33-891.xlsx</code> (26.5 KB)<br>
+        • <strong>કમ્પ્યુટર લેબ શાળાઓ:</strong> 59 શાળાઓ.<br>
+        • <strong>જ્ઞાનકુંજ સ્માર્ટ ક્લાસ:</strong> 105 વર્ગખંડો.<br>
+        • <strong>વિગતો:</strong> કોમ્પ્યુટર સેટ્સ, એજન્સી (ArMee, BCCL, Ashoka વગેરે), હાર્ડવેર ફેઝ અને વોરંટી સ્થિતિ.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/ICT_SUPPORT_SYSTEM_SchoolList_2026-08-19_13-35-33-891.xlsx" download="ICT_Support_System.xlsx">
+          <i class="fa-solid fa-file-arrow-down"></i> Download ICT Support.xlsx
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('ICT Computer Lab')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open ICT Lab
+        </a>
+      </div>
+    `;
+  } else if (param === "Download CRC Visits") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> CRC & BRC Wise School Visits (Excel)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફોલ્ડર:</strong> <code>CTS DATA/CRC VISIT/</code> (933 કુલ મુલાકાત રેકોર્ડ્સ)<br>
+        • <strong>મહિનાવાર ફાઇલો:</strong> ઓગસ્ટ, જુલાઈ અને જૂન માસના શાળા નિરીક્ષણ પત્રકો.<br>
+        • <strong>વિગતો:</strong> વર્ગખંડ અવલોકન, શિક્ષક માર્ગદર્શન, FLN લર્નિંગ સ્ટેટસ અને સુધારાત્મક સૂચનો.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/CRC VISIT/CRC_BRC_Wise_Visits AUG.xlsx" download="CRC_Visits_AUG.xlsx">
+          <i class="fa-solid fa-file-arrow-down"></i> Download Aug Visits.xlsx
+        </a>
+        <a class="udise-bot-download-btn" href="CTS DATA/CRC VISIT/CRC_BRC_Wise_Visits JULY.xlsx" download="CRC_Visits_JULY.xlsx" style="background:#0284c7;">
+          <i class="fa-solid fa-file-arrow-down"></i> July Visits.xlsx
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('CRC School Visit')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> View Visits Tab
+        </a>
+      </div>
+    `;
+  } else if (param === "Download Daily Attendance") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-file-excel" style="color:#16a34a;"></i> Date-Wise Daily Attendance Reports 2026-27 (Excel)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફોલ્ડર:</strong> <code>CTS DATA/DATE WISE ATTENDANCE REPORT 2026-27/</code> (26 તારીખોના રિપોર્ટ્સ)<br>
+        • <strong>હાજરી સરેરાશ:</strong> શિક્ષક: 97.2% · વિદ્યાર્થી: 94.8%.<br>
+        • <strong>વિગતો:</strong> તમામ શાળાઓની તારીખવાર હાજરી, ગેરહાજરી, રજા અને બાકી રહેલ શાળાઓની વિગત.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-download-btn" href="CTS DATA/DATE WISE ATTENDANCE REPORT 2026-27/DAILY ATTENDANCE REPORT - MEHSANA FINAL DATE- 03-08-26.xlsx" download="Daily_Attendance_Latest.xlsx">
+          <i class="fa-solid fa-file-arrow-down"></i> Download Latest Attendance.xlsx
+        </a>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Teacher Attendance')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Attendance
+        </a>
+      </div>
+    `;
+  } else if (param === "Download Indicator Data") {
+    replyHtml = `
+      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
+        <i class="fa-solid fa-chart-pie" style="color:#eab308;"></i> Educational Indicators Reports (GER / NER / Retention)
+      </div>
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>ફોલ્ડર:</strong> <code>CTS DATA/INDICETOR/</code><br>
+        • <strong>રિપોર્ટ્સ:</strong> Gross Enrollment Ratio (GER), Net Enrollment Ratio (NER), Retention Rate, Dropout Rate અને Gender Parity Index.<br>
+        • <strong>વર્ષો:</strong> 2020-21, 2021-22 અને 2025-26 સુધીની પ્રગતિ.
+      </div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Indicator')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Indicator Module
+        </a>
+      </div>
+    `;
+  }
+
+  // -------------------------------------------------------------------------
+  // 1. STANDARD MODULES (Attendance, SAT, Teacher, ICT, GSQAC, etc.)
+  // -------------------------------------------------------------------------
+  else if (param === "Teacher Attendance") {
     replyHtml = `
       <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
         <i class="fa-solid fa-user-tie" style="color:#15803d;"></i> Teacher Attendance (શિક્ષક હાજરી)
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
         • <strong>રોજિંદી હાજરી દર:</strong> કડી તાલુકામાં સરેરાશ <strong>97.2%</strong> શિક્ષકો હાજર રહે છે.<br>
         • <strong>હાજરી પદ્ધતિ:</strong> SSA ગુજરાત પોર્ટલ દ્વારા ઓનલાઇન પંચ-ઇન.<br>
         • <strong>રજા/ડ્યુટી નોંધ:</strong> CL, ML, DL અને ઓન-ડ્યુટી મુલાકાતોનું લાઈવ વર્ગીકરણ.<br>
         • <strong>CRC ક્લસ્ટર્સ:</strong> તમામ 14 CRC સેન્ટર્સ દ્વારા દૈનિક વેરિફિકેશન થાય છે.
       </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Teacher Attendance')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Teacher Attendance (શિક્ષક હાજરી ખોલો)
-      </a>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Teacher Attendance')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Teacher Attendance
+        </a>
+        <a class="udise-bot-download-btn" href="CTS DATA/DATE WISE ATTENDANCE REPORT 2026-27/DAILY ATTENDANCE REPORT - MEHSANA FINAL DATE- 03-08-26.xlsx" download="Attendance_Report.xlsx">
+          <i class="fa-solid fa-file-excel"></i> Download Excel
+        </a>
+      </div>
     `;
   } else if (param === "Student Attendance") {
     replyHtml = `
       <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
         <i class="fa-solid fa-user-graduate" style="color:#15803d;"></i> Student Attendance (વિદ્યાર્થી હાજરી)
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
         • <strong>કુલ વિદ્યાર્થીઓ:</strong> 68,397 નોંધાયેલા વિદ્યાર્થીઓ.<br>
         • <strong>સરેરાશ હાજરી:</strong> <strong>94.8%</strong> દૈનિક સરેરાશ હાજરી દર.<br>
-        • <strong>કુમાર-કન્યા રેશિયો:</strong> કુમાર: 52.4% · કન્યા: 47.6% (સમાન લિંગ પ્રમાણ).<br>
-        • <strong>100% હાજરી શાળાઓ:</strong> 48 શાળાઓ નિયમિત 100% હાજરી નોંધાવે છે.
+        • <strong>કુમાર-કન્યા રેશિયો:</strong> કુમાર: 52.4% · કન્યા: 47.6% (સમાન લિંગ પ્રમાણ).
       </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Student Attendance')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Student Attendance (વિદ્યાર્થી હાજરી ખોલો)
-      </a>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Student Attendance')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Student Attendance
+        </a>
+      </div>
     `;
   } else if (param === "Not Submitted Attendance") {
     replyHtml = `
       <div style="font-weight:800; color:#dc2626; font-size:13.5px; margin-bottom:6px;">
         <i class="fa-solid fa-file-circle-xmark" style="color:#dc2626;"></i> Not Submitted Attendance (બાકી હાજરી શાળાઓ)
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
         • <strong>મોડ્યુલ હેતુ:</strong> જે શાળાઓએ આજના દિવસની હાજરી હજુ સુધી સબમિટ નથી કરી તેની તાત્કાલિક યાદી.<br>
-        • <strong>સમય મર્યાદા:</strong> સવારે 11:30 વાગ્યા સુધીમાં તમામ પ્રાથમિક શાળાઓએ હાજરી પૂરવી ફરજિયાત છે.<br>
-        • <strong>એલર્ટ સિસ્ટમ:</strong> CRC અને BRC લેવલેથી બાકી શાળાઓને ઓટો-નોટિસ મોકલવામાં આવે છે.
+        • <strong>સમય મર્યાદા:</strong> સવારે 11:30 વાગ્યા સુધીમાં તમામ પ્રાથમિક શાળાઓએ હાજરી પૂરવી ફરજિયાત છે.
       </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Not Submitted Attendance')" style="background:#dc2626;">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> View Not Submitted Schools (બાકી શાળાઓ જુઓ)
-      </a>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Not Submitted Attendance')" style="background:#dc2626;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> View Not Submitted Schools
+        </a>
+      </div>
     `;
   } else if (param === "Attendance Pivot") {
     replyHtml = `
       <div style="font-weight:800; color:#0284c7; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-table-cells" style="color:#0284c7;"></i> Attendance Pivot Analytics (હાજરી પિવોટ વિશ્લેષણ)
+        <i class="fa-solid fa-table-cells" style="color:#0284c7;"></i> Attendance Pivot Analytics
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
         • <strong>14 CRC ક્લસ્ટર્સની તુલના:</strong> કડી કન્યા, ડાંગરવા, ઇન્દ્રપુરા વગેરે તમામ ક્લસ્ટરની લાઇવ હાજરી ટકાવારી.<br>
-        • <strong>વિઝ્યુઅલ પ્રોગ્રેસ બાર:</strong> દરેક ક્લસ્ટરની હાજરી ટકાવારી કલર-કોડેડ બાર સાથે દર્શાવવામાં આવે છે.<br>
-        • <strong>ટોપ પરફોર્મિંગ ક્લસ્ટર:</strong> સૌથી ઉત્કૃષ્ટ હાજરી ધરાવતા ક્લસ્ટરને ગોલ્ડ બેજ મળે છે.
+        • <strong>વિઝ્યુઅલ પ્રોગ્રેસ બાર:</strong> દરેક ક્લસ્ટરની હાજરી ટકાવારી કલર-કોડેડ બાર સાથે.
       </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Teacher Attendance')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Attendance Pivot (પિવોટ ટેબલ જુઓ)
-      </a>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Teacher Attendance')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Attendance Pivot
+        </a>
+      </div>
     `;
-  }
-  
-  // 2. SAT EXAM PARAMS
-  else if (param === "SAT Exam Results") {
+  } else if (param === "SAT Exam Results") {
     replyHtml = `
       <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-file-signature" style="color:#ea580c;"></i> SAT Exam Results (સેમ 1 અને સેમ 2 પરીક્ષા પરિણામ)
+        <i class="fa-solid fa-file-signature" style="color:#ea580c;"></i> SAT Exam Results (સેમ 1 vs સેમ 2)
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>કુલ મૂલ્યાંકન કરેલ શાળાઓ:</strong> 134 શાળાઓ (22,560 વિદ્યાર્થીઓ).<br>
-        • <strong>ગ્રેડ A (>80%) પ્રગતિ:</strong> સેમ-1 માં 1,547 થી વધીને સેમ-2 માં <strong>2,687 વિદ્યાર્થીઓ</strong> (<strong>+5.2% વૃદ્ધિ</strong>).<br>
-        • <strong>ગ્રેડ B (60-80%):</strong> સેમ-2 માં 6,094 વિદ્યાર્થીઓ (27.7%).<br>
-        • <strong>સુધારણા જરૂરી (<40% ગ્રેડ D):</strong> 48.9% થી ઘટીને 32.1% (<strong>3,792 વિદ્યાર્થીઓનો સુધારો!</strong>).<br>
-        • <strong>સરેરાશ સ્કોર:</strong> 44.6% થી વધીને <strong>52.4%</strong> થયો છે.
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
+        • <strong>મૂલ્યાંકન કરેલ શાળાઓ:</strong> 134 શાળાઓ (22,560 વિદ્યાર્થીઓ).<br>
+        • <strong>ગ્રેડ A (>80%) પ્રગતિ:</strong> સેમ-1 (1,547) થી વધીને સેમ-2 માં <strong>2,687 વિદ્યાર્થીઓ</strong> (<strong>+5.2% વૃદ્ધિ</strong>).<br>
+        • <strong>સુધારણા જરૂરી (<40%):</strong> 48.9% થી ઘટીને 32.1% (<strong>3,792 વિદ્યાર્થીઓનો સુધારો!</strong>).
       </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open SAT Report (પરીક્ષા રિપોર્ટ ખોલો)
-      </a>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open SAT Report
+        </a>
+        <a class="udise-bot-download-btn" href="CTS DATA/SAT 2022-23.xlsx" download="SAT_2022-23.xlsx">
+          <i class="fa-solid fa-file-excel"></i> Download SAT Excel
+        </a>
+      </div>
     `;
-  } else if (param === "SoE Schools") {
-    replyHtml = `
-      <div style="font-weight:800; color:#b45309; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-award" style="color:#b45309;"></i> Schools of Excellence (SoE શાળાઓનું વિશ્લેષણ)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>પસંદ કરેલ SoE શાળાઓ:</strong> 91 શાળાઓ (કડી બ્લોકની 67.9% શાળાઓ).<br>
-        • <strong>સામાન્ય શાળાઓ:</strong> 43 શાળાઓ.<br>
-        • <strong>પરફોર્મન્સ તુલના:</strong> SoE શાળાઓમાં <strong>14.5%</strong> વિદ્યાર્થીઓએ A ગ્રેડ મેળવ્યો, જ્યારે નોન-SoE માં 7.3%.<br>
-        • <strong>ખાસ સુવિધાઓ:</strong> SoE શાળાઓમાં જ્ઞાનકુંજ, સાયન્સ લેબ અને ટેબ્લેટની વિશેષ ફાળવણી.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM'); switchSatSubView('soe');">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open SoE Comparison (SoE વિશ્લેષણ જુઓ)
-      </a>
-    `;
-  } else if (param === "SAT Pivot") {
-    replyHtml = `
-      <div style="font-weight:800; color:#c2410c; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-chart-column" style="color:#c2410c;"></i> SAT Pivot Analytics & CRC Rank
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>CRC રેન્કિંગ:</strong> તમામ 14 ક્લસ્ટર્સની પરીક્ષા પરિણામ આધારિત રેન્કિંગ.<br>
-        • <strong>પ્રગતિ વિશ્લેષણ:</strong> સેમ 1 ની સરખામણીએ સેમ 2 માં થયેલ ગ્રોથ ટકાવારી.<br>
-        • <strong>વિષયવાર પ્રગતિ:</strong> ગણિત, વિજ્ઞાન, ભાષાના પરિણામોનું વિગતવાર પિવોટ.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM'); switchSatSubView('pivot');">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> View SAT Pivot Table (પિવોટ ટેબલ જુઓ)
-      </a>
-    `;
-  }
-
-  // 3. UDISE+ PARAMS
-  else if (param === "Teacher Profile") {
+  } else if (param === "Teacher Profile") {
     replyHtml = `
       <div style="font-weight:800; color:#7c3aed; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-chalkboard-user" style="color:#7c3aed;"></i> UDISE+ Teacher Profile (2,109 શિક્ષકોની વિગત)
+        <i class="fa-solid fa-chalkboard-user" style="color:#7c3aed;"></i> UDISE+ Teacher Profile (2,109 શિક્ષકો)
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
+      <div style="font-size:12px; line-height:1.6; color:#334155; margin-bottom:10px;">
         • <strong>કુલ શિક્ષકો:</strong> 2,109 શિક્ષકોનો સંપૂર્ણ ડેટાબેઝ.<br>
-        • <strong>સામાજિક કેટેગરી:</strong> General: 1,597 · OBC: 334 · SC: 177 · ST: 1.<br>
-        • <strong>વ્યાવસાયિક લાયકાત:</strong> B.Ed: 1,244 શિક્ષકો · D.El.Ed / PTC: 488 · B.El.Ed: 177.<br>
-        • <strong>ઉચ્ચ લાયકાત ધરાવતા:</strong> 2,085 શિક્ષકો સ્નાતક/અનુસ્નાતક (PG/Graduate).<br>
-        • <strong>શાળા સંચાલન:</strong> Local Body, Private Unaided, Government Aided પ્રમાણે ફિલ્ટર ઉપલબ્ધ.
+        • <strong>સામાજિક વર્ગ:</strong> General: 1,597 · OBC: 334 · SC: 177 · ST: 1.<br>
+        • <strong>વ્યાવસાયિક લાયકાત:</strong> B.Ed: 1,244 શિક્ષકો · D.El.Ed / PTC: 488 · B.El.Ed: 177.
       </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('UDISE+ Teacher Profile')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Teacher Profile (શિક્ષક પ્રોફાઇલ જુઓ)
-      </a>
-    `;
-  } else if (param === "School Profile") {
-    replyHtml = `
-      <div style="font-weight:800; color:#2563eb; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-school" style="color:#2563eb;"></i> UDISE+ School Profile (શાળા પ્રોફાઇલ & ઇન્ફ્રાસ્ટ્રક્ચર)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>કુલ શાળાઓ:</strong> કડી તાલુકાની તમામ 184 શાળાઓની યાદી.<br>
-        • <strong>મકાન અને ઓરડા:</strong> પાકા મકાન, બાઉન્ડ્રી વોલ, રમતનું મેદાન, પુસ્તકાલય.<br>
-        • <strong>મૂળભૂત સુવિધાઓ:</strong> વીજળી, પીવાનું પાણી, શૌચાલય અને ઇન્ટરનેટ સુવિધા.<br>
-        • <strong>મેનેજમેન્ટ:</strong> સરકારી, ગ્રાન્ટેડ અને સ્વનિર્ભર શાળાઓની વિગત.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('UDISE+ School Profile')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open School Profile (શાળા પ્રોફાઇલ જુઓ)
-      </a>
-    `;
-  } else if (param === "Electricity") {
-    replyHtml = `
-      <div style="font-weight:800; color:#eab308; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-bolt" style="color:#eab308;"></i> Electricity Facility (વીજળી & સોલાર પેનલ)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>વીજ કનેક્શન:</strong> 134 શાળાઓ (100% વિદ્યુતીકરણ પૂર્ણ).<br>
-        • <strong>સોલાર રૂફટોપ:</strong> 42 શાળાઓમાં પર્યાવરણ અનુકૂળ સૌર ઊર્જા પેનલ કાર્યરત છે.<br>
-        • <strong>પાવર બેકઅપ / ઇન્વર્ટર:</strong> 86 શાળાઓમાં અવિરત વીજ પુરવઠા માટે બેકઅપ ઉપલબ્ધ.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('UDISE+ School Profile')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> View Facility Details (સુવિધા જુઓ)
-      </a>
-    `;
-  } else if (param === "Drinking Water") {
-    replyHtml = `
-      <div style="font-weight:800; color:#0ea5e9; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-faucet-drip" style="color:#0ea5e9;"></i> Drinking Water (પીવાનું શુદ્ધ પાણી)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>પીવાના પાણીની સુવિધા:</strong> 134 શાળાઓ (100% સુલભતા).<br>
-        • <strong>RO પ્યોરિફાયર સિસ્ટમ:</strong> 126 શાળાઓ (94.0% શાળાઓમાં RO પ્લાન્ટ).<br>
-        • <strong>નળ જોડાણ:</strong> તમામ શાળાઓમાં ગ્રામ પંચાયત / નર્મદા પાઇપલાઇન સાથે સતત પાણી.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('UDISE+ School Profile')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open School Profile (પાણીની વિગત જુઓ)
-      </a>
-    `;
-  } else if (param === "Toilet") {
-    replyHtml = `
-      <div style="font-weight:800; color:#16a34a; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-restroom" style="color:#16a34a;"></i> Toilets & CWSN (શૌચાલય અને સ્વચ્છતા)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>કુમાર-કન્યા શૌચાલય:</strong> 100% શાળાઓમાં અલગ અને કાર્યરત શૌચાલય ઉપલબ્ધ.<br>
-        • <strong>CWSN દિવ્યાંગ અનુકૂળ:</strong> 128 શાળાઓમાં રેમ્પ અને ગ્રેબ-બાર સાથે દિવ્યાંગ શૌચાલય.<br>
-        • <strong>રનિંગ વોટર:</strong> શૌચાલયોમાં નળ દ્વારા અવિરત પાણીની વ્યવસ્થા.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('UDISE+ School Profile')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open School Profile (શૌચાલય વિગત જુઓ)
-      </a>
-    `;
-  } else if (param === "Student Enrollment") {
-    replyHtml = `
-      <div style="font-weight:800; color:#0284c7; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-users" style="color:#0284c7;"></i> Student Enrollment & Balvatika (વિદ્યાર્થી સંખ્યા)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>કુલ નોંધાયેલ વિદ્યાર્થીઓ:</strong> 68,397 વિદ્યાર્થીઓ.<br>
-        • <strong>બાલવાટિકા પ્રવેશ:</strong> 4,007 નવા બાળકોનો પ્રવેશ.<br>
-        • <strong>ધોરણ 1 નવો પ્રવેશ:</strong> 5,811 વિદ્યાર્થીઓ.<br>
-        • <strong>ધોરણ 2 થી 12:</strong> 58,579 વિદ્યાર્થીઓ નિયમિત અભ્યાસ હેઠળ.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Home Dashboard')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Home Dashboard (મુખ્ય ડેશબોર્ડ જુઓ)
-      </a>
-    `;
-  }
-
-  // 4. ICT & GYANKUNJ PARAMS
-  else if (param === "ICT Computer Lab") {
-    replyHtml = `
-      <div style="font-weight:800; color:#0284c7; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-desktop" style="color:#0284c7;"></i> ICT Computer Lab (કોમ્પ્યુટર લેબ)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>લેબ સુવિધા ધરાવતી શાળાઓ:</strong> કડી તાલુકાની <strong>59 શાળાઓ</strong> માં સજ્જ કોમ્પ્યુટર લેબ.<br>
-        • <strong>કાર્યરત કોમ્પ્યુટર્સ:</strong> 500+ ડેસ્કટોપ સિસ્ટમ્સ ડિજિટલ શિક્ષણ માટે સક્રિય.<br>
-        • <strong>ઇન્ટરનેટ કનેક્ટિવિટી:</strong> તમામ 59 લેબ શાળાઓમાં હાઇ-સ્પીડ બ્રોડબેન્ડ કનેક્શન.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('ICT Computer Lab')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open ICT Computer Lab (કોમ્પ્યુટર લેબ જુઓ)
-      </a>
-    `;
-  } else if (param === "Gyankunj Smart Class") {
-    replyHtml = `
-      <div style="font-weight:800; color:#0284c7; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-tv" style="color:#0284c7;"></i> Gyankunj Smart Class (જ્ઞાનકુંજ સ્માર્ટ ક્લાસ)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>સ્માર્ટ ક્લાસરૂમ્સ:</strong> કડી તાલુકામાં <strong>105 વર્ગખંડો</strong> જ્ઞાનકુંજ પ્રોજેક્ટ હેઠળ સજ્જ.<br>
-        • <strong>ડિજિટલ સાધનો:</strong> ઇન્ટરેક્ટિવ વ્હાઇટ બોર્ડ, શોર્ટ-થ્રો પ્રોજેક્ટર, લેપટોપ અને સ્પીકર્સ.<br>
-        • <strong>ઈ-કન્ટેન્ટ ઉપયોગ:</strong> ધોરણ 5 થી 8 ના ગણિત, વિજ્ઞાન અને અંગ્રેજી પાઠ્યક્રમનું ડિજિટલ શિક્ષણ.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Gyankunj')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Gyankunj (જ્ઞાનકુંજ વિગત જુઓ)
-      </a>
-    `;
-  }
-
-  // 5. OTHER MODULES PARAMS
-  else if (param === "Child Tracking System (CTS)") {
-    replyHtml = `
-      <div style="font-weight:800; color:#854d0e; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-chart-line" style="color:#854d0e;"></i> Child Tracking System (CTS - ચાઈલ્ડ ટ્રેકિંગ સિસ્ટમ)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>ચાઇલ્ડ યુનિક આઈડી (UID):</strong> દરેક વિદ્યાર્થીના 18-અંકના UID આધારિત ટ્રેકિંગ.<br>
-        • <strong>ડ્રોપઆઉટ નિવારણ:</strong> સ્થળાંતરિત અને અધવચ્ચેથી શાળા છોડતા બાળકોની ઓળખ અને પુનઃપ્રવેશ.<br>
-        • <strong>પ્રગતિ રિપોર્ટ:</strong> પ્રાથમિકથી માધ્યમિક સુધીના પ્રમોશન અને ટ્રાન્ઝિશનનું મોનિટરિંગ.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Child Tracking System (CTS)')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open CTS Portal (CTS પોર્ટલ જુઓ)
-      </a>
-    `;
-  } else if (param === "GSQAC") {
-    replyHtml = `
-      <div style="font-weight:800; color:#854d0e; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-award" style="color:#854d0e;"></i> GSQAC (શાળા ગુણવત્તા એક્રેડિટેશન)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>ગુણવત્તા મૂલ્યાંકન:</strong> ગુજરાત સ્કૂલ ક્વોલિટી એક્રેડિટેશન કાઉન્સિલ દ્વારા શાળાઓનું મૂલ્યાંકન.<br>
-        • <strong>સ્ટાર રેટિંગ:</strong> 5-સ્ટાર, 4-સ્ટાર અને 3-સ્ટાર શાળાઓનું પ્રમાણીકરણ.<br>
-        • <strong>મૂલ્યાંકન ક્ષેત્રો:</strong> લર્નિંગ આઉટકમ્સ, શિક્ષણ પદ્ધતિ, ઇન્ફ્રાસ્ટ્રક્ચર અને શાળા વ્યવસ્થાપન.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('GSQAC')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open GSQAC (શાળા એક્રેડિટેશન જુઓ)
-      </a>
-    `;
-  } else if (param === "CRC School Visit") {
-    replyHtml = `
-      <div style="font-weight:800; color:#854d0e; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-person-walking-luggage" style="color:#854d0e;"></i> CRC School Visit (શાળા મુલાકાત & મોનિટરિંગ)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>નિયમિત નિરીક્ષણ:</strong> CRC કો-ઓર્ડિનેટર દ્વારા માસિક શાળા મુલાકાતો.<br>
-        • <strong>વર્ગખંડ અવલોકન:</strong> શિક્ષકોની અધ્યાપન પદ્ધતિ અને FLN (મૂળભૂત સાક્ષરતા) ચકાસણી.<br>
-        • <strong>શિક્ષણ સુધારણા:</strong> શાળાઓને શૈક્ષણિક માર્ગદર્શન અને સુધારાત્મક સૂચનો.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('CRC School Visit')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open CRC School Visit (શાળા મુલાકાત જુઓ)
-      </a>
-    `;
-  } else if (param === "All School Information") {
-    replyHtml = `
-      <div style="font-weight:800; color:#854d0e; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-school" style="color:#854d0e;"></i> All School Information (184 શાળાઓની ડિરેક્ટરી)
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>સંપૂર્ણ યાદી:</strong> કડી તાલુકાની તમામ 184 શાળાઓનો સંપર્ક ડેટાબેઝ.<br>
-        • <strong>વિગતો:</strong> શાળાનું નામ, 11-અંકનો DISE કોડ, ગામ, પીનકોડ, આચાર્યનું નામ અને મોબાઈલ નંબર.<br>
-        • <strong>ફિલ્ટર અને સર્ચ:</strong> ક્લસ્ટર અથવા ગામના નામથી તાત્કાલિક શાળા શોધો.
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('All School Information')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open All School Information (શાળા યાદી જુઓ)
-      </a>
-    `;
-  }
-
-  // 6. ADMIN & HELP PARAMS
-  else if (param === "Users Management") {
-    const role = sessionStorage.getItem("mis_user_role");
-    if (role === "admin") {
-      replyHtml = `
-        <div style="font-weight:800; color:#b91c1c; font-size:13.5px; margin-bottom:6px;">
-          <i class="fa-solid fa-users-gear" style="color:#b91c1c;"></i> Users Management (યુઝર મેનેજમેન્ટ)
-        </div>
-        <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-          • <strong>Admin વિશેષાધિકાર:</strong> તમે Admin (<strong>240402</strong>) તરીકે લૉગિન છો.<br>
-          • <strong>યુઝરનેમ બદલવું:</strong> કોષ્ટકમાં આપેલા <strong>EDIT USERNAME</strong> બટન પર ક્લિક કરીને નવું નામ રાખી શકો છો.<br>
-          • <strong>નવો યુઝર ઉમેરવો:</strong> ઉપર આપેલા 'Add New User' ફોર્મથી નવો યુઝર બનાવી શકાય છે.<br>
-          • <strong>પાસવર્ડ સિક્યોરિટી:</strong> તમામ યુઝર્સના પાસવર્ડ સુરક્ષિત રાખવામાં આવે છે.
-        </div>
-        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Users Management')" style="background:#b91c1c;">
-          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Users Management (યુઝર મેનેજમેન્ટ ખોલો)
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('UDISE+ Teacher Profile')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Teacher Profile
         </a>
-      `;
-    } else {
-      replyHtml = `
-        <div style="font-weight:800; color:#b91c1c; font-size:13.5px; margin-bottom:6px;">
-          <i class="fa-solid fa-lock" style="color:#b91c1c;"></i> Users Management (Admin ઓપ્શન)
-        </div>
-        <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-          • Users Management નું ઓપ્શન ફક્ત <strong>Admin (User ID: 240402)</strong> માટે જ ઉપલબ્ધ છે.<br>
-          • અન્ય યુઝર્સ આ પેજને એક્સેસ કરી શકતા નથી.<br>
-          • જો તમારે યુઝર આઈડી અથવા પાસવર્ડ બદલવો હોય તો એડમિન (240402) નો સંપર્ક કરવો.
-        </div>
-      `;
-    }
-  } else if (param === "Excel CSV Download") {
-    replyHtml = `
-      <div style="font-weight:800; color:#15803d; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-file-excel" style="color:#15803d;"></i> How to Download Excel / CSV Data
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        <strong>કોઈપણ ડેટા એક્સેલમાં ડાઉનલોડ કરવા માટેના સરળ સ્ટેપ્સ:</strong><br>
-        1. ડાબી બાજુથી તમારું જોઈતું મોડ્યુલ ખોલો (દા.ત. <em>Teacher Profile</em> અથવા <em>SAT Exam</em>).<br>
-        2. જરૂર મુજબ ક્લસ્ટર, મેનેજમેન્ટ કે સેમેસ્ટર ફિલ્ટર પસંદ કરો.<br>
-        3. કોષ્ટકની ઉપર આપેલા લીલા રંગના <strong>Export CSV</strong> અથવા <strong>Download Excel</strong> બટન પર ક્લિક કરો.<br>
-        4. તમારી CSV/Excel ફાઈલ તાત્કાલિક તમારા કમ્પ્યુટરમાં સેવ થઈ જશે.
+        <a class="udise-bot-download-btn" href="CTS DATA/UDISE/KADI_School_Teacher_Profile_Details_AY_2026-27.xlsx" download="Teacher_Profiles.xlsx">
+          <i class="fa-solid fa-file-excel"></i> Download Excel
+        </a>
       </div>
     `;
   } else {
     replyHtml = `
-      <div>તમે <strong>${param}</strong> ની માહિતી માંગી છે. તમે ડાબી બાજુના સાઇડબાર મેનુમાંથી સીધું આ પેજ ખોલી શકો છો.</div>
+      <div>તમે <strong>${param}</strong> ની માહિતી માંગી છે. નીચે આપેલા બટનથી વિગતો જોઈ કે ડાઉનલોડ કરી શકો છો.</div>
+      <div class="udise-bot-action-row">
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('Home Dashboard')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Dashboard
+        </a>
+      </div>
     `;
   }
 
   appendBotAssistantMessage(replyHtml);
 }
 
+// ---------------------------------------------------------------------------
+// SMART UNIVERSAL EXCEL & MODULE SEARCH ENGINE
+// ---------------------------------------------------------------------------
 function sendBotMessage() {
   const input = document.getElementById("txtBotInput");
   if (!input) return;
@@ -9115,233 +9202,198 @@ function sendBotMessage() {
 
   const query = rawText.toLowerCase();
 
-  // 1. ATTENDANCE INTENT
-  if (query.includes("attend") || query.includes("hajri") || query.includes("hazri") || query.includes("હાજરી") ||
-      query.includes("present") || query.includes("absent") || query.includes("gerhajir") || query.includes("ગેરહાજર") ||
-      query.includes("leave") || query.includes("raja") || query.includes("રજા")) {
-    
-    if (query.includes("not submit") || query.includes("baki") || query.includes("બાકી") || query.includes("pend")) {
-      handleBotParameter("Not Submitted Attendance");
-      return;
-    }
-    if (query.includes("pivot") || query.includes("પિવોટ") || query.includes("cluster") || query.includes("crc")) {
-      handleBotParameter("Attendance Pivot");
-      return;
-    }
-    if (query.includes("student") || query.includes("vidyarthi") || query.includes("વિદ્યાર્થી")) {
-      handleBotParameter("Student Attendance");
-      return;
-    }
-    handleBotParameter("Teacher Attendance");
-    return;
-  }
-
-  // 2. SAT EXAM INTENT
-  if (query.includes("sat") || query.includes("exam") || query.includes("pariksha") || query.includes("પરીક્ષા") ||
-      query.includes("result") || query.includes("parinam") || query.includes("પરિણામ") || query.includes("mark") ||
-      query.includes("grade") || query.includes("ગ્રેડ") || query.includes("sem 1") || query.includes("sem 2") ||
-      query.includes("sem1") || query.includes("sem2")) {
-    
-    if (query.includes("soe") || query.includes("excellence")) {
-      handleBotParameter("SoE Schools");
-      return;
-    }
-    if (query.includes("pivot") || query.includes("પિવોટ")) {
-      handleBotParameter("SAT Pivot");
-      return;
-    }
-    handleBotParameter("SAT Exam Results");
-    return;
-  }
-
-  // 3. TEACHER INTENT
-  if (query.includes("teach") || query.includes("shikshak") || query.includes("શિક્ષક") || query.includes("staff") ||
-      query.includes("guruji") || query.includes("vidyasahayak") || query.includes("vidya sahayak") ||
-      query.includes("qualification") || query.includes("layakat") || query.includes("લાયકાત") || query.includes("bed") || query.includes("ptc") ||
-      query.includes("social category") || query.includes("obc") || query.includes("sc") || query.includes("st")) {
-    handleBotParameter("Teacher Profile");
-    return;
-  }
-
-  // 4. STUDENT & ENROLLMENT INTENT
-  if (query.includes("student") || query.includes("vidyarthi") || query.includes("વિદ્યાર્થી") ||
-      query.includes("enroll") || query.includes("sankhya") || query.includes("સંખ્યા") ||
-      query.includes("balvatika") || query.includes("બાલવાટિકા") || query.includes("admission") || query.includes("dhoran")) {
-    handleBotParameter("Student Enrollment");
-    return;
-  }
-
-  // 5. ICT & GYANKUNJ INTENT
-  if (query.includes("ict") || query.includes("computer") || query.includes("કોમ્પ્યુટર") || query.includes("lab") ||
-      query.includes("લેબ") || query.includes("gyankunj") || query.includes("gyan kunj") || query.includes("જ્ઞાનકુંજ") ||
-      query.includes("smart class") || query.includes("સ્માર્ટ ક્લાસ") || query.includes("tablet") || query.includes("projector")) {
-    if (query.includes("gyankunj") || query.includes("smart") || query.includes("જ્ઞાનકુંજ")) {
-      handleBotParameter("Gyankunj Smart Class");
-      return;
-    }
-    handleBotParameter("ICT Computer Lab");
-    return;
-  }
-
-  // 6. GSQAC INTENT
-  if (query.includes("gsqac") || query.includes("accreditation") || query.includes("gunvatta") || query.includes("ગુણવત્તા") ||
-      query.includes("star") || query.includes("સ્ટાર")) {
-    handleBotParameter("GSQAC");
-    return;
-  }
-
-  // 7. CTS INTENT
-  if (query.includes("cts") || query.includes("child track") || query.includes("ચાઈલ્ડ ટ્રેકિંગ") || query.includes("tracking")) {
-    handleBotParameter("Child Tracking System (CTS)");
-    return;
-  }
-
-  // 8. CRC SCHOOL VISIT INTENT
-  if (query.includes("visit") || query.includes("mulakat") || query.includes("મુલાકાત") || query.includes("inspection") ||
-      query.includes("tapas") || query.includes("તપાસ") || query.includes("monitoring")) {
-    handleBotParameter("CRC School Visit");
-    return;
-  }
-
-  // 9. USERS & ADMIN & PASSWORD INTENT
-  if (query.includes("user") || query.includes("admin") || query.includes("240402") || query.includes("password") ||
-      query.includes("pasward") || query.includes("પાસવર્ડ") || query.includes("edit user") || query.includes("username") ||
-      query.includes("login") || query.includes("લૉગિન")) {
-    handleBotParameter("Users Management");
-    return;
-  }
-
-  // 10. EXCEL / CSV / DOWNLOAD INTENT
-  if (query.includes("excel") || query.includes("csv") || query.includes("download") || query.includes("export") ||
-      query.includes("print") || query.includes("ડાઉનલોડ") || query.includes("પ્રિન્ટ")) {
-    handleBotParameter("Excel CSV Download");
-    return;
-  }
-
-  // 11. FACILITIES INTENT
-  if (query.includes("elec") || query.includes("power") || query.includes("light") || query.includes("vijli") || query.includes("વીજળી") || query.includes("solar")) {
-    handleBotParameter("Electricity");
-    return;
-  }
-  if (query.includes("water") || query.includes("pani") || query.includes("પાણી") || query.includes("drink") || query.includes("ro ")) {
-    handleBotParameter("Drinking Water");
-    return;
-  }
-  if (query.includes("toilet") || query.includes("latrine") || query.includes("washroom") || query.includes("souchalay") || query.includes("શૌચાલય")) {
-    handleBotParameter("Toilet");
-    return;
-  }
-  if (query.includes("room") || query.includes("class") || query.includes("ordo") || query.includes("ઓરડો") || query.includes("building")) {
-    handleBotParameter("School Profile");
-    return;
-  }
-
-  // 12. GENERAL HELP / GREETING
-  if (query.includes("help") || query.includes("madad") || query.includes("મદદ") || query.includes("hi") ||
-      query.includes("hello") || query.includes("kem cho") || query.includes("કેમ છો") || query.includes("menu") || query.includes("tab")) {
-    const helpHtml = `
+  // 1. Check if user asked for all Excel/files or Download Catalog
+  if (query.includes("excel") || query.includes("download") || query.includes("ડાઉનલોડ") || query.includes("file") || query.includes("ફાઇલ") || query.includes("path")) {
+    const excelCatalogHtml = `
       <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:8px;">
-        <i class="fa-solid fa-circle-question" style="color:#0284c7;"></i> MIS+ BOT હેલ્પ &amp; ગાઇડ
+        <i class="fa-solid fa-folder-open" style="color:#16a34a;"></i> કડી બ્લોક અધિકૃત EXCEL &amp; CSV ફાઇલ્સ (13 ડેટાસેટ્સ)
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155; margin-bottom:10px;">
-        તમે પોર્ટલના કોઈપણ મેનુ કે વિષય અંગે પૂછી શકો છો. નીચે આપેલા મુખ્ય વિભાગો ઉપલબ્ધ છે:
+      <div style="font-size:11.5px; line-height:1.55; color:#334155; margin-bottom:10px;">
+        તમે નીચે આપેલ કોઈપણ અધિકૃત એક્સેલ ફાઈલ એક જ ક્લિકમાં ડાઉનલોડ કરી શકો છો:
       </div>
       <div style="display:flex; flex-direction:column; gap:6px;">
-        <button class="udise-bot-param-btn" onclick="handleBotParameter('Teacher Attendance')">
-          <span><i class="fa-solid fa-clipboard-user" style="color:#15803d; margin-right:6px;"></i> ૧. હાજરી મોડ્યુલ (Teacher / Student / Not Submitted)</span>
-          <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-        </button>
-        <button class="udise-bot-param-btn" onclick="handleBotParameter('SAT Exam Results')">
-          <span><i class="fa-solid fa-file-signature" style="color:#ea580c; margin-right:6px;"></i> ૨. SAT પરીક્ષા પરિણામ (Sem 1 vs Sem 2 &amp; SoE)</span>
-          <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-        </button>
-        <button class="udise-bot-param-btn" onclick="handleBotParameter('Teacher Profile')">
-          <span><i class="fa-solid fa-chalkboard-user" style="color:#7c3aed; margin-right:6px;"></i> ૩. UDISE+ શિક્ષક પ્રોફાઇલ (2,109 શિક્ષકો, લાયકાત)</span>
-          <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-        </button>
-        <button class="udise-bot-param-btn" onclick="handleBotParameter('ICT Computer Lab')">
-          <span><i class="fa-solid fa-laptop-code" style="color:#0284c7; margin-right:6px;"></i> ૪. ICT કોમ્પ્યુટર લેબ અને જ્ઞાનકુંજ સ્માર્ટ ક્લાસ</span>
-          <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-        </button>
-        <button class="udise-bot-param-btn" onclick="handleBotParameter('Users Management')">
-          <span><i class="fa-solid fa-users-gear" style="color:#b91c1c; margin-right:6px;"></i> ૫. Admin &amp; યુઝર મેનેજમેન્ટ (Username Edit)</span>
-          <i class="fa-solid fa-chevron-right" style="font-size:10px;"></i>
-        </button>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> SAT 2022-23 (પરીક્ષા પરિણામ)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/SAT 2022-23.xlsx" download="SAT_2022-23.xlsx"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> CWSN Student Details (દિવ્યાંગ)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/CWSN Student Details (3).xls" download="CWSN_Details.xls"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-csv" style="color:#0284c7; margin-right:5px;"></i> Balvatika Entry (બાલવાટિકા)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px; background:#0284c7;" href="CTS DATA/SchoolWiseStudentEntry_240402 BALVATKA 19-8-2026.csv" download="Balvatika.csv"><i class="fa-solid fa-download"></i> CSV</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> Total GSOS Students (ઓપન સ્કૂલ)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/Total_GSOS_Students.xlsx" download="Total_GSOS.xlsx"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-csv" style="color:#0284c7; margin-right:5px;"></i> Total Students 68K Master</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px; background:#0284c7;" href="CTS DATA/Total Students-240402 (6).csv" download="Total_Students.csv"><i class="fa-solid fa-download"></i> CSV</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> UDISE Teacher Profile (2,109 શિક્ષકો)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/UDISE/KADI_School_Teacher_Profile_Details_AY_2026-27.xlsx" download="Teacher_Profiles.xlsx"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> School Master &amp; School List</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/SchoolList-240402 (32).xls" download="SchoolList.xls"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> GSQAC All Result (શાળા એક્રેડિટેશન)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/GSQAC All Result.xlsx" download="GSQAC_Results.xlsx"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> ICT Support System (લેબ &amp; સાધનો)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/ICT_SUPPORT_SYSTEM_SchoolList_2026-08-19_13-35-33-891.xlsx" download="ICT_System.xlsx"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> CRC School Visits (ઓગસ્ટ/જુલાઈ/જૂન)</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/CRC VISIT/CRC_BRC_Wise_Visits AUG.xlsx" download="CRC_Visits_AUG.xlsx"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11.5px; font-weight:700; color:#0f172a;"><i class="fa-solid fa-file-excel" style="color:#16a34a; margin-right:5px;"></i> Date-Wise Attendance Report</span>
+          <a class="udise-bot-download-btn" style="padding:3px 8px; font-size:10.5px;" href="CTS DATA/DATE WISE ATTENDANCE REPORT 2026-27/DAILY ATTENDANCE REPORT - MEHSANA FINAL DATE- 03-08-26.xlsx" download="Daily_Attendance.xlsx"><i class="fa-solid fa-download"></i> Excel</a>
+        </div>
       </div>
     `;
-    appendBotAssistantMessage(helpHtml);
+    appendBotAssistantMessage(excelCatalogHtml);
     return;
   }
 
-  // 13. CHECK IF USER TYPED A SPECIFIC SCHOOL (NAME OR DISE CODE)
-  const satData = (globalData && globalData.sat_data) ? globalData.sat_data : {};
-  const allSchools = satData.comparison_records || satData.sem2_records || allSchoolRows || [];
-  
+  // 2. CHECK IF USER SEARCHED A SPECIFIC SCHOOL (BY NAME OR 11-DIGIT DISE CODE)
+  const g = globalData || {};
+  const satData = g.sat_data || {};
+  const allSchools = g.school_records || [];
+  const satSchools = satData.comparison_records || satData.sem2_records || [];
+
   const foundSchool = allSchools.find(s => {
-    const sId = (s.school_id || s.dise_code || '').toLowerCase();
-    const sName = (s.school_name || '').toLowerCase();
+    const sId = String(s.school_id || s.dise_code || '').toLowerCase();
+    const sName = String(s.school_name || '').toLowerCase();
+    return sId.includes(query) || sName.includes(query);
+  }) || satSchools.find(s => {
+    const sId = String(s.school_id || '').toLowerCase();
+    const sName = String(s.school_name || '').toLowerCase();
     return sId.includes(query) || sName.includes(query);
   });
 
   if (foundSchool) {
+    const schoolId = foundSchool.school_id || foundSchool.dise_code;
+    const sat = (satData.comparison_records || []).find(s => String(s.school_id) === String(schoolId)) || foundSchool;
+    const schoolTeachers = (g.udise_teacher_profiles || []).filter(t => String(t.udise_code) === String(schoolId));
+    const schoolCwsn = (g.cwsn_student_records || []).filter(c => String(c.school || '').toLowerCase().includes(String(foundSchool.school_name || '').toLowerCase()));
+    const schoolIct = (g.ict_labs_records || []).filter(i => String(i.school_id) === String(schoolId));
+    const schoolGsqac = (g.gsqac_records || []).filter(q => String(q.school_id) === String(schoolId));
+
+    const totalStudents = foundSchool.total || sat.total_students || 0;
+    const isSoe = (sat.is_soe === 'Y' || foundSchool.is_soe === 'Y');
+
     const replyHtml = `
-      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-school" style="color:#16a34a;"></i> શાળા મળી: ${foundSchool.school_name}
+      <div style="font-weight:800; color:#002b49; font-size:14px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:flex-start;">
+        <span><i class="fa-solid fa-school" style="color:#16a34a;"></i> ${foundSchool.school_name}</span>
+        ${isSoe ? '<span class="badge badge-warning" style="font-size:10px;">SoE School</span>' : ''}
       </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>DISE Code:</strong> <code>${foundSchool.school_id || foundSchool.dise_code}</code><br>
-        • <strong>CRC Cluster:</strong> ${foundSchool.cluster || foundSchool.cluster_name}<br>
-        • <strong>Management:</strong> ${foundSchool.management || 'Local Body'}<br>
-        • <strong>Category:</strong> ${foundSchool.category || 'Primary / Upper Primary'}<br>
-        • <strong>SoE Status:</strong> ${foundSchool.is_soe === 'Y' ? '<span class="badge badge-success">School of Excellence (SoE)</span>' : '<span class="badge badge-light">Regular School</span>'}<br>
-        • <strong>Total Students:</strong> ${(foundSchool.total_students || 0).toLocaleString()}<br>
-        • <strong>SAT Sem-2 Score:</strong> <strong>${foundSchool.avg_score || foundSchool.sem2_score || 'N/A'}%</strong> (Grade A: ${foundSchool.perc_80 || foundSchool.sem2_perc80 || '0'}%)
+      <div style="font-size:12px; line-height:1.6; color:#334155; background:#f8fafc; padding:10px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:10px;">
+        • <strong>DISE Code:</strong> <code>${schoolId}</code><br>
+        • <strong>CRC Cluster:</strong> ${foundSchool.cluster_name || sat.cluster || 'Kadi'}<br>
+        • <strong>Management:</strong> ${foundSchool.management || sat.management || 'Local Body'}<br>
+        • <strong>વિદ્યાર્થી સંખ્યા:</strong> ${totalStudents.toLocaleString()} (બાલવાટિકા: ${foundSchool.balvatika || 0}, CWSN: ${schoolCwsn.length})<br>
+        • <strong>શિક્ષકો:</strong> ${schoolTeachers.length} શિક્ષકો (B.Ed: ${schoolTeachers.filter(t => (t.professional_qualification || '').includes('B.Ed')).length})<br>
+        • <strong>SAT Exam પરિણામ:</strong> સેમ-1: <strong>${sat.sem1_score || 'N/A'}%</strong> · સેમ-2: <strong>${sat.sem2_score || sat.avg_score || 'N/A'}%</strong> (ગ્રેડ A: ${sat.perc_80 || sat.sem2_perc80 || '0'}%)<br>
+        • <strong>ICT / Gyankunj:</strong> ${schoolIct.length > 0 ? '<span style="color:#15803d; font-weight:700;">કોમ્પ્યુટર લેબ સજ્જ</span>' : 'સામાન્ય લેબ'}<br>
+        • <strong>GSQAC રેટિંગ:</strong> ${schoolGsqac.length > 0 ? `${schoolGsqac[0].score}% (ગ્રેડ ${schoolGsqac[0].grade})` : 'પ્રમાણિત'}
       </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM')">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> View in SAT Performance Module
-      </a>
+      <div class="udise-bot-action-row">
+        <button class="udise-bot-download-btn" onclick="downloadSchoolSummaryCSV('${schoolId}')">
+          <i class="fa-solid fa-file-arrow-down"></i> Download School Excel (CSV)
+        </button>
+        <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM')">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i> View in Portal
+        </a>
+      </div>
     `;
     appendBotAssistantMessage(replyHtml);
     return;
   }
 
-  // 14. CHECK IF USER TYPED A CRC CLUSTER NAME
-  const crcList = satData.crc_summary_sem2 || allCrcRows || [];
-  const foundCrc = crcList.find(c => {
-    const cName = (c.cluster || c.cluster_name || '').toLowerCase();
-    return cName.includes(query);
-  });
-
-  if (foundCrc) {
-    const replyHtml = `
-      <div style="font-weight:800; color:#002b49; font-size:13.5px; margin-bottom:6px;">
-        <i class="fa-solid fa-layer-group" style="color:#f97316;"></i> CRC Cluster: ${foundCrc.cluster || foundCrc.cluster_name}
-      </div>
-      <div style="font-size:12.5px; line-height:1.6; color:#334155;">
-        • <strong>કુલ શાળાઓ:</strong> ${foundCrc.schools || foundCrc.schools_cnt || 0} શાળાઓ<br>
-        • <strong>SoE શાળાઓ:</strong> ${foundCrc.soe_cnt || foundCrc.soe_schools || 0} SoE એકમો<br>
-        • <strong>કુલ વિદ્યાર્થીઓ:</strong> ${(foundCrc.total || foundCrc.total_students || 0).toLocaleString()}<br>
-        • <strong>SAT Grade A (>80%):</strong> ${foundCrc.p_80 || 0} (${foundCrc.perc_80 || 0}%)<br>
-        • <strong>સરેરાશ સ્કોર:</strong> <strong>${foundCrc.avg_score || 0}%</strong>
-      </div>
-      <a class="udise-bot-action-btn" href="javascript:void(0);" onclick="botNavigateTo('SAT FIRST AND SECOND SEM'); switchSatSubView('crc');">
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> View CRC Cluster Summary
-      </a>
-    `;
-    appendBotAssistantMessage(replyHtml);
+  // 3. CHECK TOPIC INTENTS
+  if (query.includes("cwsn") || query.includes("દિવ્યાંગ") || query.includes("divyang") || query.includes("special need")) {
+    handleBotParameter("Download CWSN Details");
+    return;
+  }
+  if (query.includes("balvatika") || query.includes("બાલવાટિકા") || query.includes("bal vatika")) {
+    handleBotParameter("Download Balvatika Entry");
+    return;
+  }
+  if (query.includes("gsos") || query.includes("ઓપન સ્કૂલ") || query.includes("open school")) {
+    handleBotParameter("Download Total GSOS");
+    return;
+  }
+  if (query.includes("sat") || query.includes("exam") || query.includes("pariksha") || query.includes("પરીક્ષા") || query.includes("result") || query.includes("પરિણામ")) {
+    handleBotParameter("Download SAT 2022-23");
+    return;
+  }
+  if (query.includes("gsqac") || query.includes("accreditation") || query.includes("star") || query.includes("ગુણવત્તા")) {
+    handleBotParameter("Download GSQAC Results");
+    return;
+  }
+  if (query.includes("ict") || query.includes("computer") || query.includes("lab") || query.includes("લેબ") || query.includes("gyankunj") || query.includes("જ્ઞાનકુંજ") || query.includes("smart class")) {
+    handleBotParameter("Download ICT Support");
+    return;
+  }
+  if (query.includes("crc visit") || query.includes("mulakat") || query.includes("મુલાકાત") || query.includes("inspection")) {
+    handleBotParameter("Download CRC Visits");
+    return;
+  }
+  if (query.includes("attend") || query.includes("hajri") || query.includes("હાજરી") || query.includes("date wise")) {
+    if (query.includes("not submit") || query.includes("baki") || query.includes("બાકી")) {
+      handleBotParameter("Not Submitted Attendance");
+      return;
+    }
+    handleBotParameter("Download Daily Attendance");
+    return;
+  }
+  if (query.includes("teach") || query.includes("shikshak") || query.includes("શિક્ષક") || query.includes("udise") || query.includes("qualification") || query.includes("લાયકાત")) {
+    handleBotParameter("Download Teacher Profile");
+    return;
+  }
+  if (query.includes("total student") || query.includes("વિદ્યાર્થીઓ") || query.includes("enroll") || query.includes("sankhya") || query.includes("સંખ્યા")) {
+    handleBotParameter("Download Total Students");
+    return;
+  }
+  if (query.includes("school master") || query.includes("school list") || query.includes("શાળા યાદી")) {
+    handleBotParameter("Download School Master");
+    return;
+  }
+  if (query.includes("indicator") || query.includes("ઇન્ડિકેટર")) {
+    handleBotParameter("Download Indicator Data");
+    return;
+  }
+  if (query.includes("user") || query.includes("admin") || query.includes("240402") || query.includes("password") || query.includes("પાસવર્ડ")) {
+    handleBotParameter("Users Management");
     return;
   }
 
-  // Fallback response with helpful hints and clickable buttons
+  // Fallback response with helpful guide
   const fallbackHtml = `
     <div style="font-size:12.5px; line-height:1.55; color:#334155;">
       <em>"${rawText}"</em> માટે કોઈ સીધો રેકોર્ડ મળ્યો નથી.<br><br>
-      તમે આ મુજબ પ્રશ્ન પૂછી શકો છો:<br>
-      • <strong>હાજરી:</strong> <em>"આજની હાજરી"</em>, <em>"બાકી શાળાઓ"</em>, <em>"વિદ્યાર્થી હાજરી"</em><br>
-      • <strong>પરીક્ષા:</strong> <em>"SAT Exam પરિણામ"</em>, <em>"A ગ્રેડ શાળાઓ"</em>, <em>"SoE શાળાઓ"</em><br>
-      • <strong>શિક્ષક:</strong> <em>"શિક્ષકોની વિગત"</em>, <em>"લાયકાત"</em>, <em>"B.Ed શિક્ષકો"</em><br>
-      • <strong>કોમ્પ્યુટર:</strong> <em>"ICT લેબ"</em>, <em>"જ્ઞાનકુંજ સ્માર્ટ ક્લાસ"</em><br>
-      • <strong>શોધો:</strong> 11-અંકનો DISE કોડ અથવા શાળાનું નામ લખો.
+      તમે નીચે મુજબ કોઈપણ માહિતી સર્ચ કે ડાઉનલોડ કરી શકો છો:<br>
+      • <strong>શાળાનું નામ કે કોડ:</strong> <em>"Aluva"</em>, <em>"Dangarwa"</em>, <em>"240402..."</em><br>
+      • <strong>એક્સેલ ફાઇલો:</strong> <em>"Download Excel"</em>, <em>"SAT"</em>, <em>"CWSN"</em>, <em>"Balvatika"</em>, <em>"GSOS"</em>, <em>"Teacher Profile"</em><br>
+      • <strong>રિપોર્ટ્સ:</strong> <em>"આજની હાજરી"</em>, <em>"જ્ઞાનકુંજ"</em>, <em>"GSQAC પરિણામ"</em>
+    </div>
+    <div class="udise-bot-action-row">
+      <button class="udise-bot-download-btn" onclick="handleBotParameter('Download SAT 2022-23')">
+        <i class="fa-solid fa-file-excel"></i> SAT Exam Excel
+      </button>
+      <button class="udise-bot-download-btn" onclick="handleBotParameter('Download Teacher Profile')" style="background:#7c3aed;">
+        <i class="fa-solid fa-file-excel"></i> Teacher Excel
+      </button>
+      <button class="udise-bot-action-btn" onclick="filterBotCategory('excel')">
+        <i class="fa-solid fa-folder-open"></i> All 13 Excel Files
+      </button>
     </div>
   `;
   appendBotAssistantMessage(fallbackHtml);

@@ -1128,3 +1128,39 @@ th, .custom-table th, table th, tr th, #theadCrcSummary th, #tableCrcSummary th 
 .mis-cat-ict { background: #e0f2fe; color: #0284c7; }
 .mis-cat-other { background: #fef9c3; color: #854d0e; }
 .mis-cat-admin { background: #fee2e2; color: #b91c1c; }
+
+/* MIS+ BOT EXCEL & SEARCH ENHANCEMENTS */
+.mis-cat-excel { background: #dcfce7; color: #166534; font-weight: 800; }
+
+.udise-bot-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #15803d;
+  color: #ffffff !important;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+.udise-bot-download-btn:hover {
+  background: #166534;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(22, 101, 52, 0.35);
+}
+
+.udise-bot-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.udise-bot-pill-row::-webkit-scrollbar {
+  display: none;
+}
