@@ -116,6 +116,42 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Student analytics file not found"}).encode("utf-8"))
             return
 
+        if parsed.path == "/api/principals":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            principal_file = os.path.join(DIRECTORY, "data", "principal_data.json")
+            if os.path.exists(principal_file):
+                with open(principal_file, "r", encoding="utf-8") as f:
+                    self.wfile.write(f.read().encode("utf-8"))
+            else:
+                self.wfile.write(json.dumps({"total_principals": 0, "records": []}).encode("utf-8"))
+            return
+
+        if parsed.path == "/api/principal_by_udise":
+            query_params = urllib.parse.parse_qs(parsed.query)
+            udise = query_params.get("udise", [""])[0].strip()
+            principal_file = os.path.join(DIRECTORY, "data", "principal_data.json")
+            found = None
+            if os.path.exists(principal_file):
+                try:
+                    with open(principal_file, "r", encoding="utf-8") as f:
+                        pdata = json.load(f)
+                        for r in pdata.get("records", []):
+                            if str(r.get("udise_code")) == udise or str(r.get("school_id")) == udise:
+                                found = r
+                                break
+                except Exception:
+                    pass
+            self.send_response(200 if found else 404)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            if found:
+                self.wfile.write(json.dumps({"success": True, "principal": found}, ensure_ascii=False).encode("utf-8"))
+            else:
+                self.wfile.write(json.dumps({"success": False, "message": f"Principal for UDISE '{udise}' not found"}, ensure_ascii=False).encode("utf-8"))
+            return
+
         if parsed.path == "/api/student_by_uid":
             query_params = urllib.parse.parse_qs(parsed.query)
             uid = query_params.get("uid", [""])[0].strip().replace('"', '').replace("'", "")

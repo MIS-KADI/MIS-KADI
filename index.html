@@ -76,13 +76,18 @@
           </ul>
         </li>
 
-        <!-- 3. All School Information -->
-        <li class="nav-item">
-          <a class="nav-link" href="javascript:void(0);" onclick="openModuleTab('All School Information')">
+        <!-- 3. All School Information Dropdown -->
+        <li class="nav-item has-submenu" id="menuAllSchools">
+          <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuAllSchools', 'All School Information')">
             <span class="nav-link-content">
               <i class="fa-solid fa-school"></i> All School Information
             </span>
+            <i class="fa-solid fa-chevron-down caret-icon" onclick="event.stopPropagation(); toggleSubmenu('menuAllSchools');"></i>
           </a>
+          <ul class="sub-nav">
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('All School Information')"><i class="fa-solid fa-list-check"></i> School Master List</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Principal Contact Number')"><i class="fa-solid fa-address-book"></i> Principal Contact Number (આચાર્ય સંપર્ક)</a></li>
+          </ul>
         </li>
 
         <!-- 4. GSQAC -->
@@ -510,6 +515,7 @@
   </div>
 
   <script src="data/dashboard_data.js?v=20260821_RESTORED"></script>
+  <script src="data/principal_data.js"></script>
   <script src="data/student_analytics.js"></script>
   <script src="app.js?v=20260821_RESTORED"></script>
   <!-- ========================================================== -->
@@ -600,7 +606,6 @@
           💡 ઝડપી પ્રશ્નો (Quick Questions):
         </div>
         <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          <button class="mis-quick-chip" onclick="askQuickBot('24040207501')">🏫 કુંડળ શાળા પ્રોફાઇલ &amp; PDF</button>
           <button class="mis-quick-chip" onclick="askQuickBot('મેનેજમેન્ટ વાઈઝ કેટલી શાળાઓ છે?')">🏢 મેનેજમેન્ટ વાઈઝ શાળાઓ</button>
           <button class="mis-quick-chip" onclick="askQuickBot('કડી માં કેટલા સીઆરસી છે?')">📍 14 CRC ક્લસ્ટર્સ</button>
           <button class="mis-quick-chip" onclick="askQuickBot('કડી ની કુલ કેટલી શાળાઓ છે?')">🏫 કુલ શાળાઓ</button>

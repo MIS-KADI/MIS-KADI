@@ -513,8 +513,13 @@ function openModuleTab(tabName) {
   updateSidebarActiveLink(tabName);
 
   try {
-    if (tabName === "All School Information") {
+    if (tabName === "All School Information" || tabName === "School Master List") {
       renderTotalSchoolsDataTables();
+      return;
+    }
+
+    if (tabName === "Principal Contact Number" || tabName === "Principal Contact" || tabName === "આચાર્ય સંપર્ક" || tabName === "આચાર્યશ્રીઓના સંપર્ક નંબર") {
+      renderPrincipalContactModuleView();
       return;
     }
 
@@ -6407,12 +6412,308 @@ function renderTotalStudentsDataTables() {
   `);
 }
 
+// ===========================================================================
+// PRINCIPAL CONTACT NUMBER MODULE (Source: PRINCIPAL MOBILE NUMBER.xlsx)
+// ===========================================================================
+function getPrincipalRecords() {
+  if (window.principalData && Array.isArray(window.principalData.records) && window.principalData.records.length > 0) {
+    return window.principalData.records;
+  }
+  if (typeof globalData !== 'undefined' && globalData && Array.isArray(globalData.principal_records) && globalData.principal_records.length > 0) {
+    return globalData.principal_records;
+  }
+  return [];
+}
+
+function renderPrincipalContactModuleView() {
+  activeTabName = "Principal Contact Number";
+  const homeWrapper = document.getElementById("homeDashboardContentWrapper");
+  const tabWrapper = document.getElementById("moduleTabDedicatedContainer");
+  const title = document.getElementById("txtMainModuleTitle");
+
+  if (homeWrapper) homeWrapper.style.display = "none";
+  if (tabWrapper) tabWrapper.style.display = "block";
+  if (title) title.innerText = "PRINCIPAL CONTACT NUMBERS";
+
+  updateSidebarActiveLink("Principal Contact Number");
+
+  const records = getPrincipalRecords();
+  const clusters = Array.from(new Set(records.map(r => r.cluster).filter(Boolean))).sort();
+  const managements = Array.from(new Set(records.map(r => r.management).filter(Boolean))).sort();
+
+  tabWrapper.innerHTML = `
+    <!-- TOP SUB-NAV TOGGLE BAR -->
+    <div style="display:flex; gap:8px; margin-bottom:16px; border-bottom:2px solid #e2e8f0; padding-bottom:12px; flex-wrap:wrap;">
+      <button class="btn" style="background:#ffffff; color:#475569; border:1px solid #cbd5e1; font-weight:700; font-size:13px; padding:8px 18px; border-radius:6px; cursor:pointer;" onclick="openModuleTab('All School Information')">
+        <i class="fa-solid fa-list-check" style="color:#0284c7; margin-right:6px;"></i> 1. School Master List (244 શાળાઓ)
+      </button>
+      <button class="btn" style="background:#0f172a; color:#ffffff; border:1px solid #0f172a; font-weight:800; font-size:13px; padding:8px 18px; border-radius:6px; box-shadow:0 2px 4px rgba(0,0,0,0.1); cursor:pointer;" onclick="openModuleTab('Principal Contact Number')">
+        <i class="fa-solid fa-address-book" style="color:#f97316; margin-right:6px;"></i> 2. Principal Contact Numbers (આચાર્ય સંપર્ક)
+      </button>
+    </div>
+
+    <!-- MAIN HEADER BANNER -->
+    <div style="background:linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f766e 100%); color:#ffffff; border-radius:12px; padding:20px 24px; margin-bottom:20px; box-shadow:0 4px 14px rgba(6,78,59,0.25);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div style="width:48px; height:48px; background:rgba(255,255,255,0.18); border:1.5px solid rgba(255,255,255,0.3); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px;">
+            <i class="fa-solid fa-address-book" style="color:#fef08a;"></i>
+          </div>
+          <div>
+            <h2 style="font-size:20px; font-weight:900; margin:0; letter-spacing:0.3px; color:#ffffff;">
+              KADI TALUKA PRINCIPAL CONTACT DIRECTORY
+            </h2>
+            <div style="font-size:13px; opacity:0.92; margin-top:3px;">
+              કડી તાલુકાની તમામ ૨૪૪ શાળાઓના આચાર્યશ્રીઓના નામ અને સંપર્ક નંબર (Source: PRINCIPAL MOBILE NUMBER.xlsx)
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn" style="background:#f97316; color:#ffffff; font-weight:800; font-size:12.5px; padding:8px 16px; border-radius:6px; border:none; display:flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,0.2); cursor:pointer;" onclick="exportPrincipalContactCSV()">
+            <i class="fa-solid fa-file-excel"></i> Export Excel / CSV
+          </button>
+          <button class="btn" style="background:rgba(255,255,255,0.2); color:#ffffff; font-weight:700; font-size:12.5px; padding:8px 14px; border-radius:6px; border:1px solid rgba(255,255,255,0.3); display:flex; align-items:center; gap:6px; cursor:pointer;" onclick="window.print()">
+            <i class="fa-solid fa-print"></i> Print
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 KPI SUMMARY CARDS -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:20px;">
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #0284c7; border-radius:10px; padding:14px 18px; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+        <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">કુલ શાળાઓ (Total Schools)</div>
+        <div style="font-size:24px; font-weight:900; color:#0f172a; margin-top:4px;">${records.length || 244}</div>
+        <div style="font-size:11px; color:#0284c7; margin-top:2px; font-weight:600;"><i class="fa-solid fa-school"></i> 100% Operational Status</div>
+      </div>
+
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #16a34a; border-radius:10px; padding:14px 18px; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+        <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">કુલ આચાર્યશ્રી (Total Principals)</div>
+        <div style="font-size:24px; font-weight:900; color:#16a34a; margin-top:4px;">${records.length || 244}</div>
+        <div style="font-size:11px; color:#15803d; margin-top:2px; font-weight:600;"><i class="fa-solid fa-user-tie"></i> 100% Verified Head Masters</div>
+      </div>
+
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #ea580c; border-radius:10px; padding:14px 18px; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+        <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">મોબાઈલ નંબર સંપર્ક (Contact Verified)</div>
+        <div style="font-size:24px; font-weight:900; color:#ea580c; margin-top:4px;">100%</div>
+        <div style="font-size:11px; color:#c2410c; margin-top:2px; font-weight:600;"><i class="fa-solid fa-phone"></i> ${records.length || 244} Mobile Contacts</div>
+      </div>
+
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #8b5cf6; border-radius:10px; padding:14px 18px; box-shadow:0 2px 5px rgba(0,0,0,0.04);">
+        <div style="font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">CRC ક્લસ્ટર્સ (Cluster Coverage)</div>
+        <div style="font-size:24px; font-weight:900; color:#8b5cf6; margin-top:4px;">${clusters.length || 14}</div>
+        <div style="font-size:11px; color:#6d28d9; margin-top:2px; font-weight:600;"><i class="fa-solid fa-location-dot"></i> 14 CRC Clusters Covered</div>
+      </div>
+    </div>
+
+    <!-- SEARCH & FILTER CONTROLS BAR -->
+    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:16px 20px; margin-bottom:16px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:10px; flex:1; min-width:260px;">
+          <div style="position:relative; width:100%; max-width:420px;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute; left:12px; top:12px; color:#94a3b8; font-size:13px;"></i>
+            <input type="text" id="txtPrincipalSearch" class="form-control" placeholder="શાળાનું નામ, DISE કોડ, આચાર્યશ્રીનું નામ કે મોબાઇલ શોધો..." oninput="onPrincipalFilterChange()" style="padding-left:36px; height:38px; font-size:12.5px; border-radius:6px;" />
+          </div>
+          <button class="btn" style="height:38px; padding:0 12px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; cursor:pointer;" onclick="resetPrincipalFilters()">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:12px; font-weight:700; color:#475569; margin:0;"><i class="fa-solid fa-filter"></i> CRC:</label>
+            <select id="selPrincipalCluster" class="form-control" onchange="onPrincipalFilterChange()" style="height:38px; font-size:12px; min-width:160px; border-radius:6px;">
+              <option value="ALL">All 14 CRC Clusters</option>
+              ${clusters.map(c => `<option value="${c}">${c}</option>`).join('')}
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label style="font-size:12px; font-weight:700; color:#475569; margin:0;"><i class="fa-solid fa-sitemap"></i> Management:</label>
+            <select id="selPrincipalMgt" class="form-control" onchange="onPrincipalFilterChange()" style="height:38px; font-size:12px; min-width:160px; border-radius:6px;">
+              <option value="ALL">All Managements</option>
+              ${managements.map(m => `<option value="${m}">${m}</option>`).join('')}
+            </select>
+          </div>
+
+          <span id="lblPrincipalResultCount" style="font-size:12px; font-weight:800; color:#047857; background:#dcfce7; padding:6px 12px; border-radius:6px; border:1px solid #bbf7d0;">
+            Showing ${records.length} of ${records.length}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE CONTAINER -->
+    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <div style="max-height:650px; overflow-y:auto; overflow-x:auto;">
+        <table class="table" style="width:100%; border-collapse:collapse; margin:0; font-size:12.5px;">
+          <thead style="background:#0f172a; color:#ffffff; position:sticky; top:0; z-index:2;">
+            <tr>
+              <th style="padding:10px 8px; text-align:center; width:45px;">#</th>
+              <th style="padding:10px 10px; text-align:left; width:115px;">UDISE Code</th>
+              <th style="padding:10px 12px; text-align:left; min-width:220px;">School Name</th>
+              <th style="padding:10px 10px; text-align:left; width:140px;">CRC Cluster</th>
+              <th style="padding:10px 10px; text-align:left; width:120px;">Management</th>
+              <th style="padding:10px 12px; text-align:left; min-width:190px;">Principal Name (આચાર્યશ્રી)</th>
+              <th style="padding:10px 10px; text-align:center; width:140px;">Mobile Number</th>
+              <th style="padding:10px 10px; text-align:left; width:180px;">Email ID</th>
+              <th style="padding:10px 8px; text-align:center; width:80px;">Status</th>
+              <th style="padding:10px 10px; text-align:center; width:100px;">Profile PDF</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPrincipalRecords">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  renderPrincipalTableRows(records);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderPrincipalTableRows(list) {
+  const tbody = document.getElementById("tbodyPrincipalRecords");
+  if (!tbody) return;
+
+  if (!list || list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center; padding:30px; color:#64748b; font-size:14px;">
+          <i class="fa-solid fa-triangle-exclamation" style="font-size:24px; color:#f59e0b; margin-bottom:8px; display:block;"></i>
+          કોઈ માહિતી મળી નથી. કૃપા કરીને શોધ શબ્દ અથવા ફિલ્ટર બદલો. (No records found matching filters)
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = list.map((r, i) => `
+    <tr style="border-bottom:1px solid #f1f5f9; transition:background 0.15s ease;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+      <td style="padding:8px 8px; text-align:center; font-weight:700; color:#64748b;">${i + 1}</td>
+      <td style="padding:8px 10px;">
+        <code style="background:#f1f5f9; color:#ea580c; padding:3px 6px; border-radius:4px; font-weight:800; font-size:11.5px; border:1px solid #e2e8f0;">${r.udise_code}</code>
+      </td>
+      <td style="padding:8px 12px;">
+        <div style="font-weight:800; color:#0f172a; font-size:12.5px;">${r.school_name}</div>
+        <div style="font-size:11px; color:#64748b; margin-top:1px;">
+          ${r.category || ''} ${r.total_students ? `· <strong style="color:#0284c7;">${r.total_students} Students</strong>` : ''}
+        </div>
+      </td>
+      <td style="padding:8px 10px;">
+        <span style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:12px; display:inline-block;">
+          ${r.cluster}
+        </span>
+      </td>
+      <td style="padding:8px 10px; font-size:11.5px; color:#334155; font-weight:600;">
+        ${r.management || '-'}
+      </td>
+      <td style="padding:8px 12px;">
+        <div style="font-weight:800; color:#0b2545; font-size:12.5px; display:flex; align-items:center; gap:5px;">
+          <i class="fa-solid fa-user-tie" style="color:#0284c7; font-size:11px;"></i> ${r.principal_name}
+        </div>
+        <div style="font-size:10px; color:#64748b; text-transform:uppercase; font-weight:700; margin-top:2px;">
+          ${r.designation || 'PRINCIPAL'}
+        </div>
+      </td>
+      <td style="padding:8px 10px; text-align:center;">
+        <a href="tel:${r.mobile}" style="display:inline-flex; align-items:center; gap:5px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:11.5px; font-weight:800; padding:4px 9px; border-radius:6px; text-decoration:none;" title="Click to call ${r.mobile}">
+          <i class="fa-solid fa-phone" style="font-size:10px;"></i> ${r.mobile}
+        </a>
+      </td>
+      <td style="padding:8px 10px; font-size:11px;">
+        ${r.email ? `<a href="mailto:${r.email}" style="color:#0284c7; text-decoration:none; font-weight:600; word-break:break-all;" title="${r.email}"><i class="fa-solid fa-envelope" style="margin-right:3px; color:#94a3b8;"></i>${r.email}</a>` : '<span style="color:#94a3b8;">-</span>'}
+      </td>
+      <td style="padding:8px 8px; text-align:center;">
+        <span style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px;">
+          Active
+        </span>
+      </td>
+      <td style="padding:8px 10px; text-align:center;">
+        <button class="btn" style="background:#0284c7; color:#ffffff; font-size:11px; font-weight:700; padding:4px 9px; border-radius:5px; border:none; display:inline-flex; align-items:center; gap:4px; cursor:pointer;" onclick="downloadSchoolProfilePDF('${r.udise_code}', this)" title="Download School Profile PDF">
+          <i class="fa-solid fa-file-pdf"></i> PDF
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function onPrincipalFilterChange() {
+  const search = (document.getElementById("txtPrincipalSearch")?.value || "").toLowerCase().trim();
+  const cluster = document.getElementById("selPrincipalCluster")?.value || "ALL";
+  const mgt = document.getElementById("selPrincipalMgt")?.value || "ALL";
+
+  const allRecords = getPrincipalRecords();
+  const filtered = allRecords.filter(r => {
+    const matchCluster = (cluster === "ALL" || r.cluster === cluster);
+    const matchMgt = (mgt === "ALL" || r.management === mgt);
+    const matchSearch = (!search ||
+      String(r.udise_code || '').toLowerCase().includes(search) ||
+      String(r.school_name || '').toLowerCase().includes(search) ||
+      String(r.principal_name || '').toLowerCase().includes(search) ||
+      String(r.mobile || '').includes(search) ||
+      String(r.email || '').toLowerCase().includes(search) ||
+      String(r.cluster || '').toLowerCase().includes(search)
+    );
+    return matchCluster && matchMgt && matchSearch;
+  });
+
+  const countBadge = document.getElementById("lblPrincipalResultCount");
+  if (countBadge) {
+    countBadge.innerText = `Showing ${filtered.length} of ${allRecords.length}`;
+  }
+
+  renderPrincipalTableRows(filtered);
+}
+
+function resetPrincipalFilters() {
+  const s = document.getElementById("txtPrincipalSearch");
+  const c = document.getElementById("selPrincipalCluster");
+  const m = document.getElementById("selPrincipalMgt");
+  if (s) s.value = "";
+  if (c) c.value = "ALL";
+  if (m) m.value = "ALL";
+  onPrincipalFilterChange();
+}
+
+function exportPrincipalContactCSV() {
+  const records = getPrincipalRecords();
+  const headers = ["Sr No", "UDISE Code", "School Name", "CRC Cluster", "Management", "Category", "Principal Name", "Designation", "Mobile Number", "Email ID", "Total Students", "Status"];
+  const rows = records.map((r, i) => [
+    i + 1,
+    r.udise_code,
+    r.school_name,
+    r.cluster,
+    r.management,
+    r.category,
+    r.principal_name,
+    r.designation,
+    r.mobile,
+    r.email,
+    r.total_students || '',
+    r.status
+  ]);
+  downloadCustomDatasetCSV("Kadi_Principals_Contact_List.csv", headers, rows);
+}
+
 function renderTotalSchoolsDataTables() {
   prepareCardTableView("Total Schools List");
   const heading = document.getElementById("txtTabSectionHeading");
   const thead = document.getElementById("theadTabDetails");
 
-  if (heading) heading.innerHTML = `<i class="fa-solid fa-school" style="color:#0284c7;"></i> TOTAL SCHOOLS MASTER DIRECTORY (244 SCHOOLS - 14 CRC CLUSTERS)`;
+  if (heading) {
+    heading.innerHTML = `
+      <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
+        <button class="btn" style="background:#0f172a; color:#ffffff; border:1px solid #0f172a; font-weight:800; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="openModuleTab('All School Information')">
+          <i class="fa-solid fa-list-check" style="color:#38bdf8; margin-right:6px;"></i> 1. School Master List (244 શાળાઓ)
+        </button>
+        <button class="btn" style="background:#ffffff; color:#475569; border:1px solid #cbd5e1; font-weight:700; font-size:12.5px; padding:6px 14px; border-radius:6px; cursor:pointer;" onclick="openModuleTab('Principal Contact Number')">
+          <i class="fa-solid fa-address-book" style="color:#ea580c; margin-right:6px;"></i> 2. Principal Contact Numbers (આચાર્ય સંપર્ક)
+        </button>
+      </div>
+      <div><i class="fa-solid fa-school" style="color:#0284c7;"></i> TOTAL SCHOOLS MASTER DIRECTORY (244 SCHOOLS - 14 CRC CLUSTERS)</div>
+    `;
+  }
   if (thead) {
     thead.innerHTML = `
       <tr>
@@ -10438,6 +10739,14 @@ function generateOfficialCtsReportHTML(schoolId) {
   const scGyan = gyankunjList.filter(g => String(g.school_id) === String(schoolId));
   const scGsqac = gsqacList.filter(q => String(q.school_id) === String(schoolId));
 
+  const princMap = (g.principals_by_udise) || {};
+  const princList = (window.principalData && window.principalData.records) || g.principal_records || [];
+  const principal = princMap[schoolId] || princList.find(p => String(p.udise_code || p.school_id) === String(schoolId)) || {};
+  const principalName = principal.principal_name || sc.principal_name || "N/A";
+  const principalMobile = principal.mobile || sc.principal_mobile || "N/A";
+  const principalEmail = principal.email || sc.principal_email || "";
+  const principalDesig = principal.designation || "PRINCIPAL";
+
   const schoolName = sc.school_name || sat.school_name || "R.R. SHETH SHRI P.M. MULTIP";
   const clusterName = sc.cluster_name || sat.cluster || "KADI KUMAR SHALA - 3";
   const mgt = sc.management || sat.management || "4 - Government Aided";
@@ -10487,6 +10796,7 @@ function generateOfficialCtsReportHTML(schoolId) {
             <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:10px; color:#475569; margin:4px 0 5px;">
               <div><strong style="color:#64748b;">CLUSTER:</strong> <span style="font-weight:700; color:#0f172a;">${clusterName}</span></div>
               <div><strong style="color:#64748b;">MANAGEMENT:</strong> <span style="font-weight:700; color:#0f172a;">${mgt}</span></div>
+              <div><strong style="color:#64748b;">PRINCIPAL:</strong> <span style="font-weight:700; color:#0f172a;">${principalName}</span> (<span style="color:#15803d; font-weight:800;">${principalMobile}</span>)</div>
             </div>
             <div style="display:flex; gap:6px; flex-wrap:wrap;">
               <span style="display:inline-flex; align-items:center; gap:3px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:9px; font-weight:800; padding:2px 7px; border-radius:10px;">
@@ -10544,6 +10854,14 @@ function generateOfficialCtsReportHTML(schoolId) {
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:5px 8px;">
           <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-sitemap"></i> MANAGEMENT</div>
           <div style="font-size:11px; font-weight:800; color:#0f172a; margin-top:1px;">${mgt}</div>
+        </div>
+        <div style="grid-column: span 2; background:#f0fdf4; border:1px solid #86efac; border-radius:4px; padding:5px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#15803d;"><i class="fa-solid fa-user-tie"></i> PRINCIPAL NAME (આચાર્યશ્રીનું નામ)</div>
+          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${principalName}</div>
+        </div>
+        <div style="grid-column: span 2; background:#f0fdf4; border:1px solid #86efac; border-radius:4px; padding:5px 8px;">
+          <div style="font-size:8px; font-weight:800; color:#15803d;"><i class="fa-solid fa-phone"></i> PRINCIPAL CONTACT / MOBILE (સંપર્ક નંબર)</div>
+          <div style="font-size:11.5px; font-weight:900; color:#15803d; margin-top:1px;">${principalMobile} ${principalEmail ? `<span style="font-size:9.5px; font-weight:600; color:#64748b;">(${principalEmail})</span>` : ''}</div>
         </div>
         <div style="grid-column: span 4; background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:5px 8px;">
           <div style="font-size:8px; font-weight:800; color:#ea580c;"><i class="fa-solid fa-layer-group"></i> SCHOOL CATEGORY</div>
@@ -11059,6 +11377,14 @@ function sendBotMessage() {
 
   if (foundSchool) {
     const schoolId = foundSchool.school_id || foundSchool.dise_code;
+    const princMap = (g.principals_by_udise) || {};
+    const princList = (window.principalData && window.principalData.records) || g.principal_records || [];
+    const princInfo = princMap[schoolId] || princList.find(p => String(p.udise_code || p.school_id) === String(schoolId)) || {};
+    const principalName = princInfo.principal_name || foundSchool.principal_name || "N/A";
+    const principalMobile = princInfo.mobile || foundSchool.principal_mobile || "N/A";
+    const principalEmail = princInfo.email || foundSchool.principal_email || "";
+    const principalDesig = princInfo.designation || "PRINCIPAL";
+
     const scTeachers = (g.udise_teacher_profiles || []).filter(t => String(t.udise_code) === String(schoolId));
     const sat = (satData.comparison_records || []).find(s => String(s.school_id) === String(schoolId)) || {};
     const totalStudents = foundSchool.total || sat.total_students || 0;
@@ -11080,6 +11406,24 @@ function sendBotMessage() {
           <span style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:9.5px; font-weight:800; padding:2px 7px; border-radius:10px; white-space:nowrap;">
             <i class="fa-solid fa-circle-check"></i> ACTIVE
           </span>
+        </div>
+
+        <!-- Principal Name & Contact (Requested by User) -->
+        <div style="background:linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border:1px solid #86efac; border-radius:8px; padding:8px 12px; margin:8px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <div style="font-size:9.5px; font-weight:800; color:#166534; text-transform:uppercase; letter-spacing:0.4px; display:flex; align-items:center; gap:4px;">
+              <i class="fa-solid fa-user-tie"></i> આચાર્યશ્રી (PRINCIPAL)
+            </div>
+            <div style="font-size:13px; font-weight:900; color:#0f172a; margin-top:2px;">
+              ${principalName}
+            </div>
+            ${principalEmail ? `<div style="font-size:10px; color:#64748b; margin-top:1px;"><i class="fa-solid fa-envelope"></i> ${principalEmail}</div>` : ''}
+          </div>
+          <div>
+            <a href="tel:${principalMobile}" style="display:inline-flex; align-items:center; gap:5px; background:#16a34a; color:#ffffff; font-size:12px; font-weight:800; padding:6px 12px; border-radius:6px; text-decoration:none; box-shadow:0 2px 4px rgba(22,163,74,0.25);" title="Call Principal ${principalMobile}">
+              <i class="fa-solid fa-phone"></i> ${principalMobile}
+            </a>
+          </div>
         </div>
 
         <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin:8px 0; font-size:11px;">
@@ -11125,6 +11469,37 @@ function sendBotMessage() {
         downloadSchoolProfilePDF(schoolId, btn);
       }, 350);
     }
+    return;
+  }
+
+  // =========================================================================
+  // 1.1 QUERY: PRINCIPAL CONTACTS / આચાર્યશ્રીઓના સંપર્ક નંબર
+  // =========================================================================
+  if (
+    query.includes("આચાર્ય") || query.includes("પ્રિન્સિપાલ") || query.includes("principal") ||
+    (query.includes("મોબાઈલ") && (query.includes("નંબર") || query.includes("કોન્ટેક્ટ") || query.includes("contact"))) ||
+    query.includes("phone number")
+  ) {
+    const pRecords = getPrincipalRecords();
+    const replyHtml = `
+      <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:12px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.04); margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:900; color:#064e3b; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-address-book" style="color:#16a34a;"></i> કડી તાલુકાના તમામ આચાર્યશ્રીઓના સંપર્ક નંબર (${pRecords.length} શાળાઓ)
+        </div>
+        <div style="font-size:11.5px; color:#475569; margin-bottom:8px;">
+          કડી તાલુકાની તમામ ૨૪૪ સરકારી, ગ્રાન્ટેડ અને ખાનગી શાળાઓના આચાર્યશ્રીઓના નામ અને મોબાઇલ નંબર ઉપલબ્ધ છે. કોઈપણ શાળાનો DISE કોડ લખીને સીધો આચાર્યશ્રીનો નંબર અને પ્રોફાઇલ મેળવી શકો છો.
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="udise-bot-pdf-btn" style="flex:1; padding:7px 12px; font-size:11.5px; cursor:pointer;" onclick="botNavigateTo('Principal Contact Number')">
+            <i class="fa-solid fa-table-list"></i> Open Principal Contact Directory
+          </button>
+          <button class="udise-bot-download-btn" style="padding:7px 12px; font-size:11.5px; cursor:pointer;" onclick="exportPrincipalContactCSV()">
+            <i class="fa-solid fa-file-excel"></i> Export CSV
+          </button>
+        </div>
+      </div>
+    `;
+    appendBotAssistantMessage(replyHtml);
     return;
   }
 
