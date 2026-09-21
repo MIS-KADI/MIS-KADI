@@ -13,6 +13,8 @@ total_students = 0
 boys = 0
 girls = 0
 cwsn_count = 0
+rural_students = 0
+urban_students = 0
 
 class_order = ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
 class_counts = {c: 0 for c in class_order}
@@ -21,6 +23,22 @@ cluster_counts = defaultdict(int)
 cluster_gender = defaultdict(lambda: {"boys": 0, "girls": 0, "total": 0})
 social_counts = defaultdict(int)
 management_counts = defaultdict(int)
+
+# Rural / Urban pivots
+area_counts = {"Rural": 0, "Urban": 0}
+area_gender_pivot = {
+    "Rural": {"Male": 0, "Female": 0, "Total": 0},
+    "Urban": {"Male": 0, "Female": 0, "Total": 0}
+}
+area_class_pivot = {
+    "Rural": {c: 0 for c in class_order},
+    "Urban": {c: 0 for c in class_order}
+}
+area_mgt_pivot = {
+    "Rural": defaultdict(int),
+    "Urban": defaultdict(int)
+}
+mgt_area_pivot = defaultdict(lambda: {"Rural": 0, "Urban": 0, "Total": 0})
 
 # 2D Pivots
 cluster_class_pivot = defaultdict(lambda: {c: 0 for c in class_order})
@@ -56,6 +74,30 @@ with open(CSV_PATH, mode="r", encoding="utf-8-sig", errors="replace") as f:
         std_class = normalize_class(row.get("StudyingClass"))
         class_counts[std_class] += 1
 
+        # Rural vs Urban determination
+        v_name = (row.get("Village") or "").strip()
+        is_urban = ("WORD" in v_name.upper()) or ("WARD" in v_name.upper())
+        area = "Urban" if is_urban else "Rural"
+        
+        if is_urban:
+            urban_students += 1
+            area_counts["Urban"] += 1
+            if gender == "Male":
+                area_gender_pivot["Urban"]["Male"] += 1
+            else:
+                area_gender_pivot["Urban"]["Female"] += 1
+            area_gender_pivot["Urban"]["Total"] += 1
+            area_class_pivot["Urban"][std_class] += 1
+        else:
+            rural_students += 1
+            area_counts["Rural"] += 1
+            if gender == "Male":
+                area_gender_pivot["Rural"]["Male"] += 1
+            else:
+                area_gender_pivot["Rural"]["Female"] += 1
+            area_gender_pivot["Rural"]["Total"] += 1
+            area_class_pivot["Rural"][std_class] += 1
+
         cluster = (row.get("Cluster") or "").strip() or "Unknown"
         cluster_counts[cluster] += 1
         if gender == "Male":
@@ -76,6 +118,10 @@ with open(CSV_PATH, mode="r", encoding="utf-8-sig", errors="replace") as f:
         mgt = (row.get("Management") or "").strip() or "Other"
         management_counts[mgt] += 1
         mgt_class_pivot[mgt][std_class] += 1
+        area_mgt_pivot[area][mgt] += 1
+        mgt_area_pivot[mgt][area] += 1
+        mgt_area_pivot[mgt]["Total"] += 1
+
         if gender == "Male":
             mgt_gender_pivot[mgt]["Male"] += 1
         else:
@@ -94,13 +140,16 @@ with open(CSV_PATH, mode="r", encoding="utf-8-sig", errors="replace") as f:
                 "school_id": sch_id,
                 "school_name": sch_name,
                 "cluster": cluster,
-                "village": (row.get("Village") or "").strip(),
+                "village": v_name,
+                "area": area,
                 "management": mgt,
                 "category": (row.get("SchoolCategory") or "").strip(),
                 "total": 0,
                 "boys": 0,
                 "girls": 0,
-                "balvatika": 0
+                "balvatika": 0,
+                "classes": {c: 0 for c in class_order},
+                "social": {"General": 0, "OBC": 0, "SC": 0, "ST": 0}
             }
         sch = school_summaries[sch_id]
         sch["total"] += 1
@@ -110,6 +159,11 @@ with open(CSV_PATH, mode="r", encoding="utf-8-sig", errors="replace") as f:
             sch["girls"] += 1
         if std_class == "Balvatika":
             sch["balvatika"] += 1
+        sch["classes"][std_class] += 1
+        if soc in sch["social"]:
+            sch["social"][soc] += 1
+        else:
+            sch["social"]["General"] += 1
 
         # Keep initial 300 students for instant client rendering
         if len(initial_students) < 300:
@@ -131,7 +185,8 @@ with open(CSV_PATH, mode="r", encoding="utf-8-sig", errors="replace") as f:
                 "SchoolId": sch_id,
                 "School": sch_name,
                 "Cluster": cluster,
-                "Village": (row.get("Village") or "").strip(),
+                "Village": v_name,
+                "Area": area,
                 "Management": mgt,
                 "SchoolCategory": (row.get("SchoolCategory") or "").strip(),
                 "Religion": (row.get("Religion") or "").strip(),
@@ -147,6 +202,9 @@ higher_sec_11_12 = sum(class_counts[str(i)] for i in range(11, 13))
 sec_higher_sec_9_12 = secondary_9_10 + higher_sec_11_12
 balvatika_total = class_counts["Balvatika"]
 
+rural_schools = sum(1 for s in school_summaries.values() if s["area"] == "Rural")
+urban_schools = sum(1 for s in school_summaries.values() if s["area"] == "Urban")
+
 analytics_data = {
     "kpis": {
         "total_students": total_students,
@@ -156,6 +214,12 @@ analytics_data = {
         "girls": girls,
         "boys_percentage": round((boys / total_students) * 100, 2) if total_students else 0,
         "girls_percentage": round((girls / total_students) * 100, 2) if total_students else 0,
+        "rural_students": rural_students,
+        "urban_students": urban_students,
+        "rural_percentage": round((rural_students / total_students) * 100, 2) if total_students else 0,
+        "urban_percentage": round((urban_students / total_students) * 100, 2) if total_students else 0,
+        "rural_schools": rural_schools,
+        "urban_schools": urban_schools,
         "balvatika": balvatika_total,
         "primary_1_5": primary_1_5,
         "upper_primary_6_8": upper_primary_6_8,
@@ -167,10 +231,16 @@ analytics_data = {
     "class_order": class_order,
     "class_counts": class_counts,
     "clusters_list": sorted(list(cluster_counts.keys())),
+    "managements_list": sorted(list(management_counts.keys())),
     "cluster_counts": dict(cluster_counts),
     "cluster_gender": dict(cluster_gender),
     "social_counts": dict(social_counts),
     "management_counts": dict(management_counts),
+    "area_counts": area_counts,
+    "area_gender_pivot": area_gender_pivot,
+    "area_class_pivot": area_class_pivot,
+    "area_mgt_pivot": {k: dict(v) for k, v in area_mgt_pivot.items()},
+    "mgt_area_pivot": {k: dict(v) for k, v in mgt_area_pivot.items()},
     "cluster_class_pivot": {k: dict(v) for k, v in cluster_class_pivot.items()},
     "mgt_class_pivot": {k: dict(v) for k, v in mgt_class_pivot.items()},
     "social_class_pivot": {k: dict(v) for k, v in social_class_pivot.items()},
@@ -193,4 +263,4 @@ with open(OUTPUT_JS, "w", encoding="utf-8") as f:
 
 print("Generated:", OUTPUT_JSON, f"({os.path.getsize(OUTPUT_JSON)} bytes)")
 print("Generated:", OUTPUT_JS, f"({os.path.getsize(OUTPUT_JS)} bytes)")
-print("Total students processed:", total_students)
+print(f"Total students: {total_students} | Rural: {rural_students} ({analytics_data['kpis']['rural_percentage']}%) | Urban: {urban_students} ({analytics_data['kpis']['urban_percentage']}%)")

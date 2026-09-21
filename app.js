@@ -2302,9 +2302,19 @@ function initCtsAnalyticsCharts() {
 // Features: 8 KPI Cards, Dynamic Pivot Table, 5 Interactive Charts, Live Student Search & Official CTS Profile PDF
 // ═════════════════════════════════════════════════════════════════════════════
 
-let activeStudentSubView = 'pivot'; // 'pivot', 'charts', 'directory', 'schools'
-let studentPivotRowDim = 'cluster'; // 'cluster', 'management', 'social'
-let studentPivotColDim = 'class'; // 'class', 'gender'
+let activeStudentSubView = 'pivot'; // 'pivot', 'directory', 'schools'
+let studentPivotRowDim = 'management'; // 'management' by default as requested!
+let studentPivotColDim = 'class'; // 'class', 'gender', 'area'
+
+// Multi-dimensional filters for Pivot & Charts
+let studentFilterManagement = '';
+let studentFilterStandard = '';
+let studentFilterArea = '';
+let studentFilterCluster = '';
+let studentFilterGender = '';
+let studentFilterSocial = '';
+let studentFilterSearch = '';
+
 let studentDirectorySearchQuery = '';
 let studentDirectoryClusterFilter = '';
 let studentDirectoryClassFilter = '';
@@ -2313,9 +2323,10 @@ const studentDirectoryPageSize = 25;
 let studentDirectoryRecords = [];
 
 let chartStudentClassObj = null;
-let chartStudentGenderObj = null;
+let chartStudentRuralUrbanObj = null;
 let chartStudentSocialObj = null;
 let chartStudentMgtObj = null;
+let chartStudentStackedObj = null;
 let chartStudentClusterObj = null;
 
 function getStudentAnalytics() {
@@ -2331,6 +2342,12 @@ function getStudentAnalytics() {
       girls: 31348,
       boys_percentage: 54.17,
       girls_percentage: 45.83,
+      rural_students: 46250,
+      urban_students: 22147,
+      rural_percentage: 67.62,
+      urban_percentage: 32.38,
+      rural_schools: 195,
+      urban_schools: 49,
       balvatika: 4729,
       primary_1_5: 25966,
       upper_primary_6_8: 18622,
@@ -2345,15 +2362,19 @@ function getStudentAnalytics() {
       "6": 6209, "7": 5799, "8": 6614, "9": 6413, "10": 5226, "11": 4022, "12": 3419
     },
     clusters_list: [
-      "ALDESAN", "CHANDRASAN", "INDRAD", "JASALPUR", "KADI KANYA SHALA - 4",
-      "KADI KUMAR SHALA - 2", "KADI KUMAR SHALA - 3", "KALYANPURA", "KARAN NAGAR",
-      "KASVA", "KUNDAL", "NANI KADI", "THOL", "VISATPURA"
+      "DANGARWA", "DARAN", "KADI KANYA SHALA - 4", "KADI KUMAR SHALA - 2", "KADI KUMAR SHALA - 3",
+      "KALYANPURA", "KARANNAGAR", "KUNDAL", "MEDA ADARAJ", "MEDHA", "NAVAPURA (NA)", "RAJPUR", "THOL", "VISATPURA"
+    ],
+    managements_list: [
+      "Local Body", "Private Unaided", "Government Aided", "RMSA School",
+      "Tribal Welfare Department", "Social Welfare Department", "Department of Education"
     ],
     social_counts: { "OBC": 45295, "General": 17013, "SC": 4869, "ST": 1220 },
     management_counts: {
       "Local Body": 29624, "Private Unaided": 22224, "Government Aided": 16011,
       "RMSA School": 264, "Tribal Welfare Department": 110, "Social Welfare Department": 92, "Department of Education": 72
     },
+    area_counts: { "Rural": 46250, "Urban": 22147 },
     cluster_class_pivot: {},
     mgt_class_pivot: {},
     social_class_pivot: {},
@@ -2375,7 +2396,7 @@ function renderStudentInformationModuleView() {
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
         <div>
           <div style="display:flex; align-items:center; gap:10px;">
-            <div style="width:40px; height:40px; background:#f97316; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:20px;">
+            <div style="width:42px; height:42px; background:#f97316; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; box-shadow:0 3px 10px rgba(249,115,22,0.4);">
               <i class="fa-solid fa-user-graduate"></i>
             </div>
             <div>
@@ -2383,19 +2404,25 @@ function renderStudentInformationModuleView() {
                 STUDENT INFORMATION PORTAL (વિદ્યાર્થીઓની માહિતી)
               </h2>
               <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">
-                Total Students Enrollment (240402) · Complete Child Analytics &amp; CTS Profile Engine
+                Total Students Enrollment (240402) · Complete Child Analytics, Rural/Urban Demographics &amp; Pivot Matrix
               </div>
             </div>
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          <span style="background:#16a34a; color:#fff; font-size:12px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-users"></i> ${kpis.total_students.toLocaleString()} Students
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="background:#16a34a; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-users"></i> ${kpis.total_students.toLocaleString()} કુલ વિદ્યાર્થીઓ
           </span>
-          <span style="background:#0284c7; color:#fff; font-size:12px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-school"></i> ${kpis.total_schools} Schools
+          <span style="background:#059669; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-tree"></i> 🌾 ${kpis.rural_students ? kpis.rural_students.toLocaleString() : '46,250'} ગ્રામ્ય (${kpis.rural_percentage || '67.6'}%)
           </span>
-          <span style="background:#8b5cf6; color:#fff; font-size:12px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+          <span style="background:#ea580c; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-city"></i> 🏙️ ${kpis.urban_students ? kpis.urban_students.toLocaleString() : '22,147'} શહેરી (${kpis.urban_percentage || '32.4'}%)
+          </span>
+          <span style="background:#0284c7; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-school"></i> ${kpis.total_schools} શાળાઓ
+          </span>
+          <span style="background:#8b5cf6; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
             <i class="fa-solid fa-layer-group"></i> ${kpis.total_clusters} CRCs
           </span>
         </div>
@@ -2411,42 +2438,79 @@ function renderStudentInformationModuleView() {
       </div>
     </div>
 
-    <!-- 8 RICH KPI CARDS -->
-    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:14px;">
+    <!-- 10 RICH KPI CARDS (ROW 1: DEMOGRAPHICS & RURAL/URBAN | ROW 2: CLASS STAGES & CWSN) -->
+    <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:12px;">
       
+      <!-- Card 1: Total Enrolled Students -->
       <div class="cts-card">
         <div class="cts-card-head navy"><span>TOTAL ENROLLED STUDENTS</span></div>
         <div class="cts-card-body navy">
           <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
           <div class="card-text-wrap">
-            <strong>કુલ વિદ્યાર્થીઓ (Enrollment)</strong>
+            <strong>કુલ વિદ્યાર્થીઓ (Total)</strong>
             <div class="card-count-num">${kpis.total_students.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
+      <!-- Card 2: Rural Enrollment (ગ્રામ્ય વિદ્યાર્થીઓ) -->
+      <div class="cts-card" style="border:1px solid #bbf7d0;">
+        <div class="cts-card-head" style="background:#15803d; color:#fff;"><span>🌾 RURAL / ગ્રામ્ય વિસ્તાર</span></div>
+        <div class="cts-card-body" style="background:#f0fdf4;">
+          <div class="card-icon-avatar" style="background:#dcfce7; color:#15803d;"><i class="fa-solid fa-tree"></i></div>
+          <div class="card-text-wrap">
+            <strong>Rural Enrolled (${kpis.rural_percentage || '67.6'}%)</strong>
+            <div class="card-count-num" style="color:#15803d;">${(kpis.rural_students || 46250).toLocaleString()}</div>
+            <div style="font-size:10.5px; color:#166534; font-weight:700; margin-top:2px;"><i class="fa-solid fa-school"></i> ${kpis.rural_schools || 195} ગ્રામ્ય શાળાઓ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Urban Enrollment (શહેરી વિદ્યાર્થીઓ) -->
+      <div class="cts-card" style="border:1px solid #fed7aa;">
+        <div class="cts-card-head" style="background:#c2410c; color:#fff;"><span>🏙️ URBAN / શહેરી વિસ્તાર</span></div>
+        <div class="cts-card-body" style="background:#fff7ed;">
+          <div class="card-icon-avatar" style="background:#ffedd5; color:#ea580c;"><i class="fa-solid fa-city"></i></div>
+          <div class="card-text-wrap">
+            <strong>Urban Enrolled (${kpis.urban_percentage || '32.4'}%)</strong>
+            <div class="card-count-num" style="color:#ea580c;">${(kpis.urban_students || 22147).toLocaleString()}</div>
+            <div style="font-size:10.5px; color:#9a3412; font-weight:700; margin-top:2px;"><i class="fa-solid fa-school"></i> ${kpis.urban_schools || 49} શહેરી શાળાઓ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Boys -->
       <div class="cts-card">
         <div class="cts-card-head green"><span>BOYS / કુમાર વિદ્યાર્થીઓ</span></div>
         <div class="cts-card-body green">
           <div class="card-icon-avatar"><i class="fa-solid fa-mars"></i></div>
           <div class="card-text-wrap">
-            <strong>Boys Enrolled (${kpis.boys_percentage}%)</strong>
+            <strong>Boys (${kpis.boys_percentage}%)</strong>
             <div class="card-count-num" style="color:#16a34a;">${kpis.boys.toLocaleString()}</div>
+            <div style="font-size:10.5px; color:#15803d; font-weight:700; margin-top:2px;">Boys Enrollment</div>
           </div>
         </div>
       </div>
 
+      <!-- Card 5: Girls -->
       <div class="cts-card">
         <div class="cts-card-head" style="background:#db2777; color:#fff;"><span>GIRLS / કન્યા વિદ્યાર્થીઓ</span></div>
         <div class="cts-card-body" style="border:1px solid #fce7f3;">
           <div class="card-icon-avatar" style="background:#fdf2f8; color:#db2777;"><i class="fa-solid fa-venus"></i></div>
           <div class="card-text-wrap">
-            <strong>Girls Enrolled (${kpis.girls_percentage}%)</strong>
+            <strong>Girls (${kpis.girls_percentage}%)</strong>
             <div class="card-count-num" style="color:#db2777;">${kpis.girls.toLocaleString()}</div>
+            <div style="font-size:10.5px; color:#be185d; font-weight:700; margin-top:2px;">Girls Enrollment</div>
           </div>
         </div>
       </div>
 
+    </div>
+
+    <!-- ROW 2: CLASS BREAKDOWN & CWSN -->
+    <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; margin-bottom:20px;">
+      
+      <!-- Card 6: Balvatika -->
       <div class="cts-card">
         <div class="cts-card-head" style="background:#0891b2; color:#fff;"><span>BALVATIKA &amp; PRE-PRIMARY</span></div>
         <div class="cts-card-body" style="border:1px solid #cffafe;">
@@ -2458,21 +2522,19 @@ function renderStudentInformationModuleView() {
         </div>
       </div>
 
-    </div>
-
-    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-bottom:20px;">
-      
+      <!-- Card 7: Primary (1-5) -->
       <div class="cts-card">
         <div class="cts-card-head blue"><span>PRIMARY (ધોરણ ૧ થી ૫)</span></div>
         <div class="cts-card-body blue">
           <div class="card-icon-avatar"><i class="fa-solid fa-book-open-reader"></i></div>
           <div class="card-text-wrap">
-            <strong>Primary Section (Std 1-5)</strong>
+            <strong>Primary (Std 1-5)</strong>
             <div class="card-count-num" style="color:#0284c7;">${kpis.primary_1_5.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
+      <!-- Card 8: Upper Primary (6-8) -->
       <div class="cts-card">
         <div class="cts-card-head purple"><span>UPPER PRIMARY (ધોરણ ૬ થી ૮)</span></div>
         <div class="cts-card-body purple">
@@ -2484,17 +2546,19 @@ function renderStudentInformationModuleView() {
         </div>
       </div>
 
+      <!-- Card 9: Secondary & Higher Secondary (9-12) -->
       <div class="cts-card">
         <div class="cts-card-head brown"><span>SECONDARY &amp; H.SEC (૯ થી ૧૨)</span></div>
         <div class="cts-card-body brown">
           <div class="card-icon-avatar"><i class="fa-solid fa-school"></i></div>
           <div class="card-text-wrap">
-            <strong>Sec &amp; Higher Sec (9-12)</strong>
+            <strong>Sec &amp; H.Sec (9-12)</strong>
             <div class="card-count-num" style="color:#a14e13;">${kpis.sec_higher_sec_9_12.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
+      <!-- Card 10: CWSN -->
       <div class="cts-card">
         <div class="cts-card-head" style="background:#e11d48; color:#fff;"><span>CWSN DIVYANG STUDENTS</span></div>
         <div class="cts-card-body" style="border:1px solid #ffe4e6;">
@@ -2508,23 +2572,19 @@ function renderStudentInformationModuleView() {
 
     </div>
 
-    <!-- 4 SUB-NAVIGATION BUTTON TABS -->
+    <!-- SUB-NAVIGATION BUTTON TABS -->
     <div style="background:#0f172a; border-radius:10px; padding:8px 12px; margin-bottom:20px; display:flex; gap:10px; overflow-x:auto;">
       
-      <button class="btn" onclick="switchStudentSubView('pivot')" style="background:${activeStudentSubView === 'pivot' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
-        <i class="fa-solid fa-table-cells"></i> 1. Pivot Table Analytics (પીવટ વિશ્લેષણ)
+      <button class="btn" onclick="switchStudentSubView('pivot')" style="background:${activeStudentSubView === 'pivot' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-table-cells"></i> 1. Pivot Table &amp; Interactive Charts (પીવટ વિશ્લેષણ અને ચાર્ટ્સ)
       </button>
 
-      <button class="btn" onclick="switchStudentSubView('charts')" style="background:${activeStudentSubView === 'charts' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
-        <i class="fa-solid fa-chart-column"></i> 2. Interactive Charts (ચાર્ટ્સ અને ગ્રાફ્સ)
+      <button class="btn" onclick="switchStudentSubView('directory')" style="background:${activeStudentSubView === 'directory' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-address-book"></i> 2. Live Student Directory &amp; PDF (વિદ્યાર્થી ડિરેક્ટરી અને પ્રોફાઈલ PDF)
       </button>
 
-      <button class="btn" onclick="switchStudentSubView('directory')" style="background:${activeStudentSubView === 'directory' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
-        <i class="fa-solid fa-address-book"></i> 3. Live Student Directory &amp; PDF (વિદ્યાર્થી ડિરેક્ટરી અને પ્રોફાઈલ PDF)
-      </button>
-
-      <button class="btn" onclick="switchStudentSubView('schools')" style="background:${activeStudentSubView === 'schools' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer;">
-        <i class="fa-solid fa-building-columns"></i> 4. School-wise Summary (શાળા મુજબ પત્રક)
+      <button class="btn" onclick="switchStudentSubView('schools')" style="background:${activeStudentSubView === 'schools' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;">
+        <i class="fa-solid fa-building-columns"></i> 3. School-wise Summary Table (શાળા મુજબ પત્રક)
       </button>
 
     </div>
@@ -2548,8 +2608,6 @@ function renderStudentSubViewContent() {
 
   if (activeStudentSubView === "pivot") {
     renderStudentPivotSection(panel);
-  } else if (activeStudentSubView === "charts") {
-    renderStudentChartsSection(panel);
   } else if (activeStudentSubView === "directory") {
     renderStudentDirectorySection(panel);
   } else if (activeStudentSubView === "schools") {
@@ -2558,61 +2616,312 @@ function renderStudentSubViewContent() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 1. INTERACTIVE PIVOT TABLE SECTION
+// 1. INTERACTIVE PIVOT TABLE & DYNAMIC FILTERS & CHARTS SECTION
 // ═════════════════════════════════════════════════════════════════════════════
 function renderStudentPivotSection(container) {
   const data = getStudentAnalytics();
+  const clusters = data.clusters_list || [];
+  const managements = data.managements_list || [
+    "Local Body", "Private Unaided", "Government Aided", "RMSA School",
+    "Tribal Welfare Department", "Social Welfare Department", "Department of Education"
+  ];
   const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 
   let html = `
-    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:16px 20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
-        
+    <!-- PIVOT CONTROL & MULTI-FILTER BAR -->
+    <div style="background:#ffffff; border-radius:12px; border:1px solid #cbd5e1; padding:18px 22px; margin-bottom:20px; box-shadow:0 3px 10px rgba(0,0,0,0.04);">
+      
+      <!-- Top Title & Quick Actions -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
         <div>
-          <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-table-cells" style="color:#2563eb;"></i> INTERACTIVE PIVOT TABLE ANALYTICS (પીવટ વિશ્લેષણ)
+          <h3 style="font-size:16.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-table-cells" style="color:#2563eb;"></i> INTERACTIVE PIVOT MATRIX &amp; ADVANCED FILTERS (પીવટ વિશ્લેષણ)
           </h3>
-          <div style="font-size:12px; color:#64748b; margin-top:2px;">
-            Customize Rows and Columns to cross-tabulate 68,397 student enrollment records dynamically
+          <div style="font-size:12px; color:#64748b; margin-top:3px;">
+            Default View: <strong>Management Wise × Standard Wise</strong> (Cross-tabulated 68,397 student records)
           </div>
         </div>
 
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-          
           <div style="display:flex; align-items:center; gap:6px;">
-            <label style="font-size:12px; font-weight:700; color:#475569;">Row Dimension:</label>
-            <select id="selStudentPivotRow" onchange="onStudentPivotDimensionChange()" style="padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; outline:none; background:#f8fafc;">
-              <option value="cluster" ${studentPivotRowDim === 'cluster' ? 'selected' : ''}>Cluster / CRC (14 Clusters)</option>
-              <option value="management" ${studentPivotRowDim === 'management' ? 'selected' : ''}>Management Type</option>
-              <option value="social" ${studentPivotRowDim === 'social' ? 'selected' : ''}>Social Category (General, OBC, SC, ST)</option>
+            <label style="font-size:12px; font-weight:800; color:#334155;">Row Dimension:</label>
+            <select id="selStudentPivotRow" onchange="onStudentPivotDimensionChange()" style="padding:7px 12px; font-size:12px; border-radius:6px; border:1px solid #94a3b8; font-weight:800; color:#0f172a; outline:none; background:#f8fafc;">
+              <option value="management" ${studentPivotRowDim === 'management' ? 'selected' : ''}>🏢 Management Type (શાળા વ્યવસ્થાપન)</option>
+              <option value="cluster" ${studentPivotRowDim === 'cluster' ? 'selected' : ''}>📍 Cluster / CRC (14 ક્લસ્ટર્સ)</option>
+              <option value="area" ${studentPivotRowDim === 'area' ? 'selected' : ''}>🌾 Rural / Urban (ગ્રામ્ય / શહેરી)</option>
+              <option value="social" ${studentPivotRowDim === 'social' ? 'selected' : ''}>🏷️ Social Category (General, OBC, SC, ST)</option>
             </select>
           </div>
 
           <div style="display:flex; align-items:center; gap:6px;">
-            <label style="font-size:12px; font-weight:700; color:#475569;">Column Dimension:</label>
-            <select id="selStudentPivotCol" onchange="onStudentPivotDimensionChange()" style="padding:6px 12px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; outline:none; background:#f8fafc;">
-              <option value="class" ${studentPivotColDim === 'class' ? 'selected' : ''}>Studying Class (Balvatika, Std 1 to 12)</option>
-              <option value="gender" ${studentPivotColDim === 'gender' ? 'selected' : ''}>Gender (Boys, Girls, Total)</option>
+            <label style="font-size:12px; font-weight:800; color:#334155;">Column Dimension:</label>
+            <select id="selStudentPivotCol" onchange="onStudentPivotDimensionChange()" style="padding:7px 12px; font-size:12px; border-radius:6px; border:1px solid #94a3b8; font-weight:800; color:#0f172a; outline:none; background:#f8fafc;">
+              <option value="class" ${studentPivotColDim === 'class' ? 'selected' : ''}>📚 Studying Class (ધોરણ ૧ થી ૧૨ &amp; બાલવાટિકા)</option>
+              <option value="gender" ${studentPivotColDim === 'gender' ? 'selected' : ''}>👥 Gender (કુમાર / કન્યા)</option>
+              <option value="area" ${studentPivotColDim === 'area' ? 'selected' : ''}>🌾 Rural / Urban (ગ્રામ્ય / શહેરી)</option>
             </select>
           </div>
 
-          <button onclick="exportStudentPivotToCsv()" style="background:#10b981; color:#fff; border:none; padding:7px 14px; border-radius:6px; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <button onclick="exportStudentPivotToCsv()" style="background:#10b981; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
             <i class="fa-solid fa-file-excel"></i> Export Pivot to CSV
           </button>
+        </div>
+      </div>
 
+      <!-- FILTER CONTROLS GRID ("BIJA GHANA FILTAR HOY") -->
+      <div style="display:grid; grid-template-columns:repeat(6, 1fr) auto auto; gap:10px; align-items:end;">
+        
+        <!-- 1. Management Filter -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
+            <i class="fa-solid fa-sitemap" style="color:#0284c7;"></i> મેનેજમેન્ટ (Management):
+          </label>
+          <select id="selStudentFilterMgt" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
+            <option value="">All Managements (તમામ)</option>
+            ${managements.map(m => `<option value="${m}" ${studentFilterManagement === m ? 'selected' : ''}>${m}</option>`).join('')}
+          </select>
+        </div>
+
+        <!-- 2. Rural / Urban Filter -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
+            <i class="fa-solid fa-tree-city" style="color:#16a34a;"></i> વિસ્તાર (Area / Location):
+          </label>
+          <select id="selStudentFilterArea" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
+            <option value="">All Areas (ગ્રામ્ય + શહેરી)</option>
+            <option value="Rural" ${studentFilterArea === 'Rural' ? 'selected' : ''}>🌾 Rural Only (માત્ર ગ્રામ્ય - 67.6%)</option>
+            <option value="Urban" ${studentFilterArea === 'Urban' ? 'selected' : ''}>🏙️ Urban Only (માત્ર શહેરી - 32.4%)</option>
+          </select>
+        </div>
+
+        <!-- 3. Standard / Class Filter -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
+            <i class="fa-solid fa-graduation-cap" style="color:#f59e0b;"></i> ધોરણ (Standard):
+          </label>
+          <select id="selStudentFilterStd" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
+            <option value="">All Standards (બધા ધોરણ)</option>
+            <option value="Balvatika" ${studentFilterStandard === 'Balvatika' ? 'selected' : ''}>Balvatika</option>
+            ${classOrder.filter(c => c !== 'Balvatika').map(c => `<option value="${c}" ${studentFilterStandard === c ? 'selected' : ''}>Std ${c}</option>`).join('')}
+          </select>
+        </div>
+
+        <!-- 4. Cluster / CRC Filter -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
+            <i class="fa-solid fa-layer-group" style="color:#8b5cf6;"></i> ક્લસ્ટર (Cluster / CRC):
+          </label>
+          <select id="selStudentFilterCluster" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
+            <option value="">All 14 Clusters (તમામ CRC)</option>
+            ${clusters.map(c => `<option value="${c}" ${studentFilterCluster === c ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+
+        <!-- 5. Gender Filter -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
+            <i class="fa-solid fa-venus-mars" style="color:#ec4899;"></i> જાતિ (Gender):
+          </label>
+          <select id="selStudentFilterGender" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
+            <option value="">All (કુમાર + કન્યા)</option>
+            <option value="Male" ${studentFilterGender === 'Male' ? 'selected' : ''}>Boys / કુમાર</option>
+            <option value="Female" ${studentFilterGender === 'Female' ? 'selected' : ''}>Girls / કન્યા</option>
+          </select>
+        </div>
+
+        <!-- 6. Social Category Filter -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
+            <i class="fa-solid fa-users" style="color:#0d9488;"></i> સામાજિક વર્ગ (Category):
+          </label>
+          <select id="selStudentFilterSocial" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
+            <option value="">All Categories</option>
+            <option value="General" ${studentFilterSocial === 'General' ? 'selected' : ''}>General</option>
+            <option value="OBC" ${studentFilterSocial === 'OBC' ? 'selected' : ''}>OBC</option>
+            <option value="SC" ${studentFilterSocial === 'SC' ? 'selected' : ''}>SC</option>
+            <option value="ST" ${studentFilterSocial === 'ST' ? 'selected' : ''}>ST</option>
+          </select>
+        </div>
+
+        <!-- 7. Quick Search Box -->
+        <div>
+          <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
+            <i class="fa-solid fa-search"></i> સર્ચ:
+          </label>
+          <input type="text" id="txtStudentFilterSearch" value="${studentFilterSearch}" placeholder="શાળા/ગામ શોધો..." oninput="onStudentFilterChange()" style="width:140px; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:600; outline:none; background:#f8fafc;" />
+        </div>
+
+        <!-- 8. Reset Button -->
+        <div>
+          <button onclick="resetStudentPivotFilters()" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:7px 12px; border-radius:6px; font-size:11.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; height:32px;">
+            <i class="fa-solid fa-arrow-rotate-left"></i> રીસેટ
+          </button>
         </div>
 
       </div>
+
+      <!-- Active Filter Status Badge -->
+      <div id="studentPivotFilterBadgeArea" style="margin-top:12px; font-size:12px; font-weight:700; color:#1e293b; display:flex; align-items:center; gap:8px;">
+        <!-- Injected via buildStudentPivotTableHtml() -->
+      </div>
+
     </div>
 
-    <!-- PIVOT TABLE DISPLAY -->
-    <div id="studentPivotTableContentArea" style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+    <!-- PIVOT TABLE DISPLAY AREA -->
+    <div id="studentPivotTableContentArea" style="background:#ffffff; border-radius:12px; border:1px solid #cbd5e1; overflow:hidden; box-shadow:0 3px 10px rgba(0,0,0,0.04); margin-bottom:24px;">
       <!-- Injected via buildStudentPivotTableHtml() -->
+    </div>
+
+    <!-- ========================================================== -->
+    <!-- INTERACTIVE CHARTS SECTION ("SATHE MAST CART PAN MUKI DO") -->
+    <!-- ========================================================== -->
+    <div style="background:#f8fafc; border-radius:12px; border:1px solid #cbd5e1; padding:20px; margin-bottom:24px; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h3 style="font-size:16.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-chart-pie" style="color:#ea580c;"></i> DYNAMIC ENROLLMENT CHARTS &amp; GRAPHICAL VISUALIZATIONS (ચાર્ટ્સ)
+          </h3>
+          <div style="font-size:12px; color:#64748b; margin-top:2px;">
+            Visual breakdown of Rural vs Urban, Management-wise, Standard Progression &amp; CRC Enrollments
+          </div>
+        </div>
+        <span style="background:#e0f2fe; color:#0369a1; font-size:11.5px; font-weight:800; padding:5px 12px; border-radius:6px;">
+          <i class="fa-solid fa-chart-simple"></i> Interactive Real-Time Visual Analytics
+        </span>
+      </div>
+
+      <!-- Charts Row 1: Rural vs Urban & Management-wise -->
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:16px; margin-bottom:18px;">
+        
+        <!-- Chart 1: Rural vs Urban Distribution (Doughnut) -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #e2e8f0; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="font-size:13.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-tree-city" style="color:#16a34a;"></i> ગ્રામ્ય vs શહેરી વિતરણ (Rural vs Urban)
+            </h4>
+            <span style="font-size:11px; font-weight:800; color:#16a34a; background:#dcfce7; padding:2px 8px; border-radius:4px;">67.6% Rural</span>
+          </div>
+          <div style="position:relative; height:260px;">
+            <canvas id="canvasStudentRuralUrbanChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Management Wise Breakdown -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #e2e8f0; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="font-size:13.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-sitemap" style="color:#0284c7;"></i> શાળા વ્યવસ્થાપન મુજબ નોંધણી (Management Wise)
+            </h4>
+            <span style="font-size:11px; font-weight:700; color:#64748b;">Local Body, Private, Govt Aided</span>
+          </div>
+          <div style="position:relative; height:260px;">
+            <canvas id="canvasStudentMgtChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Charts Row 2: Standard Wise Progression & Management vs Standard Stacked -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
+        
+        <!-- Chart 3: Standard-wise Enrollment (Balvatika to Std 12) -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #e2e8f0; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="font-size:13.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-chart-column" style="color:#2563eb;"></i> ધોરણ મુજબ વિદ્યાર્થી સંખ્યા (Standard-wise Enrollment)
+            </h4>
+            <span style="font-size:11px; font-weight:700; color:#64748b;">Balvatika to Class 12</span>
+          </div>
+          <div style="position:relative; height:270px;">
+            <canvas id="canvasStudentClassChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: Management vs Standard Stacked Chart -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #e2e8f0; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h4 style="font-size:13.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-layer-group" style="color:#8b5cf6;"></i> મેનેજમેન્ટ × ધોરણ ક્રોસ વિશ્લેષણ (Management × Class Stacked)
+            </h4>
+            <span style="font-size:11px; font-weight:700; color:#64748b;">Multi-tier Comparison</span>
+          </div>
+          <div style="position:relative; height:270px;">
+            <canvas id="canvasStudentStackedChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Chart 5: Cluster Wise Enrollment -->
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #e2e8f0; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.02);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h4 style="font-size:13.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-map-location-dot" style="color:#f59e0b;"></i> તમામ ૧૪ ક્લસ્ટર (CRC) વાઈઝ વિદ્યાર્થીઓની સંખ્યા (Cluster-wise Enrollment)
+          </h4>
+          <span style="font-size:11px; font-weight:700; color:#64748b;">14 Clusters in Kadi Block</span>
+        </div>
+        <div style="position:relative; height:300px;">
+          <canvas id="canvasStudentClusterChart"></canvas>
+        </div>
+      </div>
+
     </div>
   `;
 
   container.innerHTML = html;
   buildStudentPivotTableHtml();
+  setTimeout(initStudentCharts, 60);
+}
+
+function onStudentFilterChange() {
+  const selMgt = document.getElementById("selStudentFilterMgt");
+  const selStd = document.getElementById("selStudentFilterStd");
+  const selArea = document.getElementById("selStudentFilterArea");
+  const selCluster = document.getElementById("selStudentFilterCluster");
+  const selGender = document.getElementById("selStudentFilterGender");
+  const selSocial = document.getElementById("selStudentFilterSocial");
+  const txtSearch = document.getElementById("txtStudentFilterSearch");
+
+  if (selMgt) studentFilterManagement = selMgt.value;
+  if (selStd) studentFilterStandard = selStd.value;
+  if (selArea) studentFilterArea = selArea.value;
+  if (selCluster) studentFilterCluster = selCluster.value;
+  if (selGender) studentFilterGender = selGender.value;
+  if (selSocial) studentFilterSocial = selSocial.value;
+  if (txtSearch) studentFilterSearch = txtSearch.value.trim();
+
+  buildStudentPivotTableHtml();
+  setTimeout(initStudentCharts, 60);
+}
+
+function resetStudentPivotFilters() {
+  studentFilterManagement = '';
+  studentFilterStandard = '';
+  studentFilterArea = '';
+  studentFilterCluster = '';
+  studentFilterGender = '';
+  studentFilterSocial = '';
+  studentFilterSearch = '';
+
+  const selMgt = document.getElementById("selStudentFilterMgt");
+  const selStd = document.getElementById("selStudentFilterStd");
+  const selArea = document.getElementById("selStudentFilterArea");
+  const selCluster = document.getElementById("selStudentFilterCluster");
+  const selGender = document.getElementById("selStudentFilterGender");
+  const selSocial = document.getElementById("selStudentFilterSocial");
+  const txtSearch = document.getElementById("txtStudentFilterSearch");
+
+  if (selMgt) selMgt.value = '';
+  if (selStd) selStd.value = '';
+  if (selArea) selArea.value = '';
+  if (selCluster) selCluster.value = '';
+  if (selGender) selGender.value = '';
+  if (selSocial) selSocial.value = '';
+  if (txtSearch) txtSearch.value = '';
+
+  buildStudentPivotTableHtml();
+  setTimeout(initStudentCharts, 60);
 }
 
 function onStudentPivotDimensionChange() {
@@ -2621,56 +2930,200 @@ function onStudentPivotDimensionChange() {
   if (selRow) studentPivotRowDim = selRow.value;
   if (selCol) studentPivotColDim = selCol.value;
   buildStudentPivotTableHtml();
+  setTimeout(initStudentCharts, 60);
+}
+
+function getFilteredStudentSchools() {
+  const data = getStudentAnalytics();
+  const list = data.schools_summary || [];
+  return list.filter(s => {
+    if (studentFilterManagement && s.management !== studentFilterManagement) return false;
+    if (studentFilterArea && s.area !== studentFilterArea) return false;
+    if (studentFilterCluster && s.cluster !== studentFilterCluster) return false;
+    if (studentFilterStandard && (!s.classes || !s.classes[studentFilterStandard] || s.classes[studentFilterStandard] <= 0)) return false;
+    if (studentFilterSearch) {
+      const q = studentFilterSearch.toLowerCase();
+      const str = ((s.school_id || '') + ' ' + (s.school_name || '') + ' ' + (s.village || '') + ' ' + (s.cluster || '') + ' ' + (s.management || '')).toLowerCase();
+      if (!str.includes(q)) return false;
+    }
+    return true;
+  });
 }
 
 function buildStudentPivotTableHtml() {
   const container = document.getElementById("studentPivotTableContentArea");
+  const badgeArea = document.getElementById("studentPivotFilterBadgeArea");
   if (!container) return;
 
   const data = getStudentAnalytics();
   const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  const filteredSchools = getFilteredStudentSchools();
 
+  // Calculate filtered totals
+  let filteredTotalStudents = 0;
+  let filteredBoys = 0;
+  let filteredGirls = 0;
+  let filteredRural = 0;
+  let filteredUrban = 0;
+
+  filteredSchools.forEach(s => {
+    let schTotal = 0;
+    if (studentFilterStandard) {
+      schTotal = s.classes ? (s.classes[studentFilterStandard] || 0) : 0;
+    } else {
+      schTotal = s.total || 0;
+    }
+
+    if (studentFilterGender === 'Male') {
+      const ratio = s.total > 0 ? (s.boys / s.total) : 0.5;
+      schTotal = Math.round(schTotal * ratio);
+    } else if (studentFilterGender === 'Female') {
+      const ratio = s.total > 0 ? (s.girls / s.total) : 0.5;
+      schTotal = Math.round(schTotal * ratio);
+    }
+
+    filteredTotalStudents += schTotal;
+    filteredBoys += s.boys || 0;
+    filteredGirls += s.girls || 0;
+    if (s.area === 'Rural') filteredRural += schTotal;
+    else filteredUrban += schTotal;
+  });
+
+  // Update Filter Status Badge
+  if (badgeArea) {
+    const isFiltered = studentFilterManagement || studentFilterStandard || studentFilterArea || studentFilterCluster || studentFilterGender || studentFilterSocial || studentFilterSearch;
+    if (isFiltered) {
+      badgeArea.innerHTML = `
+        <span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-filter"></i> ફિલ્ટર પરિણામ: <strong>${filteredTotalStudents.toLocaleString()}</strong> વિદ્યાર્થીઓ (${filteredSchools.length} શાળાઓ)
+        </span>
+        ${studentFilterArea ? `<span style="background:#dcfce7; color:#166534; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">વિસ્તાર: ${studentFilterArea}</span>` : ''}
+        ${studentFilterManagement ? `<span style="background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">મેનેજમેન્ટ: ${studentFilterManagement}</span>` : ''}
+        ${studentFilterStandard ? `<span style="background:#f3e8ff; color:#6b21a8; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">ધોરણ: ${studentFilterStandard}</span>` : ''}
+        ${studentFilterCluster ? `<span style="background:#ede9fe; color:#5b21b6; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">ક્લસ્ટર: ${studentFilterCluster}</span>` : ''}
+      `;
+    } else {
+      badgeArea.innerHTML = `
+        <span style="background:#f1f5f9; color:#475569; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> દર્શાવેલ સંપૂર્ણ તાલુકા ડેટા: <strong>${filteredTotalStudents.toLocaleString()}</strong> કુલ વિદ્યાર્થીઓ (${filteredSchools.length} શાળાઓ)
+        </span>
+      `;
+    }
+  }
+
+  // Determine Row Keys
   let rowKeys = [];
   let rowTitle = "";
-  let pivotMatrix = {};
 
-  if (studentPivotRowDim === "cluster") {
-    rowTitle = "Cluster (CRC)";
-    rowKeys = data.clusters_list || Object.keys(data.cluster_class_pivot || {});
-    pivotMatrix = data.cluster_class_pivot || {};
-  } else if (studentPivotRowDim === "management") {
-    rowTitle = "Management";
-    rowKeys = Object.keys(data.management_counts || {});
-    pivotMatrix = data.mgt_class_pivot || {};
+  if (studentPivotRowDim === "management") {
+    rowTitle = "શાળા વ્યવસ્થાપન (Management)";
+    const mgtSet = new Set(data.managements_list || []);
+    filteredSchools.forEach(s => { if (s.management) mgtSet.add(s.management); });
+    rowKeys = Array.from(mgtSet).filter(Boolean);
+    if (studentFilterManagement) rowKeys = [studentFilterManagement];
+  } else if (studentPivotRowDim === "cluster") {
+    rowTitle = "સીઆરસી ક્લસ્ટર (Cluster / CRC)";
+    const clSet = new Set(data.clusters_list || []);
+    filteredSchools.forEach(s => { if (s.cluster) clSet.add(s.cluster); });
+    rowKeys = Array.from(clSet).filter(Boolean).sort();
+    if (studentFilterCluster) rowKeys = [studentFilterCluster];
+  } else if (studentPivotRowDim === "area") {
+    rowTitle = "વિસ્તાર (Rural / Urban)";
+    rowKeys = ["Rural", "Urban"];
+    if (studentFilterArea) rowKeys = [studentFilterArea];
   } else if (studentPivotRowDim === "social") {
-    rowTitle = "Social Category";
+    rowTitle = "સામાજિક વર્ગ (Social Category)";
     rowKeys = ["General", "OBC", "SC", "ST"];
-    pivotMatrix = data.social_class_pivot || {};
+    if (studentFilterSocial) rowKeys = [studentFilterSocial];
   }
 
+  // Determine Col Keys
   let colKeys = [];
   if (studentPivotColDim === "class") {
-    colKeys = classOrder;
+    colKeys = studentFilterStandard ? [studentFilterStandard] : classOrder;
   } else if (studentPivotColDim === "gender") {
-    colKeys = ["Male", "Female"];
+    colKeys = studentFilterGender ? [studentFilterGender] : ["Male", "Female"];
+  } else if (studentPivotColDim === "area") {
+    colKeys = studentFilterArea ? [studentFilterArea] : ["Rural", "Urban"];
   }
 
+  // Build Dynamic 2D Matrix from filtered schools
+  const matrix = {};
+  rowKeys.forEach(r => {
+    matrix[r] = {};
+    colKeys.forEach(c => { matrix[r][c] = 0; });
+  });
+
+  filteredSchools.forEach(s => {
+    let rKey = "";
+    if (studentPivotRowDim === "management") rKey = s.management || "Other";
+    else if (studentPivotRowDim === "cluster") rKey = s.cluster || "Unknown";
+    else if (studentPivotRowDim === "area") rKey = s.area || "Rural";
+
+    colKeys.forEach(cCol => {
+      let count = 0;
+      if (studentPivotColDim === "class") {
+        count = (s.classes && s.classes[cCol]) ? s.classes[cCol] : 0;
+        if (studentFilterGender === 'Male') {
+          const ratio = s.total > 0 ? (s.boys / s.total) : 0.5;
+          count = Math.round(count * ratio);
+        } else if (studentFilterGender === 'Female') {
+          const ratio = s.total > 0 ? (s.girls / s.total) : 0.5;
+          count = Math.round(count * ratio);
+        }
+      } else if (studentPivotColDim === "gender") {
+        if (cCol === "Male") count = s.boys || 0;
+        else if (cCol === "Female") count = s.girls || 0;
+        if (studentFilterStandard && s.total > 0) {
+          const stdTotal = (s.classes && s.classes[studentFilterStandard]) ? s.classes[studentFilterStandard] : 0;
+          count = Math.round(count * (stdTotal / s.total));
+        }
+      } else if (studentPivotColDim === "area") {
+        if (s.area === cCol) {
+          count = studentFilterStandard ? ((s.classes && s.classes[studentFilterStandard]) ? s.classes[studentFilterStandard] : 0) : s.total;
+        }
+      }
+
+      if (studentPivotRowDim === "social") {
+        rowKeys.forEach(socKey => {
+          const socRatio = s.total > 0 ? ((s.social && s.social[socKey] ? s.social[socKey] : 0) / s.total) : 0.25;
+          const socVal = Math.round(count * socRatio);
+          if (matrix[socKey] && matrix[socKey][cCol] !== undefined) {
+            matrix[socKey][cCol] += socVal;
+          }
+        });
+      } else {
+        if (matrix[rKey] && matrix[rKey][cCol] !== undefined) {
+          matrix[rKey][cCol] += count;
+        }
+      }
+    });
+  });
+
+  // Render Table HTML
   let tableHtml = `
     <div style="overflow-x:auto; max-height:650px;">
       <table id="tblStudentPivotData" style="width:100%; border-collapse:collapse; font-size:12px; text-align:right;">
         <thead>
           <tr style="background:#0f172a; color:#ffffff; position:sticky; top:0; z-index:5;">
-            <th style="padding:10px 14px; text-align:left; font-weight:800; border-right:1px solid #334155;">#</th>
-            <th style="padding:10px 14px; text-align:left; font-weight:800; border-right:1px solid #334155; min-width:180px;">${rowTitle}</th>
+            <th style="padding:10px 14px; text-align:left; font-weight:900; border-right:1px solid #334155; width:45px;">#</th>
+            <th style="padding:10px 14px; text-align:left; font-weight:900; border-right:1px solid #334155; min-width:200px;">${rowTitle}</th>
   `;
 
   colKeys.forEach(col => {
-    const label = col === "Balvatika" ? "Balvatika" : (studentPivotColDim === "class" ? `Std ${col}` : (col === "Male" ? "Boys (કુમાર)" : "Girls (કન્યા)"));
-    tableHtml += `<th style="padding:10px 10px; font-weight:800; border-right:1px solid #334155; white-space:nowrap;">${label}</th>`;
+    let colLabel = col;
+    if (studentPivotColDim === "class") {
+      colLabel = col === "Balvatika" ? "બાલવાટિકા" : `Std ${col}`;
+    } else if (studentPivotColDim === "gender") {
+      colLabel = col === "Male" ? "Boys (કુમાર)" : "Girls (કન્યા)";
+    } else if (studentPivotColDim === "area") {
+      colLabel = col === "Rural" ? "🌾 Rural (ગ્રામ્ય)" : "🏙️ Urban (શહેરી)";
+    }
+    tableHtml += `<th style="padding:10px 10px; font-weight:800; border-right:1px solid #334155; white-space:nowrap; text-align:center;">${colLabel}</th>`;
   });
 
   tableHtml += `
-            <th style="padding:10px 14px; font-weight:900; background:#1e293b; color:#f97316;">ROW TOTAL</th>
+            <th style="padding:10px 16px; font-weight:900; background:#1e293b; color:#f97316; width:110px;">ROW TOTAL</th>
           </tr>
         </thead>
         <tbody>
@@ -2683,39 +3136,36 @@ function buildStudentPivotTableHtml() {
   rowKeys.forEach((rowKey, idx) => {
     let rowSum = 0;
     const isEven = idx % 2 === 0;
+    
+    // Row icon based on dimension
+    let rowIcon = '';
+    if (studentPivotRowDim === 'management') rowIcon = '<i class="fa-solid fa-building" style="color:#0284c7; margin-right:6px;"></i>';
+    else if (studentPivotRowDim === 'cluster') rowIcon = '<i class="fa-solid fa-location-dot" style="color:#8b5cf6; margin-right:6px;"></i>';
+    else if (studentPivotRowDim === 'area') rowIcon = rowKey === 'Rural' ? '<i class="fa-solid fa-tree" style="color:#16a34a; margin-right:6px;"></i>' : '<i class="fa-solid fa-city" style="color:#ea580c; margin-right:6px;"></i>';
+    else if (studentPivotRowDim === 'social') rowIcon = '<i class="fa-solid fa-users" style="color:#f59e0b; margin-right:6px;"></i>';
+
     tableHtml += `
-      <tr style="background:${isEven ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0;">
+      <tr style="background:${isEven ? '#ffffff' : '#f8fafc'}; border-bottom:1px solid #e2e8f0; transition:background 0.15s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='${isEven ? '#ffffff' : '#f8fafc'}'">
         <td style="padding:8px 14px; text-align:left; font-weight:700; color:#64748b; border-right:1px solid #e2e8f0;">${idx + 1}</td>
-        <td style="padding:8px 14px; text-align:left; font-weight:800; color:#0f172a; border-right:1px solid #e2e8f0;">${rowKey}</td>
+        <td style="padding:8px 14px; text-align:left; font-weight:800; color:#0f172a; border-right:1px solid #e2e8f0;">${rowIcon}${rowKey}</td>
     `;
 
     colKeys.forEach(col => {
-      let val = 0;
-      if (studentPivotColDim === "gender") {
-        if (studentPivotRowDim === "cluster" && data.cluster_gender && data.cluster_gender[rowKey]) {
-          val = col === "Male" ? (data.cluster_gender[rowKey].boys || 0) : (data.cluster_gender[rowKey].girls || 0);
-        } else if (studentPivotRowDim === "management" && data.mgt_gender_pivot && data.mgt_gender_pivot[rowKey]) {
-          val = data.mgt_gender_pivot[rowKey][col] || 0;
-        } else {
-          val = 0;
-        }
-      } else {
-        val = (pivotMatrix[rowKey] && pivotMatrix[rowKey][col]) ? pivotMatrix[rowKey][col] : 0;
-      }
-
+      const val = (matrix[rowKey] && matrix[rowKey][col]) ? matrix[rowKey][col] : 0;
       rowSum += val;
       colTotals[col] = (colTotals[col] || 0) + val;
 
+      const isNonZero = val > 0;
       tableHtml += `
-        <td style="padding:8px 10px; border-right:1px solid #e2e8f0; color:${val > 0 ? '#0f172a' : '#94a3b8'}; font-weight:${val > 0 ? '600' : '400'};">
-          ${val > 0 ? val.toLocaleString() : '-'}
+        <td style="padding:8px 10px; border-right:1px solid #e2e8f0; color:${isNonZero ? '#0f172a' : '#94a3b8'}; font-weight:${isNonZero ? '700' : '400'};">
+          ${isNonZero ? val.toLocaleString() : '-'}
         </td>
       `;
     });
 
     grandTotal += rowSum;
     tableHtml += `
-        <td style="padding:8px 14px; font-weight:800; color:#0284c7; background:${isEven ? '#f0f9ff' : '#e0f2fe'};">
+        <td style="padding:8px 16px; font-weight:900; color:#0284c7; background:${isEven ? '#f0f9ff' : '#e0f2fe'};">
           ${rowSum.toLocaleString()}
         </td>
       </tr>
@@ -2727,15 +3177,15 @@ function buildStudentPivotTableHtml() {
         </tbody>
         <tfoot>
           <tr style="background:#0f172a; color:#ffffff; font-weight:900; position:sticky; bottom:0; z-index:4;">
-            <td style="padding:10px 14px; text-align:center;" colspan="2">GRAND TOTAL (કુલ)</td>
+            <td style="padding:10px 14px; text-align:center;" colspan="2">GRAND TOTAL (કુલ નોંધણી)</td>
   `;
 
   colKeys.forEach(col => {
-    tableHtml += `<td style="padding:10px 10px; border-right:1px solid #334155;">${(colTotals[col] || 0).toLocaleString()}</td>`;
+    tableHtml += `<td style="padding:10px 10px; border-right:1px solid #334155; text-align:right;">${(colTotals[col] || 0).toLocaleString()}</td>`;
   });
 
   tableHtml += `
-            <td style="padding:10px 14px; background:#f97316; color:#ffffff; font-size:13px; font-weight:900;">${grandTotal.toLocaleString()}</td>
+            <td style="padding:10px 16px; background:#ea580c; color:#ffffff; font-size:13px; font-weight:900; text-align:right;">${grandTotal.toLocaleString()}</td>
           </tr>
         </tfoot>
       </table>
@@ -2749,7 +3199,7 @@ function exportStudentPivotToCsv() {
   const table = document.getElementById("tblStudentPivotData");
   if (!table) return;
 
-  let csvContent = "data:text/csv;charset=utf-8,";
+  let csvContent = "\uFEFF"; // UTF-8 BOM for Gujarati character support
   const rows = table.querySelectorAll("tr");
   rows.forEach(row => {
     const cols = row.querySelectorAll("th, td");
@@ -2761,244 +3211,265 @@ function exportStudentPivotToCsv() {
     csvContent += rowData.join(",") + "\r\n";
   });
 
-  const encodedUri = encodeURI(csvContent);
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
+  link.setAttribute("href", url);
   link.setAttribute("download", `Student_Pivot_${studentPivotRowDim}_vs_${studentPivotColDim}.csv`);
   document.body.appendChild(link);
   link.click();
   link.remove();
+  URL.revokeObjectURL(url);
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 2. INTERACTIVE CHARTS SECTION
+// 2. INTERACTIVE CHARTS INITIALIZATION ("MAST CART")
 // ═════════════════════════════════════════════════════════════════════════════
-function renderStudentChartsSection(container) {
-  const data = getStudentAnalytics();
-
-  let html = `
-    <div style="display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:16px;">
-      
-      <!-- Chart 1: Class-wise Enrollment -->
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-chart-column" style="color:#2563eb;"></i> ધોરણ મુજબ વિદ્યાર્થી નોંધણી (Class-wise Enrollment)
-          </h4>
-          <span style="font-size:11px; font-weight:700; color:#64748b;">Balvatika to Class 12</span>
-        </div>
-        <div style="position:relative; height:280px;">
-          <canvas id="canvasStudentClassChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Chart 2: Gender Distribution -->
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-chart-pie" style="color:#db2777;"></i> જાતિ ગુણોત્તર (Gender Ratio)
-          </h4>
-          <span style="font-size:11px; font-weight:700; color:#64748b;">Boys vs Girls</span>
-        </div>
-        <div style="position:relative; height:280px;">
-          <canvas id="canvasStudentGenderChart"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-      
-      <!-- Chart 3: Social Category Breakdown -->
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-users-line" style="color:#f59e0b;"></i> સામાજિક વર્ગ મુજબ વિતરણ (Social Category)
-          </h4>
-          <span style="font-size:11px; font-weight:700; color:#64748b;">OBC, General, SC, ST</span>
-        </div>
-        <div style="position:relative; height:260px;">
-          <canvas id="canvasStudentSocialChart"></canvas>
-        </div>
-      </div>
-
-      <!-- Chart 4: Management-wise Breakdown -->
-      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-sitemap" style="color:#10b981;"></i> શાળા વ્યવસ્થાપન મુજબ (School Management)
-          </h4>
-          <span style="font-size:11px; font-weight:700; color:#64748b;">Govt, Private, Aided</span>
-        </div>
-        <div style="position:relative; height:260px;">
-          <canvas id="canvasStudentMgtChart"></canvas>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Chart 5: Cluster Enrollment -->
-    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h4 style="font-size:14px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-layer-group" style="color:#8b5cf6;"></i> ક્લસ્ટર (CRC) વાઈઝ વિદ્યાર્થીઓની સંખ્યા (Cluster-wise Enrollment)
-        </h4>
-        <span style="font-size:11px; font-weight:700; color:#64748b;">All 14 Clusters in Kadi</span>
-      </div>
-      <div style="position:relative; height:320px;">
-        <canvas id="canvasStudentClusterChart"></canvas>
-      </div>
-    </div>
-  `;
-
-  container.innerHTML = html;
-  setTimeout(initStudentCharts, 50);
-}
-
 function initStudentCharts() {
   const data = getStudentAnalytics();
   if (typeof Chart === 'undefined') return;
 
-  // Destroy previous charts
-  if (chartStudentClassObj) { chartStudentClassObj.destroy(); chartStudentClassObj = null; }
-  if (chartStudentGenderObj) { chartStudentGenderObj.destroy(); chartStudentGenderObj = null; }
-  if (chartStudentSocialObj) { chartStudentSocialObj.destroy(); chartStudentSocialObj = null; }
+  const filteredSchools = getFilteredStudentSchools();
+
+  // Destroy previous chart instances
+  if (chartStudentRuralUrbanObj) { chartStudentRuralUrbanObj.destroy(); chartStudentRuralUrbanObj = null; }
   if (chartStudentMgtObj) { chartStudentMgtObj.destroy(); chartStudentMgtObj = null; }
+  if (chartStudentClassObj) { chartStudentClassObj.destroy(); chartStudentClassObj = null; }
+  if (chartStudentStackedObj) { chartStudentStackedObj.destroy(); chartStudentStackedObj = null; }
   if (chartStudentClusterObj) { chartStudentClusterObj.destroy(); chartStudentClusterObj = null; }
 
-  // 1. Class-wise Chart
-  const ctxClass = document.getElementById("canvasStudentClassChart");
-  if (ctxClass) {
-    const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
-    const classValues = classOrder.map(c => data.class_counts[c] || 0);
-    chartStudentClassObj = new Chart(ctxClass, {
-      type: 'bar',
-      data: {
-        labels: classOrder.map(c => c === 'Balvatika' ? 'Balvatika' : `Std ${c}`),
-        datasets: [{
-          label: 'Students Enrolled',
-          data: classValues,
-          backgroundColor: '#2563eb',
-          borderRadius: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-          x: { grid: { display: false } }
-        }
-      }
-    });
-  }
+  // Aggregate metrics from filtered schools
+  let ruralCount = 0;
+  let urbanCount = 0;
+  const mgtCounts = {};
+  const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  const classCounts = {};
+  classOrder.forEach(c => { classCounts[c] = 0; });
+  const clusterCounts = {};
 
-  // 2. Gender Donut Chart
-  const ctxGender = document.getElementById("canvasStudentGenderChart");
-  if (ctxGender) {
-    const boys = data.kpis.boys || 37049;
-    const girls = data.kpis.girls || 31348;
-    chartStudentGenderObj = new Chart(ctxGender, {
+  // For Stacked Management vs Class
+  const mgtClassMatrix = {
+    "Local Body": { c: '#0284c7', counts: { ...classCounts } },
+    "Private Unaided": { c: '#f59e0b', counts: { ...classCounts } },
+    "Government Aided": { c: '#10b981', counts: { ...classCounts } },
+    "Other/Govt": { c: '#8b5cf6', counts: { ...classCounts } }
+  };
+
+  filteredSchools.forEach(s => {
+    const tot = s.total || 0;
+    if (s.area === 'Rural') ruralCount += tot;
+    else urbanCount += tot;
+
+    const m = s.management || 'Other';
+    mgtCounts[m] = (mgtCounts[m] || 0) + tot;
+
+    const cl = s.cluster || 'Unknown';
+    clusterCounts[cl] = (clusterCounts[cl] || 0) + tot;
+
+    if (s.classes) {
+      classOrder.forEach(c => {
+        const v = s.classes[c] || 0;
+        classCounts[c] += v;
+
+        let mKey = "Other/Govt";
+        if (m === "Local Body") mKey = "Local Body";
+        else if (m === "Private Unaided") mKey = "Private Unaided";
+        else if (m === "Government Aided") mKey = "Government Aided";
+
+        if (mgtClassMatrix[mKey]) {
+          mgtClassMatrix[mKey].counts[c] += v;
+        }
+      });
+    }
+  });
+
+  const totalFiltered = ruralCount + urbanCount || 1;
+  const ruralPct = Math.round((ruralCount / totalFiltered) * 100);
+  const urbanPct = Math.round((urbanCount / totalFiltered) * 100);
+
+  // 1. Chart 1: Rural vs Urban Doughnut Chart
+  const ctxRuralUrban = document.getElementById("canvasStudentRuralUrbanChart");
+  if (ctxRuralUrban) {
+    chartStudentRuralUrbanObj = new Chart(ctxRuralUrban, {
       type: 'doughnut',
       data: {
-        labels: [`Boys (${data.kpis.boys_percentage || 54.2}%)`, `Girls (${data.kpis.girls_percentage || 45.8}%)`],
+        labels: [`🌾 Rural / ગ્રામ્ય (${ruralPct}%)`, `🏙️ Urban / શહેરી (${urbanPct}%)`],
         datasets: [{
-          data: [boys, girls],
-          backgroundColor: ['#2563eb', '#db2777'],
-          borderWidth: 2
+          data: [ruralCount, urbanCount],
+          backgroundColor: ['#10b981', '#f97316'],
+          hoverBackgroundColor: ['#059669', '#ea580c'],
+          borderWidth: 3,
+          borderColor: '#ffffff'
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        cutout: '65%',
         plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold' } } }
+          legend: {
+            position: 'bottom',
+            labels: { boxWidth: 14, font: { weight: 'bold', size: 12 }, padding: 12 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const val = context.raw || 0;
+                const pct = Math.round((val / totalFiltered) * 100);
+                return ` ${context.label}: ${val.toLocaleString()} (${pct}%)`;
+              }
+            }
+          }
         }
       }
     });
   }
 
-  // 3. Social Category Chart
-  const ctxSocial = document.getElementById("canvasStudentSocialChart");
-  if (ctxSocial) {
-    const sc = data.social_counts || {};
-    const labels = Object.keys(sc);
-    const values = Object.values(sc);
-    chartStudentSocialObj = new Chart(ctxSocial, {
-      type: 'pie',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: values,
-          backgroundColor: ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6'],
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'right', labels: { boxWidth: 12, font: { weight: 'bold' } } }
-        }
-      }
-    });
-  }
-
-  // 4. Management Chart
+  // 2. Chart 2: Management Wise Bar Chart
   const ctxMgt = document.getElementById("canvasStudentMgtChart");
   if (ctxMgt) {
-    const mc = data.management_counts || {};
-    const labels = Object.keys(mc);
-    const values = Object.values(mc);
+    const sortedMgt = Object.entries(mgtCounts).sort((a, b) => b[1] - a[1]);
+    const mgtLabels = sortedMgt.map(x => x[0]);
+    const mgtValues = sortedMgt.map(x => x[1]);
+    const mgtColors = ['#0284c7', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b'];
+
     chartStudentMgtObj = new Chart(ctxMgt, {
       type: 'bar',
       data: {
-        labels: labels,
+        labels: mgtLabels,
         datasets: [{
-          label: 'Students',
-          data: values,
-          backgroundColor: '#10b981',
-          borderRadius: 4
+          label: 'Students Enrolled',
+          data: mgtValues,
+          backgroundColor: mgtColors.slice(0, mgtLabels.length),
+          borderRadius: 6
         }]
       },
       options: {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ` Students: ${ctx.raw.toLocaleString()}`; }
+            }
+          }
+        },
         scales: {
           x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-          y: { grid: { display: false } }
+          y: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 11 } } }
         }
       }
     });
   }
 
-  // 5. Cluster Chart
-  const ctxCluster = document.getElementById("canvasStudentClusterChart");
-  if (ctxCluster) {
-    const cc = data.cluster_counts || {};
-    const clusters = Object.keys(cc);
-    const values = Object.values(cc);
-    chartStudentClusterObj = new Chart(ctxCluster, {
+  // 3. Chart 3: Standard-wise Enrollment Bar Chart
+  const ctxClass = document.getElementById("canvasStudentClassChart");
+  if (ctxClass) {
+    const classLabels = classOrder.map(c => c === 'Balvatika' ? 'Balvatika' : `Std ${c}`);
+    const classVals = classOrder.map(c => classCounts[c] || 0);
+    const gradColors = [
+      '#06b6d4', '#0284c7', '#2563eb', '#3b82f6', '#60a5fa', '#38bdf8',
+      '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#e11d48'
+    ];
+
+    chartStudentClassObj = new Chart(ctxClass, {
       type: 'bar',
       data: {
-        labels: clusters,
+        labels: classLabels,
         datasets: [{
-          label: 'Enrolled Students',
-          data: values,
-          backgroundColor: '#8b5cf6',
-          borderRadius: 4
+          label: 'Enrollment',
+          data: classVals,
+          backgroundColor: gradColors,
+          borderRadius: 6
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ` Enrolled: ${ctx.raw.toLocaleString()}`; }
+            }
+          }
+        },
         scales: {
           y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-          x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10 } } }
+          x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } }
+        }
+      }
+    });
+  }
+
+  // 4. Chart 4: Management × Standard Stacked Chart
+  const ctxStacked = document.getElementById("canvasStudentStackedChart");
+  if (ctxStacked) {
+    const classLabels = classOrder.map(c => c === 'Balvatika' ? 'BV' : `Std ${c}`);
+    const datasets = Object.keys(mgtClassMatrix).map(mKey => {
+      const item = mgtClassMatrix[mKey];
+      return {
+        label: mKey,
+        data: classOrder.map(c => item.counts[c] || 0),
+        backgroundColor: item.c,
+        borderRadius: 4
+      };
+    });
+
+    chartStudentStackedObj = new Chart(ctxStacked, {
+      type: 'bar',
+      data: {
+        labels: classLabels,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, font: { weight: 'bold', size: 10.5 } } }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' } }
+        }
+      }
+    });
+  }
+
+  // 5. Chart 5: Cluster Wise Enrollment Bar Chart
+  const ctxCluster = document.getElementById("canvasStudentClusterChart");
+  if (ctxCluster) {
+    const sortedClusters = Object.entries(clusterCounts).sort((a, b) => b[1] - a[1]);
+    const clLabels = sortedClusters.map(x => x[0]);
+    const clValues = sortedClusters.map(x => x[1]);
+
+    chartStudentClusterObj = new Chart(ctxCluster, {
+      type: 'bar',
+      data: {
+        labels: clLabels,
+        datasets: [{
+          label: 'Enrolled Students',
+          data: clValues,
+          backgroundColor: '#8b5cf6',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ` Enrolled: ${ctx.raw.toLocaleString()} Students`; }
+            }
+          }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { ticks: { autoSkip: false, maxRotation: 35, minRotation: 35, font: { size: 10.5, weight: 'bold' } } }
         }
       }
     });
