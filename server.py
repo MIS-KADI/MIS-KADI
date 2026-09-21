@@ -22,9 +22,22 @@ DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
 STUDENTS_CSV = os.path.join(DIRECTORY, "CTS DATA", "Total Students-240402 (6).csv")
 STUDENT_ANALYTICS_JSON = os.path.join(DIRECTORY, "data", "student_analytics.json")
+PRINCIPALS_JSON = os.path.join(DIRECTORY, "data", "principal_data.json")
 
 _students_cache = None
 _students_by_uid = None
+_principals_cache = None
+
+def get_principals_data():
+    global _principals_cache
+    if _principals_cache is not None:
+        return _principals_cache
+    if os.path.exists(PRINCIPALS_JSON):
+        with open(PRINCIPALS_JSON, "r", encoding="utf-8") as f:
+            _principals_cache = json.load(f)
+    else:
+        _principals_cache = {"total_principals": 0, "records": []}
+    return _principals_cache
 
 def get_students_data():
     global _students_cache, _students_by_uid
@@ -116,42 +129,6 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": "Student analytics file not found"}).encode("utf-8"))
             return
 
-        if parsed.path == "/api/principals":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            principal_file = os.path.join(DIRECTORY, "data", "principal_data.json")
-            if os.path.exists(principal_file):
-                with open(principal_file, "r", encoding="utf-8") as f:
-                    self.wfile.write(f.read().encode("utf-8"))
-            else:
-                self.wfile.write(json.dumps({"total_principals": 0, "records": []}).encode("utf-8"))
-            return
-
-        if parsed.path == "/api/principal_by_udise":
-            query_params = urllib.parse.parse_qs(parsed.query)
-            udise = query_params.get("udise", [""])[0].strip()
-            principal_file = os.path.join(DIRECTORY, "data", "principal_data.json")
-            found = None
-            if os.path.exists(principal_file):
-                try:
-                    with open(principal_file, "r", encoding="utf-8") as f:
-                        pdata = json.load(f)
-                        for r in pdata.get("records", []):
-                            if str(r.get("udise_code")) == udise or str(r.get("school_id")) == udise:
-                                found = r
-                                break
-                except Exception:
-                    pass
-            self.send_response(200 if found else 404)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            if found:
-                self.wfile.write(json.dumps({"success": True, "principal": found}, ensure_ascii=False).encode("utf-8"))
-            else:
-                self.wfile.write(json.dumps({"success": False, "message": f"Principal for UDISE '{udise}' not found"}, ensure_ascii=False).encode("utf-8"))
-            return
-
         if parsed.path == "/api/student_by_uid":
             query_params = urllib.parse.parse_qs(parsed.query)
             uid = query_params.get("uid", [""])[0].strip().replace('"', '').replace("'", "")
@@ -207,6 +184,36 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
             self.wfile.write(json.dumps({"success": True, "count": len(results), "records": results}, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if parsed.path == "/api/principals":
+            data = get_principals_data()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            return
+
+        if parsed.path == "/api/principal_search":
+            query_params = urllib.parse.parse_qs(parsed.query)
+            q = query_params.get("q", [""])[0].strip().lower()
+            cluster = query_params.get("cluster", [""])[0].strip()
+            data = get_principals_data()
+            records = data.get("records", [])
+            filtered = []
+            for p in records:
+                if cluster and p.get("cluster") != cluster:
+                    continue
+                if q:
+                    text = f"{p.get('udise_code', '')} {p.get('school_name', '')} {p.get('principal_name', '')} {p.get('mobile', '')} {p.get('email', '')}".lower()
+                    if q in text:
+                        filtered.append(p)
+                else:
+                    filtered.append(p)
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"success": True, "count": len(filtered), "records": filtered}, ensure_ascii=False).encode("utf-8"))
             return
 
         return super().do_GET()

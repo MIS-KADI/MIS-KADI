@@ -77,7 +77,7 @@
         </li>
 
         <!-- 3. All School Information Dropdown -->
-        <li class="nav-item has-submenu" id="menuAllSchools">
+        <li class="nav-item" id="menuAllSchools">
           <a class="nav-link" href="javascript:void(0);" onclick="openParentNavTab('menuAllSchools', 'All School Information')">
             <span class="nav-link-content">
               <i class="fa-solid fa-school"></i> All School Information
@@ -86,7 +86,7 @@
           </a>
           <ul class="sub-nav">
             <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('All School Information')"><i class="fa-solid fa-list-check"></i> School Master List</a></li>
-            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Principal Contact Number')"><i class="fa-solid fa-address-book"></i> Principal Contact Number (આચાર્ય સંપર્ક)</a></li>
+            <li><a class="sub-nav-link" href="javascript:void(0);" onclick="openModuleTab('Principal Contact Numbers')"><i class="fa-solid fa-address-book"></i> Principal Contact Numbers (આચાર્ય સંપર્ક નંબર)</a></li>
           </ul>
         </li>
 
@@ -515,8 +515,8 @@
   </div>
 
   <script src="data/dashboard_data.js?v=20260821_RESTORED"></script>
-  <script src="data/principal_data.js"></script>
   <script src="data/student_analytics.js"></script>
+  <script src="data/principal_data.js"></script>
   <script src="app.js?v=20260821_RESTORED"></script>
   <!-- ========================================================== -->
   <!-- UDISE+ / MIS KADI VIRTUAL ASSISTANT CHATBOT (FLOATING UI) -->
@@ -606,6 +606,7 @@
           💡 ઝડપી પ્રશ્નો (Quick Questions):
         </div>
         <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <button class="mis-quick-chip" onclick="askQuickBot('આચાર્ય સંપર્ક નંબર')">📞 આચાર્ય સંપર્ક નંબર</button>
           <button class="mis-quick-chip" onclick="askQuickBot('મેનેજમેન્ટ વાઈઝ કેટલી શાળાઓ છે?')">🏢 મેનેજમેન્ટ વાઈઝ શાળાઓ</button>
           <button class="mis-quick-chip" onclick="askQuickBot('કડી માં કેટલા સીઆરસી છે?')">📍 14 CRC ક્લસ્ટર્સ</button>
           <button class="mis-quick-chip" onclick="askQuickBot('કડી ની કુલ કેટલી શાળાઓ છે?')">🏫 કુલ શાળાઓ</button>
