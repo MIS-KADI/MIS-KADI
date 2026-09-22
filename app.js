@@ -73,47 +73,119 @@ const alwaysShowValuesPlugin = {
   afterDatasetsDraw(chart) {
     try {
       if (!chart || !chart.ctx || !chart.data || !chart.data.datasets) return;
+      if (chart.config && chart.config.options && chart.config.options.plugins && chart.config.options.plugins.alwaysShowValuesPlugin && chart.config.options.plugins.alwaysShowValuesPlugin.display === false) return;
       const { ctx } = chart;
       ctx.save();
       
-      chart.data.datasets.forEach((dataset, datasetIndex) => {
-        const meta = chart.getDatasetMeta(datasetIndex);
-        if (!meta || meta.hidden || !meta.data) return;
+      const isStackedBar = Boolean(
+        chart.config && chart.config.type === 'bar' &&
+        ((chart.config.options && chart.config.options.scales && chart.config.options.scales.x && chart.config.options.scales.x.stacked && chart.config.options.scales.y && chart.config.options.scales.y.stacked) ||
+        (chart.config.options && chart.config.options.isStacked))
+      );
 
-        meta.data.forEach((element, index) => {
-          if (!element) return;
-          const val = dataset.data ? dataset.data[index] : null;
-          if (val === null || val === undefined || val === '') return;
+      const isHorizontal = Boolean(chart.config && chart.config.type === 'bar' && chart.config.options && chart.config.options.indexAxis === 'y');
 
-          let displayStr = '';
-          if (typeof val === 'number') {
-            displayStr = (val % 1 === 0) ? val.toLocaleString() : val.toFixed(1);
-            if (chart.config && chart.config.options && chart.config.options.valueSuffix) {
-              displayStr += chart.config.options.valueSuffix;
+      if (isStackedBar) {
+        // Intelligent Stacked Bar Rendering:
+        // 1. Zeroes and tiny fractions are completely ignored (no clutter/overlap)
+        // 2. Segments with >= 20px height show their value centered inside the colored bar in white with shadow
+        // 3. Stack grand total is rendered clearly above the apex of each bar
+        const stackTotals = {};
+        const stackTopYs = {};
+        const stackXs = {};
+
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          if (!meta || meta.hidden || !meta.data) return;
+
+          meta.data.forEach((element, index) => {
+            if (!element) return;
+            const val = dataset.data ? dataset.data[index] : null;
+            if (val === null || val === undefined || typeof val !== 'number' || val <= 0) return;
+
+            stackTotals[index] = (stackTotals[index] || 0) + val;
+            stackXs[index] = element.x;
+            if (stackTopYs[index] === undefined || element.y < stackTopYs[index]) {
+              stackTopYs[index] = element.y;
             }
-          } else {
-            displayStr = String(val);
+
+            const segHeight = Math.abs(element.base - element.y);
+            if (segHeight >= 20 && val >= 100) {
+              const segY = (element.y + element.base) / 2;
+              ctx.font = 'bold 10.5px sans-serif';
+              ctx.fillStyle = '#ffffff';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.shadowColor = 'rgba(15, 23, 42, 0.75)';
+              ctx.shadowBlur = 3;
+              ctx.fillText(val.toLocaleString(), element.x, segY);
+              ctx.shadowBlur = 0;
+            }
+          });
+        });
+
+        // Draw Stack Totals cleanly above each stack
+        Object.keys(stackTotals).forEach(indexKey => {
+          const tot = stackTotals[indexKey];
+          const x = stackXs[indexKey];
+          const topY = stackTopYs[indexKey];
+          if (tot > 0 && x !== undefined && topY !== undefined) {
+            ctx.font = '900 11.5px sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            let yPos = topY - 4;
+            if (chart.chartArea && yPos < chart.chartArea.top + 10) yPos = topY + 14;
+            ctx.fillText(tot.toLocaleString(), x, yPos);
           }
+        });
 
-          ctx.font = 'bold 11px sans-serif';
-          
-          if (chart.config && chart.config.type === 'bar') {
-            if (element.x !== undefined && element.y !== undefined) {
-              ctx.fillStyle = '#0f172a';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'bottom';
-              let yPos = element.y - 3;
-              if (chart.chartArea && yPos < chart.chartArea.top + 10) yPos = element.y + 14;
-              ctx.fillText(displayStr, element.x, yPos);
+      } else {
+        // Standard unstacked bar, line, doughnut, pie
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+          const meta = chart.getDatasetMeta(datasetIndex);
+          if (!meta || meta.hidden || !meta.data) return;
+
+          meta.data.forEach((element, index) => {
+            if (!element) return;
+            const val = dataset.data ? dataset.data[index] : null;
+            if (val === null || val === undefined || val === '') return;
+
+            let displayStr = '';
+            if (typeof val === 'number') {
+              displayStr = (val % 1 === 0) ? val.toLocaleString() : val.toFixed(1);
+              if (chart.config && chart.config.options && chart.config.options.valueSuffix) {
+                displayStr += chart.config.options.valueSuffix;
+              }
+            } else {
+              displayStr = String(val);
             }
-          } else if (chart.config && chart.config.type === 'line') {
-            if (element.x !== undefined && element.y !== undefined) {
-              ctx.fillStyle = dataset.borderColor || '#0f172a';
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'bottom';
-              ctx.fillText(displayStr, element.x, element.y - 6);
-            }
-          } else if (chart.config && (chart.config.type === 'doughnut' || chart.config.type === 'pie')) {
+
+            ctx.font = 'bold 11px sans-serif';
+            
+            if (chart.config && chart.config.type === 'bar') {
+              if (element.x !== undefined && element.y !== undefined) {
+                ctx.fillStyle = '#0f172a';
+                if (isHorizontal) {
+                  ctx.textAlign = 'left';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillText(displayStr, element.x + 5, element.y);
+                } else {
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'bottom';
+                  let yPos = element.y - 3;
+                  if (chart.chartArea && yPos < chart.chartArea.top + 10) yPos = element.y + 14;
+                  ctx.fillText(displayStr, element.x, yPos);
+                }
+              }
+            } else if (chart.config && chart.config.type === 'line') {
+              if (element.x !== undefined && element.y !== undefined) {
+                ctx.fillStyle = dataset.borderColor || '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(displayStr, element.x, element.y - 6);
+              }
+            } else if (chart.config && (chart.config.type === 'doughnut' || chart.config.type === 'pie')) {
             if (typeof val === 'number' && val < 10) return;
             if (element.startAngle === undefined || element.outerRadius === undefined) return;
 
@@ -169,6 +241,7 @@ const alwaysShowValuesPlugin = {
           }
         });
       });
+    }
 
       ctx.restore();
     } catch (e) {
@@ -2308,12 +2381,102 @@ let studentPivotColDim = 'class'; // 'class', 'gender', 'area'
 
 // Multi-dimensional filters for Pivot & Charts
 let studentFilterManagement = '';
+let studentFilterStandards = ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
 let studentFilterStandard = '';
 let studentFilterArea = '';
 let studentFilterCluster = '';
 let studentFilterGender = '';
 let studentFilterSocial = '';
 let studentFilterSearch = '';
+
+// Checkbox Dropdown Helper Functions for Standards
+function toggleStudentStdDropdown(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById("menuStudentStdDropdown");
+  if (!menu) return;
+  const isShown = menu.style.display === "block";
+  menu.style.display = isShown ? "none" : "block";
+}
+
+function closeStudentStdDropdown() {
+  const menu = document.getElementById("menuStudentStdDropdown");
+  if (menu) menu.style.display = "none";
+}
+
+function updateStudentStdDropdownLabel() {
+  const lbl = document.getElementById("txtStudentStdSelectedSummary");
+  if (!lbl) return;
+  const count = studentFilterStandards.length;
+  if (count === 13) {
+    lbl.innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:#f59e0b; margin-right:4px;"></i> બધા ધોરણ (${count})`;
+  } else if (count === 0) {
+    lbl.innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:#ef4444; margin-right:4px;"></i> કોઈ પસંદ નથી (0)`;
+  } else if (count <= 3) {
+    const names = studentFilterStandards.map(c => c === 'Balvatika' ? 'BV' : `Std ${c}`).join(', ');
+    lbl.innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:#2563eb; margin-right:4px;"></i> ${names} (${count})`;
+  } else {
+    lbl.innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:#2563eb; margin-right:4px;"></i> ${count} ધોરણ પસંદ કરેલ`;
+  }
+}
+
+function toggleAllStudentStandards(checked) {
+  const allStandards = ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  studentFilterStandards = checked ? [...allStandards] : [];
+  document.querySelectorAll(".chk-student-std").forEach(chk => {
+    chk.checked = checked;
+  });
+  updateStudentStdDropdownLabel();
+  buildStudentPivotTableHtml();
+  setTimeout(initStudentCharts, 60);
+}
+
+function selectStudentStdGroup(grp) {
+  const allStandards = ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  if (grp === 'all') {
+    studentFilterStandards = [...allStandards];
+  } else if (grp === 'primary') {
+    studentFilterStandards = ["1", "2", "3", "4", "5"];
+  } else if (grp === 'upper_primary') {
+    studentFilterStandards = ["6", "7", "8"];
+  } else if (grp === 'secondary') {
+    studentFilterStandards = ["9", "10"];
+  } else if (grp === 'higher_sec') {
+    studentFilterStandards = ["11", "12"];
+  } else if (grp === 'clear') {
+    studentFilterStandards = [];
+  }
+
+  document.querySelectorAll(".chk-student-std").forEach(chk => {
+    chk.checked = studentFilterStandards.includes(chk.value);
+  });
+  const chkAll = document.getElementById("chkStdAll");
+  if (chkAll) chkAll.checked = (studentFilterStandards.length === 13);
+
+  updateStudentStdDropdownLabel();
+  buildStudentPivotTableHtml();
+  setTimeout(initStudentCharts, 60);
+}
+
+function onStudentStdCheckboxChange() {
+  const checkedBoxes = Array.from(document.querySelectorAll(".chk-student-std:checked"));
+  studentFilterStandards = checkedBoxes.map(c => c.value);
+
+  const chkAll = document.getElementById("chkStdAll");
+  if (chkAll) chkAll.checked = (studentFilterStandards.length === 13);
+
+  updateStudentStdDropdownLabel();
+  buildStudentPivotTableHtml();
+  setTimeout(initStudentCharts, 60);
+}
+
+// Global click-outside listener to close the dropdown
+document.addEventListener("click", function(event) {
+  const container = document.getElementById("containerStudentStdDropdown");
+  const menu = document.getElementById("menuStudentStdDropdown");
+  if (container && menu && !container.contains(event.target)) {
+    menu.style.display = "none";
+  }
+});
 
 let studentDirectorySearchQuery = '';
 let studentDirectoryClusterFilter = '';
@@ -2663,7 +2826,10 @@ function renderStudentPivotSection(container) {
           </div>
 
           <button onclick="exportStudentPivotToCsv()" style="background:#10b981; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
-            <i class="fa-solid fa-file-excel"></i> Export Pivot to CSV
+            <i class="fa-solid fa-file-csv"></i> CSV ડાઉનલોડ
+          </button>
+          <button onclick="exportStudentPivotToExcel()" style="background:#0284c7; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.3);">
+            <i class="fa-solid fa-file-excel"></i> Excel ડાઉનલોડ (.xlsx)
           </button>
         </div>
       </div>
@@ -2694,16 +2860,57 @@ function renderStudentPivotSection(container) {
           </select>
         </div>
 
-        <!-- 3. Standard / Class Filter -->
-        <div>
+        <!-- 3. Standard / Class Multi-Select Checkbox Dropdown ("બીજા ફોટા માં આપેલ ધોરણ આગળ ચેક બોક્ષ") -->
+        <div style="position:relative;" id="containerStudentStdDropdown">
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-graduation-cap" style="color:#f59e0b;"></i> ધોરણ (Standard):
+            <i class="fa-solid fa-square-check" style="color:#2563eb;"></i> ધોરણ (Checkboxes):
           </label>
-          <select id="selStudentFilterStd" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
-            <option value="">All Standards (બધા ધોરણ)</option>
-            <option value="Balvatika" ${studentFilterStandard === 'Balvatika' ? 'selected' : ''}>Balvatika</option>
-            ${classOrder.filter(c => c !== 'Balvatika').map(c => `<option value="${c}" ${studentFilterStandard === c ? 'selected' : ''}>Std ${c}</option>`).join('')}
-          </select>
+          <button type="button" id="btnStudentStdDropdown" onclick="toggleStudentStdDropdown(event)" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
+            <span id="txtStudentStdSelectedSummary"><i class="fa-solid fa-graduation-cap" style="color:#f59e0b; margin-right:4px;"></i> ${studentFilterStandards.length === 13 ? 'બધા ધોરણ (13)' : studentFilterStandards.length + ' ધોરણ પસંદ'}</span>
+            <i class="fa-solid fa-chevron-down" style="font-size:10px; color:#64748b;"></i>
+          </button>
+
+          <!-- Checkbox Dropdown Menu -->
+          <div id="menuStudentStdDropdown" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:280px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.18); z-index:150; padding:10px;">
+            
+            <!-- Quick Preset Buttons -->
+            <div style="font-size:10.5px; font-weight:800; color:#64748b; margin-bottom:5px; text-transform:uppercase;">ઝડપી પસંદગી (Quick Presets):</div>
+            <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+              <button type="button" onclick="selectStudentStdGroup('all')" style="background:#e0f2fe; color:#0369a1; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">તમામ</button>
+              <button type="button" onclick="selectStudentStdGroup('primary')" style="background:#dcfce7; color:#15803d; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૧ થી ૫</button>
+              <button type="button" onclick="selectStudentStdGroup('upper_primary')" style="background:#fef3c7; color:#b45309; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૬ થી ૮</button>
+              <button type="button" onclick="selectStudentStdGroup('secondary')" style="background:#ede9fe; color:#6d28d9; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૯ થી ૧૦</button>
+              <button type="button" onclick="selectStudentStdGroup('higher_sec')" style="background:#fce7f3; color:#be185d; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૧૧ થી ૧૨</button>
+              <button type="button" onclick="selectStudentStdGroup('clear')" style="background:#f1f5f9; color:#64748b; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">ક્લિયર</button>
+            </div>
+
+            <!-- Master Checkbox (Select All) -->
+            <label style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:5px; background:#f8fafc; font-size:12px; font-weight:800; color:#0f172a; cursor:pointer; margin-bottom:6px; border:1px solid #e2e8f0;">
+              <input type="checkbox" id="chkStdAll" onchange="toggleAllStudentStandards(this.checked)" ${studentFilterStandards.length === 13 ? 'checked' : ''} style="width:16px; height:16px; accent-color:#2563eb; cursor:pointer;" />
+              <span>All Standards (બધા ધોરણ - 13)</span>
+            </label>
+
+            <!-- Scrollable List of Checkboxes -->
+            <div style="max-height:210px; overflow-y:auto; border-top:1px solid #e2e8f0; padding-top:4px; display:flex; flex-direction:column; gap:2px;">
+              <label style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:4px; font-size:12px; font-weight:700; color:#1e293b; cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                <input type="checkbox" class="chk-student-std" value="Balvatika" onchange="onStudentStdCheckboxChange()" ${studentFilterStandards.includes('Balvatika') ? 'checked' : ''} style="width:15px; height:15px; accent-color:#2563eb; cursor:pointer;" />
+                <span>Balvatika (બાલવાટિકા)</span>
+              </label>
+              ${classOrder.filter(c => c !== 'Balvatika').map(c => `
+                <label style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:4px; font-size:12px; font-weight:700; color:#1e293b; cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
+                  <input type="checkbox" class="chk-student-std" value="${c}" onchange="onStudentStdCheckboxChange()" ${studentFilterStandards.includes(c) ? 'checked' : ''} style="width:15px; height:15px; accent-color:#2563eb; cursor:pointer;" />
+                  <span>Std ${c} (ધોરણ ${c})</span>
+                </label>
+              `).join('')}
+            </div>
+
+            <!-- Apply / Close Button -->
+            <div style="margin-top:8px; padding-top:6px; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end;">
+              <button type="button" onclick="closeStudentStdDropdown()" style="background:#2563eb; color:#ffffff; border:none; border-radius:5px; font-size:11.5px; font-weight:800; padding:5px 14px; cursor:pointer;">
+                લાગુ કરો (Apply &amp; Close)
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- 4. Cluster / CRC Filter -->
@@ -2833,7 +3040,7 @@ function renderStudentPivotSection(container) {
             </h4>
             <span style="font-size:11px; font-weight:700; color:#64748b;">Balvatika to Class 12</span>
           </div>
-          <div style="position:relative; height:270px;">
+          <div style="position:relative; height:330px;">
             <canvas id="canvasStudentClassChart"></canvas>
           </div>
         </div>
@@ -2846,7 +3053,7 @@ function renderStudentPivotSection(container) {
             </h4>
             <span style="font-size:11px; font-weight:700; color:#64748b;">Multi-tier Comparison</span>
           </div>
-          <div style="position:relative; height:270px;">
+          <div style="position:relative; height:340px;">
             <canvas id="canvasStudentStackedChart"></canvas>
           </div>
         </div>
@@ -2876,7 +3083,6 @@ function renderStudentPivotSection(container) {
 
 function onStudentFilterChange() {
   const selMgt = document.getElementById("selStudentFilterMgt");
-  const selStd = document.getElementById("selStudentFilterStd");
   const selArea = document.getElementById("selStudentFilterArea");
   const selCluster = document.getElementById("selStudentFilterCluster");
   const selGender = document.getElementById("selStudentFilterGender");
@@ -2884,7 +3090,6 @@ function onStudentFilterChange() {
   const txtSearch = document.getElementById("txtStudentFilterSearch");
 
   if (selMgt) studentFilterManagement = selMgt.value;
-  if (selStd) studentFilterStandard = selStd.value;
   if (selArea) studentFilterArea = selArea.value;
   if (selCluster) studentFilterCluster = selCluster.value;
   if (selGender) studentFilterGender = selGender.value;
@@ -2897,6 +3102,7 @@ function onStudentFilterChange() {
 
 function resetStudentPivotFilters() {
   studentFilterManagement = '';
+  studentFilterStandards = ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   studentFilterStandard = '';
   studentFilterArea = '';
   studentFilterCluster = '';
@@ -2905,7 +3111,6 @@ function resetStudentPivotFilters() {
   studentFilterSearch = '';
 
   const selMgt = document.getElementById("selStudentFilterMgt");
-  const selStd = document.getElementById("selStudentFilterStd");
   const selArea = document.getElementById("selStudentFilterArea");
   const selCluster = document.getElementById("selStudentFilterCluster");
   const selGender = document.getElementById("selStudentFilterGender");
@@ -2913,13 +3118,19 @@ function resetStudentPivotFilters() {
   const txtSearch = document.getElementById("txtStudentFilterSearch");
 
   if (selMgt) selMgt.value = '';
-  if (selStd) selStd.value = '';
   if (selArea) selArea.value = '';
   if (selCluster) selCluster.value = '';
   if (selGender) selGender.value = '';
   if (selSocial) selSocial.value = '';
   if (txtSearch) txtSearch.value = '';
 
+  document.querySelectorAll(".chk-student-std").forEach(chk => {
+    chk.checked = true;
+  });
+  const chkAll = document.getElementById("chkStdAll");
+  if (chkAll) chkAll.checked = true;
+
+  updateStudentStdDropdownLabel();
   buildStudentPivotTableHtml();
   setTimeout(initStudentCharts, 60);
 }
@@ -2936,11 +3147,23 @@ function onStudentPivotDimensionChange() {
 function getFilteredStudentSchools() {
   const data = getStudentAnalytics();
   const list = data.schools_summary || [];
+  const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  const isStdFiltered = (studentFilterStandards.length > 0 && studentFilterStandards.length < classOrder.length);
+
   return list.filter(s => {
     if (studentFilterManagement && s.management !== studentFilterManagement) return false;
     if (studentFilterArea && s.area !== studentFilterArea) return false;
     if (studentFilterCluster && s.cluster !== studentFilterCluster) return false;
-    if (studentFilterStandard && (!s.classes || !s.classes[studentFilterStandard] || s.classes[studentFilterStandard] <= 0)) return false;
+    
+    // Multi-select standard filter
+    if (isStdFiltered) {
+      if (!s.classes) return false;
+      const hasAnyInSelected = studentFilterStandards.some(std => (s.classes[std] || 0) > 0);
+      if (!hasAnyInSelected) return false;
+    } else if (studentFilterStandards.length === 0) {
+      return false;
+    }
+
     if (studentFilterSearch) {
       const q = studentFilterSearch.toLowerCase();
       const str = ((s.school_id || '') + ' ' + (s.school_name || '') + ' ' + (s.village || '') + ' ' + (s.cluster || '') + ' ' + (s.management || '')).toLowerCase();
@@ -2958,6 +3181,7 @@ function buildStudentPivotTableHtml() {
   const data = getStudentAnalytics();
   const classOrder = data.class_order || ["Balvatika", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
   const filteredSchools = getFilteredStudentSchools();
+  const isStdFiltered = (studentFilterStandards.length > 0 && studentFilterStandards.length < classOrder.length);
 
   // Calculate filtered totals
   let filteredTotalStudents = 0;
@@ -2968,8 +3192,10 @@ function buildStudentPivotTableHtml() {
 
   filteredSchools.forEach(s => {
     let schTotal = 0;
-    if (studentFilterStandard) {
-      schTotal = s.classes ? (s.classes[studentFilterStandard] || 0) : 0;
+    if (isStdFiltered) {
+      schTotal = studentFilterStandards.reduce((acc, std) => acc + ((s.classes && s.classes[std]) ? s.classes[std] : 0), 0);
+    } else if (studentFilterStandards.length === 0) {
+      schTotal = 0;
     } else {
       schTotal = s.total || 0;
     }
@@ -2991,15 +3217,22 @@ function buildStudentPivotTableHtml() {
 
   // Update Filter Status Badge
   if (badgeArea) {
-    const isFiltered = studentFilterManagement || studentFilterStandard || studentFilterArea || studentFilterCluster || studentFilterGender || studentFilterSocial || studentFilterSearch;
+    const isFiltered = studentFilterManagement || isStdFiltered || (studentFilterStandards.length === 0) || studentFilterArea || studentFilterCluster || studentFilterGender || studentFilterSocial || studentFilterSearch;
     if (isFiltered) {
+      let stdBadgeHtml = '';
+      if (isStdFiltered) {
+        stdBadgeHtml = `<span style="background:#f3e8ff; color:#6b21a8; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">ધોરણ (${studentFilterStandards.length}): ${studentFilterStandards.map(c => c === 'Balvatika' ? 'BV' : 'Std ' + c).join(', ')}</span>`;
+      } else if (studentFilterStandards.length === 0) {
+        stdBadgeHtml = `<span style="background:#fee2e2; color:#991b1b; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">કોઈ ધોરણ પસંદ નથી (0)</span>`;
+      }
+
       badgeArea.innerHTML = `
         <span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
           <i class="fa-solid fa-filter"></i> ફિલ્ટર પરિણામ: <strong>${filteredTotalStudents.toLocaleString()}</strong> વિદ્યાર્થીઓ (${filteredSchools.length} શાળાઓ)
         </span>
+        ${stdBadgeHtml}
         ${studentFilterArea ? `<span style="background:#dcfce7; color:#166534; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">વિસ્તાર: ${studentFilterArea}</span>` : ''}
         ${studentFilterManagement ? `<span style="background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">મેનેજમેન્ટ: ${studentFilterManagement}</span>` : ''}
-        ${studentFilterStandard ? `<span style="background:#f3e8ff; color:#6b21a8; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">ધોરણ: ${studentFilterStandard}</span>` : ''}
         ${studentFilterCluster ? `<span style="background:#ede9fe; color:#5b21b6; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">ક્લસ્ટર: ${studentFilterCluster}</span>` : ''}
       `;
     } else {
@@ -3037,10 +3270,10 @@ function buildStudentPivotTableHtml() {
     if (studentFilterSocial) rowKeys = [studentFilterSocial];
   }
 
-  // Determine Col Keys
+  // Determine Col Keys (Restricted to Checked Standards!)
   let colKeys = [];
   if (studentPivotColDim === "class") {
-    colKeys = studentFilterStandard ? [studentFilterStandard] : classOrder;
+    colKeys = isStdFiltered ? classOrder.filter(c => studentFilterStandards.includes(c)) : (studentFilterStandards.length === 0 ? [] : classOrder);
   } else if (studentPivotColDim === "gender") {
     colKeys = studentFilterGender ? [studentFilterGender] : ["Male", "Female"];
   } else if (studentPivotColDim === "area") {
@@ -3074,13 +3307,13 @@ function buildStudentPivotTableHtml() {
       } else if (studentPivotColDim === "gender") {
         if (cCol === "Male") count = s.boys || 0;
         else if (cCol === "Female") count = s.girls || 0;
-        if (studentFilterStandard && s.total > 0) {
-          const stdTotal = (s.classes && s.classes[studentFilterStandard]) ? s.classes[studentFilterStandard] : 0;
+        if (isStdFiltered && s.total > 0) {
+          const stdTotal = studentFilterStandards.reduce((acc, std) => acc + ((s.classes && s.classes[std]) ? s.classes[std] : 0), 0);
           count = Math.round(count * (stdTotal / s.total));
         }
       } else if (studentPivotColDim === "area") {
         if (s.area === cCol) {
-          count = studentFilterStandard ? ((s.classes && s.classes[studentFilterStandard]) ? s.classes[studentFilterStandard] : 0) : s.total;
+          count = isStdFiltered ? studentFilterStandards.reduce((acc, std) => acc + ((s.classes && s.classes[std]) ? s.classes[std] : 0), 0) : s.total;
         }
       }
 
@@ -3220,6 +3453,22 @@ function exportStudentPivotToCsv() {
   link.click();
   link.remove();
   URL.revokeObjectURL(url);
+}
+
+function exportStudentPivotToExcel() {
+  const table = document.getElementById("tblStudentPivotData");
+  if (!table) return;
+  if (typeof XLSX === 'undefined') {
+    exportStudentPivotToCsv();
+    return;
+  }
+  try {
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Pivot Summary" });
+    XLSX.writeFile(wb, `Student_Enrollment_Pivot_${studentPivotRowDim}_vs_${studentPivotColDim}.xlsx`);
+  } catch (e) {
+    console.error("Excel export error:", e);
+    exportStudentPivotToCsv();
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -3364,11 +3613,14 @@ function initStudentCharts() {
     });
   }
 
+  const isStdFiltered = (studentFilterStandards.length > 0 && studentFilterStandards.length < classOrder.length);
+  const activeClassOrder = isStdFiltered ? classOrder.filter(c => studentFilterStandards.includes(c)) : (studentFilterStandards.length === 0 ? [] : classOrder);
+
   // 3. Chart 3: Standard-wise Enrollment Bar Chart
   const ctxClass = document.getElementById("canvasStudentClassChart");
   if (ctxClass) {
-    const classLabels = classOrder.map(c => c === 'Balvatika' ? 'Balvatika' : `Std ${c}`);
-    const classVals = classOrder.map(c => classCounts[c] || 0);
+    const classLabels = activeClassOrder.map(c => c === 'Balvatika' ? 'Balvatika' : `Std ${c}`);
+    const classVals = activeClassOrder.map(c => classCounts[c] || 0);
     const gradColors = [
       '#06b6d4', '#0284c7', '#2563eb', '#3b82f6', '#60a5fa', '#38bdf8',
       '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#e11d48'
@@ -3381,7 +3633,7 @@ function initStudentCharts() {
         datasets: [{
           label: 'Enrollment',
           data: classVals,
-          backgroundColor: gradColors,
+          backgroundColor: gradColors.slice(0, classLabels.length),
           borderRadius: 6
         }]
       },
@@ -3392,13 +3644,21 @@ function initStudentCharts() {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: function(ctx) { return ` Enrolled: ${ctx.raw.toLocaleString()}`; }
+              label: function(ctx) { return ` Enrolled: ${ctx.raw.toLocaleString()} Students`; }
             }
           }
         },
         scales: {
-          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-          x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10 } } }
+          y: {
+            beginAtZero: true,
+            grace: '8%',
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              font: { weight: 'bold', size: 10 },
+              callback: function(v) { return v.toLocaleString(); }
+            }
+          },
+          x: { grid: { display: false }, ticks: { font: { weight: 'bold', size: 10.5 } } }
         }
       }
     });
@@ -3407,12 +3667,12 @@ function initStudentCharts() {
   // 4. Chart 4: Management × Standard Stacked Chart
   const ctxStacked = document.getElementById("canvasStudentStackedChart");
   if (ctxStacked) {
-    const classLabels = classOrder.map(c => c === 'Balvatika' ? 'BV' : `Std ${c}`);
+    const classLabels = activeClassOrder.map(c => c === 'Balvatika' ? 'BV' : `Std ${c}`);
     const datasets = Object.keys(mgtClassMatrix).map(mKey => {
       const item = mgtClassMatrix[mKey];
       return {
         label: mKey,
-        data: classOrder.map(c => item.counts[c] || 0),
+        data: activeClassOrder.map(c => item.counts[c] || 0),
         backgroundColor: item.c,
         borderRadius: 4
       };
@@ -3427,12 +3687,49 @@ function initStudentCharts() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
         plugins: {
-          legend: { position: 'top', labels: { boxWidth: 12, font: { weight: 'bold', size: 10.5 } } }
+          legend: {
+            position: 'top',
+            labels: { boxWidth: 12, font: { weight: 'bold', size: 11 }, padding: 12 }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            padding: 10,
+            cornerRadius: 8,
+            titleFont: { weight: 'bold', size: 12 },
+            bodyFont: { size: 11 },
+            callbacks: {
+              title: function(items) {
+                return items[0] ? `ધોરણ (Class): ${items[0].label}` : '';
+              },
+              footer: function(items) {
+                let sum = 0;
+                items.forEach(i => { sum += (i.raw || 0); });
+                return `કુલ (Total): ${sum.toLocaleString()} વિદ્યાર્થીઓ`;
+              }
+            }
+          }
         },
         scales: {
-          x: { stacked: true, grid: { display: false } },
-          y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' } }
+          x: {
+            stacked: true,
+            grid: { display: false },
+            ticks: { font: { weight: 'bold', size: 11 } }
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            grace: '10%',
+            grid: { color: '#f1f5f9' },
+            ticks: {
+              font: { weight: 'bold', size: 10.5 },
+              callback: function(v) { return v.toLocaleString(); }
+            }
+          }
         }
       }
     });
