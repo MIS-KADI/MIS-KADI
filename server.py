@@ -285,13 +285,16 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(404)
         self.end_headers()
 
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+
 def run_server():
     start_folder_watcher(interval_seconds=3)
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), MISRequestHandler) as httpd:
+    with ThreadedTCPServer(("", PORT), MISRequestHandler) as httpd:
         print(f"==================================================")
-        print(f"  SS Gujarat MIS Portal - Excel Upload Server Active")
-        print(f"  Dashboard: http://localhost:{PORT}/index.html")
+        print(f"  SS Gujarat MIS Portal - Multi-Threaded Server Active")
+        print(f"  Dashboard: http://localhost:{PORT}/login.html")
         print(f"  Auto-Watcher Active on CTS DATA Folder!")
         print(f"==================================================")
         try:
