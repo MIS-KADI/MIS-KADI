@@ -218,7 +218,7 @@ function saveUsersToStorage() {
 }
 
 function checkUserAuth() {
-  const isAuth = sessionStorage.getItem("mis_session_auth") === "true" || localStorage.getItem("mis_user_logged_in") === "true";
+  const isAuth = sessionStorage.getItem("mis_session_auth") === "true";
   if (!isAuth) {
     window.location.replace("login.html");
     return;
