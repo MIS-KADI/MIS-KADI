@@ -379,6 +379,12 @@
         <div class="security-note">
           <i class="fa-solid fa-lock"></i> Mandatory Password &amp; Captcha verification enabled for security
         </div>
+
+        <div style="text-align: center; margin-top: 14px;">
+          <a href="javascript:void(0);" onclick="forceSyncUsersFromRemote()" style="color: #047857; font-size: 12px; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px; background: #ecfdf5;" title="Pull latest credentials from server or GitHub">
+            <i class="fa-solid fa-arrows-rotate"></i> ક્રેડેન્શિયલ્સ રિફ્રેશ કરો (Sync from Server/GitHub)
+          </a>
+        </div>
       </form>
     </div>
   </div>
@@ -501,6 +507,17 @@
 
     // Fetch live users from data/users.json or data/users.js or localStorage
     async function fetchLiveUsers() {
+      // 1. If user has customized their credentials locally, honor them with highest priority!
+      const isCustom = localStorage.getItem("mis_users_is_custom") === "true";
+      const stored = localStorage.getItem("mis_registered_users");
+      if (isCustom && stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+
+      // 2. Otherwise fetch newest data/users.json from server or GitHub
       try {
         const res = await fetch("data/users.json?t=" + Date.now(), { cache: "no-store" });
         if (res.ok) {
@@ -513,13 +530,20 @@
       } catch (err) {
         // static or offline
       }
+
+      // 3. Fallback to localStorage if exists
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+
+      // 4. Fallback to window.MIS_USERS_DEFAULT
       if (typeof window.MIS_USERS_DEFAULT !== "undefined" && Array.isArray(window.MIS_USERS_DEFAULT)) {
         return window.MIS_USERS_DEFAULT;
       }
-      const stored = localStorage.getItem("mis_registered_users");
-      if (stored) {
-        try { return JSON.parse(stored); } catch (e) {}
-      }
+
       return [
         { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
         { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
@@ -527,6 +551,23 @@
         { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
         { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
       ];
+    }
+
+    // Force pull fresh credentials from server / GitHub
+    async function forceSyncUsersFromRemote() {
+      try {
+        const res = await fetch("data/users.json?t=" + Date.now(), { cache: "no-store" });
+        if (res.ok) {
+          const liveList = await res.json();
+          if (Array.isArray(liveList) && liveList.length > 0) {
+            localStorage.setItem("mis_registered_users", JSON.stringify(liveList));
+            localStorage.removeItem("mis_users_is_custom");
+            alert("ક્રેડેન્શિયલ્સ સફળતાપૂર્વક સર્વર/GitHub સાથે સિંક થઈ ગયા છે!\n(Credentials successfully refreshed from server/GitHub!)");
+            return;
+          }
+        }
+      } catch (e) {}
+      alert("સર્વર અથવા GitHub સાથે કનેક્ટ થઈ શક્યું નથી.");
     }
 
     // Handle Login Submit with Dynamic Role Enforcement and Flexible Credentials

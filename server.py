@@ -250,6 +250,16 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
                 with open(users_js_path, "w", encoding="utf-8") as f:
                     f.write("window.MIS_USERS_DEFAULT = " + json.dumps(users_list, ensure_ascii=False, indent=2) + ";\n")
 
+                def _git_push_bg():
+                    try:
+                        import subprocess
+                        subprocess.run("git add data/users.json data/users.js && git commit -m \"Auto-sync users credentials\" && git push origin main", shell=True, cwd=DIRECTORY, capture_output=True)
+                    except Exception:
+                        pass
+
+                import threading
+                threading.Thread(target=_git_push_bg, daemon=True).start()
+
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
@@ -260,6 +270,22 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.end_headers()
                 self.wfile.write(json.dumps({"success": False, "message": "Invalid users list"}).encode("utf-8"))
+                return
+
+        if parsed.path == "/api/git_push_users":
+            try:
+                import subprocess
+                res = subprocess.run("git add data/users.json data/users.js && git commit -m \"Sync users credentials to GitHub\" && git push origin main", shell=True, cwd=DIRECTORY, capture_output=True, text=True)
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "message": "Successfully pushed credentials to GitHub Pages!", "output": res.stdout}).encode("utf-8"))
+                return
+            except Exception as e:
+                self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode("utf-8"))
                 return
 
         if parsed.path == "/api/upload_excel":

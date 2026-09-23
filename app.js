@@ -255,18 +255,40 @@ if (typeof Chart !== 'undefined') {
 }
 
 // User Management System State - Dynamic Source of Truth
-let registeredUsersList = (typeof window.MIS_USERS_DEFAULT !== "undefined" && Array.isArray(window.MIS_USERS_DEFAULT))
-  ? JSON.parse(JSON.stringify(window.MIS_USERS_DEFAULT))
-  : (JSON.parse(localStorage.getItem("mis_registered_users")) || [
-      { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
-      { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
-      { username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" },
-      { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
-      { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
-    ]);
+function getInitialPortalUsers() {
+  const isCustom = localStorage.getItem("mis_users_is_custom") === "true";
+  const stored = localStorage.getItem("mis_registered_users");
+  if (isCustom && stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {}
+  }
+  if (typeof window.MIS_USERS_DEFAULT !== "undefined" && Array.isArray(window.MIS_USERS_DEFAULT)) {
+    return JSON.parse(JSON.stringify(window.MIS_USERS_DEFAULT));
+  }
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {}
+  }
+  return [
+    { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+    { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+    { username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" },
+    { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
+    { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
+  ];
+}
+
+let registeredUsersList = getInitialPortalUsers();
 
 // Fetch live users from server or GitHub data/users.json
 async function syncLivePortalUsers() {
+  const isCustom = localStorage.getItem("mis_users_is_custom") === "true";
+  if (isCustom) return; // Keep user's custom edits safe!
+
   try {
     const res = await fetch("data/users.json?t=" + Date.now(), { cache: "no-store" });
     if (res.ok) {
@@ -281,14 +303,51 @@ async function syncLivePortalUsers() {
   }
 }
 
+async function forceResetUsersFromRemote() {
+  try {
+    const res = await fetch("data/users.json?t=" + Date.now(), { cache: "no-store" });
+    if (res.ok) {
+      const liveList = await res.json();
+      if (Array.isArray(liveList) && liveList.length > 0) {
+        registeredUsersList = liveList;
+        localStorage.setItem("mis_registered_users", JSON.stringify(liveList));
+        localStorage.removeItem("mis_users_is_custom");
+        alert("ક્રેડેન્શિયલ્સ સફળતાપૂર્વક સર્વર/GitHub સાથે સિંક થઈ ગયા છે!\n(Credentials refreshed from server/GitHub!)");
+        if (typeof renderUsersManagementTable === "function") {
+          renderUsersManagementTable();
+        }
+        return;
+      }
+    }
+  } catch (e) {}
+  alert("સર્વર સાથે કનેક્ટ થઈ શક્યું નથી.");
+}
+
+async function triggerGitPushUsers() {
+  try {
+    const res = await fetch("/api/git_push_users", { method: "POST" });
+    const data = await res.json();
+    if (data.success) {
+      alert("✅ યુઝર્સ અને પાસવર્ડ સફળતાપૂર્વક GitHub Pages (ઓનલાઇન) પર મોકલી દેવાયા છે!\n(Credentials successfully synced to GitHub Pages!)");
+    } else {
+      alert("⚠️ Sync note: " + (data.message || data.error));
+    }
+  } catch (e) {
+    alert("ઓનલાઇન મોકલવા માટે લોકલ સર્વર સક્રિય હોવું જરૂરી છે અથવા GitHub પર data/users.json અપલોડ કરો.");
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   checkUserAuth();
   syncLivePortalUsers();
   loadDashboardData();
 });
 
-async function saveUsersToStorage() {
+async function saveUsersToStorage(andPushGit = true) {
   localStorage.setItem("mis_registered_users", JSON.stringify(registeredUsersList));
+  localStorage.setItem("mis_users_is_custom", "true");
+  localStorage.setItem("mis_users_last_modified", Date.now().toString());
+
   try {
     await fetch("/api/save_users", {
       method: "POST",
@@ -297,6 +356,12 @@ async function saveUsersToStorage() {
     });
   } catch (e) {
     // Static / offline mode
+  }
+
+  if (andPushGit) {
+    try {
+      fetch("/api/git_push_users", { method: "POST" });
+    } catch (e) {}
   }
 }
 
@@ -366,7 +431,7 @@ function promptChangeMyPassword() {
   }
 
   userObj.password = newPwd.trim();
-  saveUsersToStorage();
+  saveUsersToStorage(true);
   alert(`Password for '${loggedUser}' has been successfully changed!\n\nતમારો નવો પાસવર્ડ સફળતાપૂર્વક અપડેટ થઈ ગયો છે.`);
 
   const wrapper = document.getElementById("moduleTabDedicatedContainer");
@@ -7689,21 +7754,26 @@ function renderUsersManagementTable() {
         <h3 style="font-size:17px; font-weight:800; margin:0;">
           <i class="fa-solid fa-users-gear" style="color:#f97316;"></i> USER MANAGEMENT PANEL (ADMINISTRATOR ACCESS)
         </h3>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-saffron" style="font-size:12px;" onclick="promptAddNewUser()">
             <i class="fa-solid fa-user-plus"></i> + ADD NEW USER
           </button>
+          <button class="btn" style="font-size:12px; background:#16a34a; color:#fff; font-weight:700; border:none; border-radius:6px; cursor:pointer;" onclick="triggerGitPushUsers()" title="Sync all changes to GitHub Pages online immediately">
+            <i class="fa-solid fa-cloud-arrow-up"></i> 🚀 SYNC TO GITHUB (ઓનલાઇન મોકલો)
+          </button>
           <button class="btn btn-light" style="font-size:12px; background:#f8fafc; color:#0f172a; font-weight:700; border:1px solid #cbd5e1;" onclick="downloadUsersJson()" title="Download updated users.json file">
             <i class="fa-solid fa-download"></i> EXPORT users.json
+          </button>
+          <button class="btn btn-light" style="font-size:12px; background:#f1f5f9; color:#475569; font-weight:700; border:1px solid #cbd5e1;" onclick="forceResetUsersFromRemote()" title="Reload from server data/users.json">
+            <i class="fa-solid fa-arrows-rotate"></i> REFRESH FROM SERVER
           </button>
         </div>
       </div>
 
       <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#166534; font-size:13px; line-height:1.6;">
-        <strong><i class="fa-solid fa-shield-halved"></i> યુઝરનેમ અને પાસવર્ડ અપડેટ ગાઈડ:</strong><br>
-        • તમે અહીંથી કોઈપણ યુઝરનો પાસવર્ડ કે યુઝરનેમ ગમે ત્યારે બદલી શકો છો, તે તરત જ અમલી બનશે.<br>
-        • લોકલ સર્વર પર <code>data/users.json</code> અને <code>data/users.js</code> માં આપમેળે અપડેટ થઈ જશે.<br>
-        • જો તમે GitHub Pages (ઓનલાઇન) વાપરતા હોવ, તો GitHub રિપોઝિટરીમાં <code>data/users.json</code> માં ફેરફાર કરવાથી અથવા નીચેથી <strong>EXPORT users.json</strong> કરીને પુશ કરવાથી ઓનલાઇન પણ તરત જ અપડેટ થઈ જશે.
+        <strong><i class="fa-solid fa-shield-halved"></i> યુઝરનેમ, પાસવર્ડ, ડી-એક્ટિવેટ અને ડિલીટ સિસ્ટમ:</strong><br>
+        • <strong>તરત જ અમલ:</strong> તમે અહીંથી કોઈપણ યુઝરનો પાસવર્ડ, યુઝરનેમ, સ્ટેટસ બદલશો કે યુઝર ડિલીટ કરશો તે તરત જ અમલી બની જશે.<br>
+        • <strong>ઓટો-સેવ &amp; ગિટ સિંક:</strong> લોકલ સર્વર પર <code>data/users.json</code> માં સેવ થઈ જાય છે અને GitHub Pages પર પણ <strong>🚀 SYNC TO GITHUB</strong> બટનથી ૧-ક્લિકમાં ઓનલાઇન લાઈવ થઈ જાય છે.
       </div>
 
       <div style="overflow-x:auto;">
@@ -7715,7 +7785,7 @@ function renderUsersManagementTable() {
               <th>Role</th>
               <th>Password</th>
               <th style="text-align:center;">Status</th>
-              <th style="text-align:center;">Actions (Edit Username / Reset Password / Status)</th>
+              <th style="text-align:center;">Actions (Edit / Reset Pwd / Status / Delete)</th>
             </tr>
           </thead>
           <tbody>
@@ -7736,16 +7806,20 @@ function renderUsersManagementTable() {
                 <td style="text-align:center;">
                   <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
                     <!-- EDIT USERNAME BUTTON -->
-                    <button class="btn" style="font-size:11px; padding:4px 10px; background:#d97706; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="editUsernamePrompt(${idx})" title="Edit Username">
-                      <i class="fa-solid fa-user-pen"></i> EDIT USERNAME
+                    <button class="btn" style="font-size:11px; padding:4px 8px; background:#d97706; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="editUsernamePrompt(${idx})" title="Edit Username">
+                      <i class="fa-solid fa-user-pen"></i> EDIT
                     </button>
                     <!-- RESET PASSWORD BUTTON -->
-                    <button class="btn btn-light" style="font-size:11px; padding:4px 10px; background:#0284c7; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="resetUserPasswordPrompt(${idx})" title="Reset Password">
+                    <button class="btn btn-light" style="font-size:11px; padding:4px 8px; background:#0284c7; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="resetUserPasswordPrompt(${idx})" title="Reset Password">
                       <i class="fa-solid fa-key"></i> RESET PWD
                     </button>
                     <!-- TOGGLE ACTIVE STATUS -->
-                    <button class="btn" style="font-size:11px; padding:4px 10px; background:${u.status === 'Active' ? '#dc2626' : '#16a34a'}; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="toggleUserStatus(${idx})">
+                    <button class="btn" style="font-size:11px; padding:4px 8px; background:${u.status === 'Active' ? '#ea580c' : '#16a34a'}; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="toggleUserStatus(${idx})" title="${u.status === 'Active' ? 'Deactivate User' : 'Activate User'}">
                       <i class="fa-solid ${u.status === 'Active' ? 'fa-user-xmark' : 'fa-user-check'}"></i> ${u.status === 'Active' ? 'DEACTIVATE' : 'ACTIVATE'}
+                    </button>
+                    <!-- DELETE USER BUTTON -->
+                    <button class="btn" style="font-size:11px; padding:4px 8px; background:#dc2626; color:#fff; border:none; font-weight:700; border-radius:4px; cursor:pointer;" onclick="deleteUserPrompt(${idx})" title="Delete User Permanently">
+                      <i class="fa-solid fa-trash-can"></i> DELETE
                     </button>
                   </div>
                 </td>
@@ -7799,8 +7873,28 @@ function editUsernamePrompt(idx) {
     }
   }
 
-  saveUsersToStorage();
-  alert(`Username successfully updated from '${oldName}' to '${trimmed}'!\n\nયુઝરનેમ સફળતાપૂર્વક બદલાઈ ગયું છે.`);
+  saveUsersToStorage(true);
+  alert(`Username successfully updated from '${oldName}' to '${trimmed}'!\n\nયુઝરનેમ સફળતાપૂર્વક બદલાઈ ગયું છે અને તરત જ અમલી બની ગયું છે.`);
+  renderUsersManagementTable();
+}
+
+function deleteUserPrompt(idx) {
+  const targetUser = registeredUsersList[idx];
+  if (!targetUser) return;
+
+  const currentLogged = sessionStorage.getItem("mis_username") || localStorage.getItem("mis_username") || "";
+  if (currentLogged.toLowerCase() === targetUser.username.toLowerCase()) {
+    alert("❌ તમે હાલમાં લૉગિન છો તે એકાઉન્ટ ડિલીટ કરી શકતા નથી!\n(You cannot delete your own active logged-in account.)");
+    return;
+  }
+
+  const confirmDelete = confirm(`⚠️ શું તમે ખરેખર યુઝર '${targetUser.username}' (${targetUser.role}) ને ડિલીટ કરવા માંગો છો?\n\nAre you sure you want to permanently delete user '${targetUser.username}'?`);
+  if (!confirmDelete) return;
+
+  const deletedName = targetUser.username;
+  registeredUsersList.splice(idx, 1);
+  saveUsersToStorage(true);
+  alert(`✅ યુઝર '${deletedName}' સફળતાપૂર્વક ડિલીટ કરી દેવામાં આવ્યો છે!`);
   renderUsersManagementTable();
 }
 
@@ -7816,19 +7910,28 @@ function toggleShowPassword(idx, realPwd) {
 }
 
 function toggleUserStatus(idx) {
-  if (registeredUsersList[idx]) {
-    registeredUsersList[idx].status = (registeredUsersList[idx].status === "Active") ? "Deactive" : "Active";
-    saveUsersToStorage();
-    renderUsersManagementTable();
+  const targetUser = registeredUsersList[idx];
+  if (!targetUser) return;
+
+  const currentLogged = sessionStorage.getItem("mis_username") || localStorage.getItem("mis_username") || "";
+  if (targetUser.status === "Active" && currentLogged.toLowerCase() === targetUser.username.toLowerCase()) {
+    alert("❌ તમે હાલમાં લૉગિન છો તે એકાઉન્ટને ડી-એક્ટિવેટ કરી શકતા નથી!\n(You cannot deactivate your own active logged-in account.)");
+    return;
   }
+
+  targetUser.status = (targetUser.status === "Active") ? "Deactive" : "Active";
+  saveUsersToStorage(true);
+  alert(`User '${targetUser.username}' status is now set to '${targetUser.status}'!\nયુઝર સ્ટેટસ સફળતાપૂર્વક અપડેટ થઈ ગયું છે.`);
+  renderUsersManagementTable();
 }
 
 function resetUserPasswordPrompt(idx) {
   const targetUser = registeredUsersList[idx];
+  if (!targetUser) return;
   const newPwd = prompt(`Enter NEW Password for user '${targetUser.username}':`, targetUser.password || "SSA@123");
   if (newPwd && newPwd.trim() !== "") {
     targetUser.password = newPwd.trim();
-    saveUsersToStorage();
+    saveUsersToStorage(true);
     alert(`Password for '${targetUser.username}' has been successfully reset to '${targetUser.password}'!\n\nપાસવર્ડ સફળતાપૂર્વક અપડેટ થઈ ગયો છે.`);
     renderUsersManagementTable();
   }
@@ -7849,7 +7952,7 @@ function promptAddNewUser() {
     status: "Active"
   });
 
-  saveUsersToStorage();
+  saveUsersToStorage(true);
   alert(`User '${newUsername.trim()}' successfully created with password '${newPwd.trim()}'!`);
   renderUsersManagementTable();
 }
