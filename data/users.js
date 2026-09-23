@@ -28,11 +28,5 @@ window.MIS_USERS_DEFAULT = [
     "status": "Active",
     "password": "SSA@123",
     "role": "CRC User"
-  },
-  {
-    "username": "DEMO_TEST",
-    "password": "123",
-    "role": "CRC User",
-    "status": "Deactive"
   }
 ];
