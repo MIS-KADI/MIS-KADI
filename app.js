@@ -510,8 +510,24 @@ function applyGlobalDataToState() {
   if (globalData.crc_summary) allCrcRows = globalData.crc_summary;
   if (globalData.gsos_student_records) allGsosRows = globalData.gsos_student_records;
   if (globalData.cwsn_student_records) allCwsnRows = globalData.cwsn_student_records;
-  if (globalData.ict_labs_records) allIctRows = globalData.ict_labs_records;
-  if (globalData.gyankunj_records) allGyankunjRows = globalData.gyankunj_records;
+  if (globalData.ict_labs_records) {
+    allIctRows = globalData.ict_labs_records;
+    allIctRows.forEach(r => {
+      if (!r.management || r.management === 'Local Body') {
+        const sc = allSchoolRows.find(s => String(s.school_id) === String(r.school_id));
+        if (sc && sc.management) r.management = sc.management;
+      }
+    });
+  }
+  if (globalData.gyankunj_records) {
+    allGyankunjRows = globalData.gyankunj_records;
+    allGyankunjRows.forEach(r => {
+      if (!r.management || r.management === 'Local Body') {
+        const sc = allSchoolRows.find(s => String(s.school_id) === String(r.school_id));
+        if (sc && sc.management) r.management = sc.management;
+      }
+    });
+  }
   if (globalData.gsqac_records) allGsqacRows = globalData.gsqac_records;
   if (globalData.gsqac_years_list) {
     gsqacYearsList = globalData.gsqac_years_list;
@@ -2684,26 +2700,23 @@ function renderStudentInformationModuleView() {
             </div>
             <div>
               <h2 style="font-size:20px; font-weight:900; color:#fff; margin:0; letter-spacing:0.3px;">
-                STUDENT INFORMATION PORTAL (વિદ્યાર્થીઓની માહિતી)
+                STUDENT INFORMATION PORTAL
               </h2>
-              <div style="font-size:12px; color:#cbd5e1; margin-top:2px;">
-                Total Students Enrollment (240402) · Complete Child Analytics, Rural/Urban Demographics &amp; Pivot Matrix
-              </div>
             </div>
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
           <span style="background:#16a34a; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-users"></i> ${kpis.total_students.toLocaleString()} કુલ વિદ્યાર્થીઓ
+            <i class="fa-solid fa-users"></i> ${kpis.total_students.toLocaleString()} Total Students
           </span>
           <span style="background:#059669; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-tree"></i> 🌾 ${kpis.rural_students ? kpis.rural_students.toLocaleString() : '46,250'} ગ્રામ્ય (${kpis.rural_percentage || '67.6'}%)
+            <i class="fa-solid fa-tree"></i> 🌾 ${kpis.rural_students ? kpis.rural_students.toLocaleString() : '46,250'} Rural (${kpis.rural_percentage || '67.6'}%)
           </span>
           <span style="background:#ea580c; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-city"></i> 🏙️ ${kpis.urban_students ? kpis.urban_students.toLocaleString() : '22,147'} શહેરી (${kpis.urban_percentage || '32.4'}%)
+            <i class="fa-solid fa-city"></i> 🏙️ ${kpis.urban_students ? kpis.urban_students.toLocaleString() : '22,147'} Urban (${kpis.urban_percentage || '32.4'}%)
           </span>
           <span style="background:#0284c7; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-            <i class="fa-solid fa-school"></i> ${kpis.total_schools} શાળાઓ
+            <i class="fa-solid fa-school"></i> ${kpis.total_schools} Schools
           </span>
           <span style="background:#8b5cf6; color:#fff; font-size:11.5px; padding:6px 12px; border-radius:6px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
             <i class="fa-solid fa-layer-group"></i> ${kpis.total_clusters} CRCs
@@ -2714,9 +2727,9 @@ function renderStudentInformationModuleView() {
       <!-- Quick Search Bar in Banner -->
       <div style="margin-top:16px; background:rgba(255,255,255,0.08); padding:10px 14px; border-radius:8px; display:flex; gap:10px; align-items:center; border:1px solid rgba(255,255,255,0.15);">
         <i class="fa-solid fa-magnifying-glass" style="color:#f97316; font-size:15px;"></i>
-        <input id="txtStudentQuickSearch" type="text" placeholder="ઝડપી સર્ચ: ૧૮ અંકનો AadhaarUID, વિદ્યાર્થીનું નામ, પિતાનું નામ, GR નંબર કે શાળા લખો..." style="flex:1; background:transparent; border:none; color:#ffffff; font-size:13px; outline:none;" onkeydown="if(event.key==='Enter') triggerStudentQuickSearch();" />
+        <input id="txtStudentQuickSearch" type="text" placeholder="Quick Search: 18-digit Aadhaar UID, Student Name, Father Name, GR No or School..." style="flex:1; background:transparent; border:none; color:#ffffff; font-size:13px; outline:none;" onkeydown="if(event.key==='Enter') triggerStudentQuickSearch();" />
         <button onclick="triggerStudentQuickSearch()" style="background:#f97316; color:#ffffff; border:none; border-radius:6px; padding:6px 14px; font-size:12px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-search"></i> સર્ચ કરો
+          <i class="fa-solid fa-search"></i> Search
         </button>
       </div>
     </div>
@@ -2730,41 +2743,41 @@ function renderStudentInformationModuleView() {
         <div class="cts-card-body navy">
           <div class="card-icon-avatar"><i class="fa-solid fa-users"></i></div>
           <div class="card-text-wrap">
-            <strong>કુલ વિદ્યાર્થીઓ (Total)</strong>
+            <strong>Total Students</strong>
             <div class="card-count-num">${kpis.total_students.toLocaleString()}</div>
           </div>
         </div>
       </div>
 
-      <!-- Card 2: Rural Enrollment (ગ્રામ્ય વિદ્યાર્થીઓ) -->
+      <!-- Card 2: Rural Enrollment (Rural Students) -->
       <div class="cts-card" style="border:1px solid #bbf7d0;">
-        <div class="cts-card-head" style="background:#15803d; color:#fff;"><span>🌾 RURAL / ગ્રામ્ય વિસ્તાર</span></div>
+        <div class="cts-card-head" style="background:#15803d; color:#fff;"><span>🌾 RURAL AREA</span></div>
         <div class="cts-card-body" style="background:#f0fdf4;">
           <div class="card-icon-avatar" style="background:#dcfce7; color:#15803d;"><i class="fa-solid fa-tree"></i></div>
           <div class="card-text-wrap">
             <strong>Rural Enrolled (${kpis.rural_percentage || '67.6'}%)</strong>
             <div class="card-count-num" style="color:#15803d;">${(kpis.rural_students || 46250).toLocaleString()}</div>
-            <div style="font-size:10.5px; color:#166534; font-weight:700; margin-top:2px;"><i class="fa-solid fa-school"></i> ${kpis.rural_schools || 195} ગ્રામ્ય શાળાઓ</div>
+            <div style="font-size:10.5px; color:#166534; font-weight:700; margin-top:2px;"><i class="fa-solid fa-school"></i> ${kpis.rural_schools || 195} Rural Schools</div>
           </div>
         </div>
       </div>
 
-      <!-- Card 3: Urban Enrollment (શહેરી વિદ્યાર્થીઓ) -->
+      <!-- Card 3: Urban Enrollment (Urban Students) -->
       <div class="cts-card" style="border:1px solid #fed7aa;">
-        <div class="cts-card-head" style="background:#c2410c; color:#fff;"><span>🏙️ URBAN / શહેરી વિસ્તાર</span></div>
+        <div class="cts-card-head" style="background:#c2410c; color:#fff;"><span>🏙️ URBAN AREA</span></div>
         <div class="cts-card-body" style="background:#fff7ed;">
           <div class="card-icon-avatar" style="background:#ffedd5; color:#ea580c;"><i class="fa-solid fa-city"></i></div>
           <div class="card-text-wrap">
             <strong>Urban Enrolled (${kpis.urban_percentage || '32.4'}%)</strong>
             <div class="card-count-num" style="color:#ea580c;">${(kpis.urban_students || 22147).toLocaleString()}</div>
-            <div style="font-size:10.5px; color:#9a3412; font-weight:700; margin-top:2px;"><i class="fa-solid fa-school"></i> ${kpis.urban_schools || 49} શહેરી શાળાઓ</div>
+            <div style="font-size:10.5px; color:#9a3412; font-weight:700; margin-top:2px;"><i class="fa-solid fa-school"></i> ${kpis.urban_schools || 49} Urban Schools</div>
           </div>
         </div>
       </div>
 
       <!-- Card 4: Boys -->
       <div class="cts-card">
-        <div class="cts-card-head green"><span>BOYS / કુમાર વિદ્યાર્થીઓ</span></div>
+        <div class="cts-card-head green"><span>BOYS STUDENTS</span></div>
         <div class="cts-card-body green">
           <div class="card-icon-avatar"><i class="fa-solid fa-mars"></i></div>
           <div class="card-text-wrap">
@@ -2777,7 +2790,7 @@ function renderStudentInformationModuleView() {
 
       <!-- Card 5: Girls -->
       <div class="cts-card">
-        <div class="cts-card-head" style="background:#db2777; color:#fff;"><span>GIRLS / કન્યા વિદ્યાર્થીઓ</span></div>
+        <div class="cts-card-head" style="background:#db2777; color:#fff;"><span>GIRLS STUDENTS</span></div>
         <div class="cts-card-body" style="border:1px solid #fce7f3;">
           <div class="card-icon-avatar" style="background:#fdf2f8; color:#db2777;"><i class="fa-solid fa-venus"></i></div>
           <div class="card-text-wrap">
@@ -2799,7 +2812,7 @@ function renderStudentInformationModuleView() {
         <div class="cts-card-body" style="border:1px solid #cffafe;">
           <div class="card-icon-avatar" style="background:#ecfeff; color:#0891b2;"><i class="fa-solid fa-child-reaching"></i></div>
           <div class="card-text-wrap">
-            <strong>બાલવાટિકા (Pre-Primary)</strong>
+            <strong>Balvatika (Pre-Primary)</strong>
             <div class="card-count-num" style="color:#0891b2;">${kpis.balvatika.toLocaleString()}</div>
           </div>
         </div>
@@ -2807,7 +2820,7 @@ function renderStudentInformationModuleView() {
 
       <!-- Card 7: Primary (1-5) -->
       <div class="cts-card">
-        <div class="cts-card-head blue"><span>PRIMARY (ધોરણ ૧ થી ૫)</span></div>
+        <div class="cts-card-head blue"><span>PRIMARY (STD 1-5)</span></div>
         <div class="cts-card-body blue">
           <div class="card-icon-avatar"><i class="fa-solid fa-book-open-reader"></i></div>
           <div class="card-text-wrap">
@@ -2819,7 +2832,7 @@ function renderStudentInformationModuleView() {
 
       <!-- Card 8: Upper Primary (6-8) -->
       <div class="cts-card">
-        <div class="cts-card-head purple"><span>UPPER PRIMARY (ધોરણ ૬ થી ૮)</span></div>
+        <div class="cts-card-head purple"><span>UPPER PRIMARY (STD 6-8)</span></div>
         <div class="cts-card-body purple">
           <div class="card-icon-avatar"><i class="fa-solid fa-graduation-cap"></i></div>
           <div class="card-text-wrap">
@@ -2831,11 +2844,11 @@ function renderStudentInformationModuleView() {
 
       <!-- Card 9: Secondary & Higher Secondary (9-12) -->
       <div class="cts-card">
-        <div class="cts-card-head brown"><span>SECONDARY &amp; H.SEC (૯ થી ૧૨)</span></div>
+        <div class="cts-card-head brown"><span>SECONDARY &amp; HIGHER SECONDARY (STD 9-12)</span></div>
         <div class="cts-card-body brown">
           <div class="card-icon-avatar"><i class="fa-solid fa-school"></i></div>
           <div class="card-text-wrap">
-            <strong>Sec &amp; H.Sec (9-12)</strong>
+            <strong>Sec &amp; H.Sec (Std 9-12)</strong>
             <div class="card-count-num" style="color:#a14e13;">${kpis.sec_higher_sec_9_12.toLocaleString()}</div>
           </div>
         </div>
@@ -2847,7 +2860,7 @@ function renderStudentInformationModuleView() {
         <div class="cts-card-body" style="border:1px solid #ffe4e6;">
           <div class="card-icon-avatar" style="background:#fff1f2; color:#e11d48;"><i class="fa-solid fa-wheelchair"></i></div>
           <div class="card-text-wrap">
-            <strong>દિવ્યાંગ બાળકો (CWSN)</strong>
+            <strong>CWSN Divyang Students</strong>
             <div class="card-count-num" style="color:#e11d48;">${kpis.cwsn} Students</div>
           </div>
         </div>
@@ -2859,15 +2872,15 @@ function renderStudentInformationModuleView() {
     <div style="background:#0f172a; border-radius:10px; padding:8px 12px; margin-bottom:20px; display:flex; gap:10px; overflow-x:auto;">
       
       <button class="btn" onclick="switchStudentSubView('pivot')" style="background:${activeStudentSubView === 'pivot' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-table-cells"></i> 1. Pivot Table &amp; Interactive Charts (પીવટ વિશ્લેષણ અને ચાર્ટ્સ)
+        <i class="fa-solid fa-table-cells"></i> 1. Pivot Table &amp; Interactive Charts
       </button>
 
       <button class="btn" onclick="switchStudentSubView('directory')" style="background:${activeStudentSubView === 'directory' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-address-book"></i> 2. Live Student Directory &amp; PDF (વિદ્યાર્થી ડિરેક્ટરી અને પ્રોફાઈલ PDF)
+        <i class="fa-solid fa-address-book"></i> 2. Live Student Directory &amp; PDF
       </button>
 
       <button class="btn" onclick="switchStudentSubView('schools')" style="background:${activeStudentSubView === 'schools' ? '#2563eb' : 'transparent'}; color:#fff; font-size:13px; font-weight:700; padding:10px 18px; border-radius:6px; border:none; cursor:pointer; display:flex; align-items:center; gap:8px;">
-        <i class="fa-solid fa-building-columns"></i> 3. School-wise Summary Table (શાળા મુજબ પત્રક)
+        <i class="fa-solid fa-building-columns"></i> 3. School-wise Summary Table
       </button>
 
     </div>
@@ -2918,7 +2931,7 @@ function renderStudentPivotSection(container) {
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid #e2e8f0; padding-bottom:12px;">
         <div>
           <h3 style="font-size:16.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-table-cells" style="color:#2563eb;"></i> INTERACTIVE PIVOT MATRIX &amp; ADVANCED FILTERS (પીવટ વિશ્લેષણ)
+            <i class="fa-solid fa-table-cells" style="color:#2563eb;"></i> INTERACTIVE PIVOT MATRIX &amp; ADVANCED FILTERS
           </h3>
           <div style="font-size:12px; color:#64748b; margin-top:3px;">
             Default View: <strong>Management Wise × Standard Wise</strong> (Cross-tabulated 68,397 student records)
@@ -2929,9 +2942,9 @@ function renderStudentPivotSection(container) {
           <div style="display:flex; align-items:center; gap:6px;">
             <label style="font-size:12px; font-weight:800; color:#334155;">Row Dimension:</label>
             <select id="selStudentPivotRow" onchange="onStudentPivotDimensionChange()" style="padding:7px 12px; font-size:12px; border-radius:6px; border:1px solid #94a3b8; font-weight:800; color:#0f172a; outline:none; background:#f8fafc;">
-              <option value="management" ${studentPivotRowDim === 'management' ? 'selected' : ''}>🏢 Management Type (શાળા વ્યવસ્થાપન)</option>
-              <option value="cluster" ${studentPivotRowDim === 'cluster' ? 'selected' : ''}>📍 Cluster / CRC (14 ક્લસ્ટર્સ)</option>
-              <option value="area" ${studentPivotRowDim === 'area' ? 'selected' : ''}>🌾 Rural / Urban (ગ્રામ્ય / શહેરી)</option>
+              <option value="management" ${studentPivotRowDim === 'management' ? 'selected' : ''}>🏢 Management Type</option>
+              <option value="cluster" ${studentPivotRowDim === 'cluster' ? 'selected' : ''}>📍 Cluster / CRC (14 Clusters)</option>
+              <option value="area" ${studentPivotRowDim === 'area' ? 'selected' : ''}>🌾 Rural / Urban</option>
               <option value="social" ${studentPivotRowDim === 'social' ? 'selected' : ''}>🏷️ Social Category (General, OBC, SC, ST)</option>
             </select>
           </div>
@@ -2939,17 +2952,17 @@ function renderStudentPivotSection(container) {
           <div style="display:flex; align-items:center; gap:6px;">
             <label style="font-size:12px; font-weight:800; color:#334155;">Column Dimension:</label>
             <select id="selStudentPivotCol" onchange="onStudentPivotDimensionChange()" style="padding:7px 12px; font-size:12px; border-radius:6px; border:1px solid #94a3b8; font-weight:800; color:#0f172a; outline:none; background:#f8fafc;">
-              <option value="class" ${studentPivotColDim === 'class' ? 'selected' : ''}>📚 Studying Class (ધોરણ ૧ થી ૧૨ &amp; બાલવાટિકા)</option>
-              <option value="gender" ${studentPivotColDim === 'gender' ? 'selected' : ''}>👥 Gender (કુમાર / કન્યા)</option>
-              <option value="area" ${studentPivotColDim === 'area' ? 'selected' : ''}>🌾 Rural / Urban (ગ્રામ્ય / શહેરી)</option>
+              <option value="class" ${studentPivotColDim === 'class' ? 'selected' : ''}>📚 Studying Class (Balvatika &amp; Std 1-12)</option>
+              <option value="gender" ${studentPivotColDim === 'gender' ? 'selected' : ''}>👥 Gender (Boys / Girls)</option>
+              <option value="area" ${studentPivotColDim === 'area' ? 'selected' : ''}>🌾 Rural / Urban</option>
             </select>
           </div>
 
           <button onclick="exportStudentPivotToCsv()" style="background:#10b981; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 6px rgba(16,185,129,0.3);">
-            <i class="fa-solid fa-file-csv"></i> CSV ડાઉનલોડ
+            <i class="fa-solid fa-file-csv"></i> CSV Download
           </button>
           <button onclick="exportStudentPivotToExcel()" style="background:#0284c7; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:800; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 2px 6px rgba(2,132,199,0.3);">
-            <i class="fa-solid fa-file-excel"></i> Excel ડાઉનલોડ (.xlsx)
+            <i class="fa-solid fa-file-excel"></i> Excel Download (.xlsx)
           </button>
         </div>
       </div>
@@ -2960,10 +2973,10 @@ function renderStudentPivotSection(container) {
         <!-- 1. Management Filter -->
         <div>
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-sitemap" style="color:#0284c7;"></i> મેનેજમેન્ટ (Management):
+            <i class="fa-solid fa-sitemap" style="color:#0284c7;"></i> Management:
           </label>
           <select id="selStudentFilterMgt" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
-            <option value="">All Managements (તમામ)</option>
+            <option value="">All Managements</option>
             ${managements.map(m => `<option value="${m}" ${studentFilterManagement === m ? 'selected' : ''}>${m}</option>`).join('')}
           </select>
         </div>
@@ -2971,22 +2984,22 @@ function renderStudentPivotSection(container) {
         <!-- 2. Rural / Urban Filter -->
         <div>
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-tree-city" style="color:#16a34a;"></i> વિસ્તાર (Area / Location):
+            <i class="fa-solid fa-tree-city" style="color:#16a34a;"></i> Area / Location:
           </label>
           <select id="selStudentFilterArea" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
-            <option value="">All Areas (ગ્રામ્ય + શહેરી)</option>
-            <option value="Rural" ${studentFilterArea === 'Rural' ? 'selected' : ''}>🌾 Rural Only (માત્ર ગ્રામ્ય - 67.6%)</option>
-            <option value="Urban" ${studentFilterArea === 'Urban' ? 'selected' : ''}>🏙️ Urban Only (માત્ર શહેરી - 32.4%)</option>
+            <option value="">All Areas (Rural + Urban)</option>
+            <option value="Rural" ${studentFilterArea === 'Rural' ? 'selected' : ''}>🌾 Rural Only</option>
+            <option value="Urban" ${studentFilterArea === 'Urban' ? 'selected' : ''}>🏙️ Urban Only</option>
           </select>
         </div>
 
         <!-- 3. Standard / Class Multi-Select Checkbox Dropdown ("બીજા ફોટા માં આપેલ ધોરણ આગળ ચેક બોક્ષ") -->
         <div style="position:relative;" id="containerStudentStdDropdown">
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-square-check" style="color:#2563eb;"></i> ધોરણ (Checkboxes):
+            <i class="fa-solid fa-square-check" style="color:#2563eb;"></i> Standards:
           </label>
           <button type="button" id="btnStudentStdDropdown" onclick="toggleStudentStdDropdown(event)" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; cursor:pointer; text-align:left;">
-            <span id="txtStudentStdSelectedSummary"><i class="fa-solid fa-graduation-cap" style="color:#f59e0b; margin-right:4px;"></i> ${studentFilterStandards.length === 13 ? 'બધા ધોરણ (13)' : studentFilterStandards.length + ' ધોરણ પસંદ'}</span>
+            <span id="txtStudentStdSelectedSummary"><i class="fa-solid fa-graduation-cap" style="color:#f59e0b; margin-right:4px;"></i> ${studentFilterStandards.length === 13 ? 'All Standards (13)' : studentFilterStandards.length + ' Standards Selected'}</span>
             <i class="fa-solid fa-chevron-down" style="font-size:10px; color:#64748b;"></i>
           </button>
 
@@ -2994,32 +3007,32 @@ function renderStudentPivotSection(container) {
           <div id="menuStudentStdDropdown" style="display:none; position:absolute; top:calc(100% + 4px); left:0; width:280px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.18); z-index:150; padding:10px;">
             
             <!-- Quick Preset Buttons -->
-            <div style="font-size:10.5px; font-weight:800; color:#64748b; margin-bottom:5px; text-transform:uppercase;">ઝડપી પસંદગી (Quick Presets):</div>
+            <div style="font-size:10.5px; font-weight:800; color:#64748b; margin-bottom:5px; text-transform:uppercase;">Quick Presets:</div>
             <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
-              <button type="button" onclick="selectStudentStdGroup('all')" style="background:#e0f2fe; color:#0369a1; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">તમામ</button>
-              <button type="button" onclick="selectStudentStdGroup('primary')" style="background:#dcfce7; color:#15803d; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૧ થી ૫</button>
-              <button type="button" onclick="selectStudentStdGroup('upper_primary')" style="background:#fef3c7; color:#b45309; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૬ થી ૮</button>
-              <button type="button" onclick="selectStudentStdGroup('secondary')" style="background:#ede9fe; color:#6d28d9; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૯ થી ૧૦</button>
-              <button type="button" onclick="selectStudentStdGroup('higher_sec')" style="background:#fce7f3; color:#be185d; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">૧૧ થી ૧૨</button>
-              <button type="button" onclick="selectStudentStdGroup('clear')" style="background:#f1f5f9; color:#64748b; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">ક્લિયર</button>
+              <button type="button" onclick="selectStudentStdGroup('all')" style="background:#e0f2fe; color:#0369a1; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">All</button>
+              <button type="button" onclick="selectStudentStdGroup('primary')" style="background:#dcfce7; color:#15803d; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">Std 1-5</button>
+              <button type="button" onclick="selectStudentStdGroup('upper_primary')" style="background:#fef3c7; color:#b45309; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">Std 6-8</button>
+              <button type="button" onclick="selectStudentStdGroup('secondary')" style="background:#ede9fe; color:#6d28d9; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">Std 9-10</button>
+              <button type="button" onclick="selectStudentStdGroup('higher_sec')" style="background:#fce7f3; color:#be185d; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">Std 11-12</button>
+              <button type="button" onclick="selectStudentStdGroup('clear')" style="background:#f1f5f9; color:#64748b; border:none; border-radius:4px; font-size:10.5px; font-weight:800; padding:3px 7px; cursor:pointer;">Clear</button>
             </div>
 
             <!-- Master Checkbox (Select All) -->
             <label style="display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:5px; background:#f8fafc; font-size:12px; font-weight:800; color:#0f172a; cursor:pointer; margin-bottom:6px; border:1px solid #e2e8f0;">
               <input type="checkbox" id="chkStdAll" onchange="toggleAllStudentStandards(this.checked)" ${studentFilterStandards.length === 13 ? 'checked' : ''} style="width:16px; height:16px; accent-color:#2563eb; cursor:pointer;" />
-              <span>All Standards (બધા ધોરણ - 13)</span>
+              <span>All Standards (13)</span>
             </label>
 
             <!-- Scrollable List of Checkboxes -->
             <div style="max-height:210px; overflow-y:auto; border-top:1px solid #e2e8f0; padding-top:4px; display:flex; flex-direction:column; gap:2px;">
               <label style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:4px; font-size:12px; font-weight:700; color:#1e293b; cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
                 <input type="checkbox" class="chk-student-std" value="Balvatika" onchange="onStudentStdCheckboxChange()" ${studentFilterStandards.includes('Balvatika') ? 'checked' : ''} style="width:15px; height:15px; accent-color:#2563eb; cursor:pointer;" />
-                <span>Balvatika (બાલવાટિકા)</span>
+                <span>Balvatika</span>
               </label>
               ${classOrder.filter(c => c !== 'Balvatika').map(c => `
                 <label style="display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:4px; font-size:12px; font-weight:700; color:#1e293b; cursor:pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='transparent'">
                   <input type="checkbox" class="chk-student-std" value="${c}" onchange="onStudentStdCheckboxChange()" ${studentFilterStandards.includes(c) ? 'checked' : ''} style="width:15px; height:15px; accent-color:#2563eb; cursor:pointer;" />
-                  <span>Std ${c} (ધોરણ ${c})</span>
+                  <span>Std ${c}</span>
                 </label>
               `).join('')}
             </div>
@@ -3027,7 +3040,7 @@ function renderStudentPivotSection(container) {
             <!-- Apply / Close Button -->
             <div style="margin-top:8px; padding-top:6px; border-top:1px solid #e2e8f0; display:flex; justify-content:flex-end;">
               <button type="button" onclick="closeStudentStdDropdown()" style="background:#2563eb; color:#ffffff; border:none; border-radius:5px; font-size:11.5px; font-weight:800; padding:5px 14px; cursor:pointer;">
-                લાગુ કરો (Apply &amp; Close)
+                Apply &amp; Close
               </button>
             </div>
           </div>
@@ -3036,10 +3049,10 @@ function renderStudentPivotSection(container) {
         <!-- 4. Cluster / CRC Filter -->
         <div>
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-layer-group" style="color:#8b5cf6;"></i> ક્લસ્ટર (Cluster / CRC):
+            <i class="fa-solid fa-layer-group" style="color:#8b5cf6;"></i> Cluster / CRC:
           </label>
           <select id="selStudentFilterCluster" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
-            <option value="">All 14 Clusters (તમામ CRC)</option>
+            <option value="">All 14 Clusters</option>
             ${clusters.map(c => `<option value="${c}" ${studentFilterCluster === c ? 'selected' : ''}>${c}</option>`).join('')}
           </select>
         </div>
@@ -3047,19 +3060,19 @@ function renderStudentPivotSection(container) {
         <!-- 5. Gender Filter -->
         <div>
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-venus-mars" style="color:#ec4899;"></i> જાતિ (Gender):
+            <i class="fa-solid fa-venus-mars" style="color:#ec4899;"></i> Gender:
           </label>
           <select id="selStudentFilterGender" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
-            <option value="">All (કુમાર + કન્યા)</option>
-            <option value="Male" ${studentFilterGender === 'Male' ? 'selected' : ''}>Boys / કુમાર</option>
-            <option value="Female" ${studentFilterGender === 'Female' ? 'selected' : ''}>Girls / કન્યા</option>
+            <option value="">All (Boys + Girls)</option>
+            <option value="Male" ${studentFilterGender === 'Male' ? 'selected' : ''}>Boys</option>
+            <option value="Female" ${studentFilterGender === 'Female' ? 'selected' : ''}>Girls</option>
           </select>
         </div>
 
         <!-- 6. Social Category Filter -->
         <div>
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-users" style="color:#0d9488;"></i> સામાજિક વર્ગ (Category):
+            <i class="fa-solid fa-users" style="color:#0d9488;"></i> Social Category:
           </label>
           <select id="selStudentFilterSocial" onchange="onStudentFilterChange()" style="width:100%; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:700; color:#0f172a; background:#f8fafc;">
             <option value="">All Categories</option>
@@ -3073,15 +3086,15 @@ function renderStudentPivotSection(container) {
         <!-- 7. Quick Search Box -->
         <div>
           <label style="display:block; font-size:11px; font-weight:800; color:#475569; margin-bottom:4px;">
-            <i class="fa-solid fa-search"></i> સર્ચ:
+            <i class="fa-solid fa-search"></i> Search:
           </label>
-          <input type="text" id="txtStudentFilterSearch" value="${studentFilterSearch}" placeholder="શાળા/ગામ શોધો..." oninput="onStudentFilterChange()" style="width:140px; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:600; outline:none; background:#f8fafc;" />
+          <input type="text" id="txtStudentFilterSearch" value="${studentFilterSearch}" placeholder="Search School / Village..." oninput="onStudentFilterChange()" style="width:140px; padding:7px 10px; font-size:11.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:600; outline:none; background:#f8fafc;" />
         </div>
 
         <!-- 8. Reset Button -->
         <div>
           <button onclick="resetStudentPivotFilters()" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:7px 12px; border-radius:6px; font-size:11.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:5px; height:32px;">
-            <i class="fa-solid fa-arrow-rotate-left"></i> રીસેટ
+            <i class="fa-solid fa-arrow-rotate-left"></i> Reset
           </button>
         </div>
 
@@ -3107,7 +3120,7 @@ function renderStudentPivotSection(container) {
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
         <div>
           <h3 style="font-size:16.5px; font-weight:900; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-chart-pie" style="color:#ea580c;"></i> DYNAMIC ENROLLMENT CHARTS &amp; GRAPHICAL VISUALIZATIONS (ચાર્ટ્સ)
+            <i class="fa-solid fa-chart-pie" style="color:#ea580c;"></i> DYNAMIC ENROLLMENT CHARTS &amp; GRAPHICAL VISUALIZATIONS
           </h3>
           <div style="font-size:12px; color:#64748b; margin-top:2px;">
             Visual breakdown of Rural vs Urban, Management-wise, Standard Progression &amp; CRC Enrollments
@@ -3341,24 +3354,24 @@ function buildStudentPivotTableHtml() {
     if (isFiltered) {
       let stdBadgeHtml = '';
       if (isStdFiltered) {
-        stdBadgeHtml = `<span style="background:#f3e8ff; color:#6b21a8; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">ધોરણ (${studentFilterStandards.length}): ${studentFilterStandards.map(c => c === 'Balvatika' ? 'BV' : 'Std ' + c).join(', ')}</span>`;
+        stdBadgeHtml = `<span style="background:#f3e8ff; color:#6b21a8; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">Standards (${studentFilterStandards.length}): ${studentFilterStandards.map(c => c === 'Balvatika' ? 'BV' : 'Std ' + c).join(', ')}</span>`;
       } else if (studentFilterStandards.length === 0) {
-        stdBadgeHtml = `<span style="background:#fee2e2; color:#991b1b; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">કોઈ ધોરણ પસંદ નથી (0)</span>`;
+        stdBadgeHtml = `<span style="background:#fee2e2; color:#991b1b; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">No standards selected (0)</span>`;
       }
 
       badgeArea.innerHTML = `
         <span style="background:#e0f2fe; color:#0369a1; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-filter"></i> ફિલ્ટર પરિણામ: <strong>${filteredTotalStudents.toLocaleString()}</strong> વિદ્યાર્થીઓ (${filteredSchools.length} શાળાઓ)
+          <i class="fa-solid fa-filter"></i> Filter Result: <strong>${filteredTotalStudents.toLocaleString()}</strong> Students (${filteredSchools.length} Schools)
         </span>
         ${stdBadgeHtml}
-        ${studentFilterArea ? `<span style="background:#dcfce7; color:#166534; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">વિસ્તાર: ${studentFilterArea}</span>` : ''}
-        ${studentFilterManagement ? `<span style="background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">મેનેજમેન્ટ: ${studentFilterManagement}</span>` : ''}
-        ${studentFilterCluster ? `<span style="background:#ede9fe; color:#5b21b6; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">ક્લસ્ટર: ${studentFilterCluster}</span>` : ''}
+        ${studentFilterArea ? `<span style="background:#dcfce7; color:#166534; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">Area: ${studentFilterArea}</span>` : ''}
+        ${studentFilterManagement ? `<span style="background:#fef3c7; color:#92400e; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">Management: ${studentFilterManagement}</span>` : ''}
+        ${studentFilterCluster ? `<span style="background:#ede9fe; color:#5b21b6; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:700;">Cluster: ${studentFilterCluster}</span>` : ''}
       `;
     } else {
       badgeArea.innerHTML = `
         <span style="background:#f1f5f9; color:#475569; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:700; display:inline-flex; align-items:center; gap:6px;">
-          <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> દર્શાવેલ સંપૂર્ણ તાલુકા ડેટા: <strong>${filteredTotalStudents.toLocaleString()}</strong> કુલ વિદ્યાર્થીઓ (${filteredSchools.length} શાળાઓ)
+          <i class="fa-solid fa-circle-check" style="color:#16a34a;"></i> Total Taluka Data: <strong>${filteredTotalStudents.toLocaleString()}</strong> Total Students (${filteredSchools.length} Schools)
         </span>
       `;
     }
@@ -3369,23 +3382,23 @@ function buildStudentPivotTableHtml() {
   let rowTitle = "";
 
   if (studentPivotRowDim === "management") {
-    rowTitle = "શાળા વ્યવસ્થાપન (Management)";
+    rowTitle = "Management Type";
     const mgtSet = new Set(data.managements_list || []);
     filteredSchools.forEach(s => { if (s.management) mgtSet.add(s.management); });
     rowKeys = Array.from(mgtSet).filter(Boolean);
     if (studentFilterManagement) rowKeys = [studentFilterManagement];
   } else if (studentPivotRowDim === "cluster") {
-    rowTitle = "સીઆરસી ક્લસ્ટર (Cluster / CRC)";
+    rowTitle = "Cluster / CRC";
     const clSet = new Set(data.clusters_list || []);
     filteredSchools.forEach(s => { if (s.cluster) clSet.add(s.cluster); });
     rowKeys = Array.from(clSet).filter(Boolean).sort();
     if (studentFilterCluster) rowKeys = [studentFilterCluster];
   } else if (studentPivotRowDim === "area") {
-    rowTitle = "વિસ્તાર (Rural / Urban)";
+    rowTitle = "Area (Rural / Urban)";
     rowKeys = ["Rural", "Urban"];
     if (studentFilterArea) rowKeys = [studentFilterArea];
   } else if (studentPivotRowDim === "social") {
-    rowTitle = "સામાજિક વર્ગ (Social Category)";
+    rowTitle = "Social Category";
     rowKeys = ["General", "OBC", "SC", "ST"];
     if (studentFilterSocial) rowKeys = [studentFilterSocial];
   }
@@ -3466,11 +3479,11 @@ function buildStudentPivotTableHtml() {
   colKeys.forEach(col => {
     let colLabel = col;
     if (studentPivotColDim === "class") {
-      colLabel = col === "Balvatika" ? "બાલવાટિકા" : `Std ${col}`;
+      colLabel = col === "Balvatika" ? "Balvatika" : `Std ${col}`;
     } else if (studentPivotColDim === "gender") {
-      colLabel = col === "Male" ? "Boys (કુમાર)" : "Girls (કન્યા)";
+      colLabel = col === "Male" ? "Boys" : "Girls";
     } else if (studentPivotColDim === "area") {
-      colLabel = col === "Rural" ? "🌾 Rural (ગ્રામ્ય)" : "🏙️ Urban (શહેરી)";
+      colLabel = col === "Rural" ? "🌾 Rural" : "🏙️ Urban";
     }
     tableHtml += `<th style="padding:10px 10px; font-weight:800; border-right:1px solid #334155; white-space:nowrap; text-align:center;">${colLabel}</th>`;
   });
@@ -3530,7 +3543,7 @@ function buildStudentPivotTableHtml() {
         </tbody>
         <tfoot>
           <tr style="background:#0f172a; color:#ffffff; font-weight:900; position:sticky; bottom:0; z-index:4;">
-            <td style="padding:10px 14px; text-align:center;" colspan="2">GRAND TOTAL (કુલ નોંધણી)</td>
+            <td style="padding:10px 14px; text-align:center;" colspan="2">GRAND TOTAL</td>
   `;
 
   colKeys.forEach(col => {
@@ -3913,7 +3926,7 @@ function renderStudentDirectorySection(container) {
     <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:16px 20px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.03);">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
         <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-          <i class="fa-solid fa-address-book" style="color:#f97316;"></i> LIVE STUDENT DIRECTORY (વિદ્યાર્થી ડિરેક્ટરી અને પ્રોફાઈલ)
+          <i class="fa-solid fa-address-book" style="color:#f97316;"></i> LIVE STUDENT DIRECTORY &amp; OFFICIAL PROFILES
         </h3>
         <span id="lblStudentResultCount" style="font-size:12px; font-weight:700; color:#64748b;">
           Searching records...
@@ -3924,19 +3937,19 @@ function renderStudentDirectorySection(container) {
         
         <div style="flex:2; min-width:260px; position:relative;">
           <i class="fa-solid fa-search" style="position:absolute; left:12px; top:11px; color:#94a3b8; font-size:13px;"></i>
-          <input id="txtStudentDirectoryQuery" type="text" value="${studentDirectorySearchQuery}" placeholder="સર્ચ: ૧૮ અંકનો AadhaarUID, વિદ્યાર્થીનું નામ, પિતાનું નામ, GR No, શાળા..." style="width:100%; padding:8px 12px 8px 34px; font-size:12.5px; border-radius:6px; border:1px solid #cbd5e1; outline:none; box-sizing:border-box;" onkeydown="if(event.key==='Enter') executeStudentDirectorySearch();" />
+          <input id="txtStudentDirectoryQuery" type="text" value="${studentDirectorySearchQuery}" placeholder="Search: 18-digit Aadhaar UID, Student Name, Father Name, GR No, School..." style="width:100%; padding:8px 12px 8px 34px; font-size:12.5px; border-radius:6px; border:1px solid #cbd5e1; outline:none; box-sizing:border-box;" onkeydown="if(event.key==='Enter') executeStudentDirectorySearch();" />
         </div>
 
         <div style="flex:1; min-width:160px;">
           <select id="selStudentDirectoryCluster" onchange="executeStudentDirectorySearch()" style="width:100%; padding:8px 10px; font-size:12.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:600; color:#0f172a; background:#f8fafc; outline:none;">
-            <option value="">All Clusters (બધા ક્લસ્ટર)</option>
+            <option value="">All Clusters</option>
             ${clusters.map(c => `<option value="${c}" ${studentDirectoryClusterFilter === c ? 'selected' : ''}>${c}</option>`).join('')}
           </select>
         </div>
 
         <div style="flex:1; min-width:130px;">
           <select id="selStudentDirectoryClass" onchange="executeStudentDirectorySearch()" style="width:100%; padding:8px 10px; font-size:12.5px; border-radius:6px; border:1px solid #cbd5e1; font-weight:600; color:#0f172a; background:#f8fafc; outline:none;">
-            <option value="">All Classes (બધા ધોરણ)</option>
+            <option value="">All Classes</option>
             <option value="Balvatika">Balvatika</option>
             ${[1,2,3,4,5,6,7,8,9,10,11,12].map(i => `<option value="${i}" ${studentDirectoryClassFilter === String(i) ? 'selected' : ''}>Class ${i}</option>`).join('')}
           </select>
@@ -4163,7 +4176,7 @@ function renderStudentSchoolMasterSection(container) {
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
           <h3 style="font-size:16px; font-weight:800; color:#0f172a; margin:0; display:flex; align-items:center; gap:8px;">
-            <i class="fa-solid fa-building-columns" style="color:#0284c7;"></i> SCHOOL-WISE STUDENT ENROLLMENT MASTER (૨૪૪ શાળાઓનું પત્રક)
+            <i class="fa-solid fa-building-columns" style="color:#0284c7;"></i> SCHOOL-WISE STUDENT ENROLLMENT MASTER (244 SCHOOLS)
           </h3>
           <div style="font-size:12px; color:#64748b; margin-top:2px;">
             Complete School-wise breakdown of Total Students, Boys, Girls, Balvatika &amp; Management
@@ -4267,258 +4280,250 @@ function exportStudentSchoolsToCsv() {
 // ═════════════════════════════════════════════════════════════════════════════
 function generateOfficialCtsStudentReportHTML(student) {
   const s = student || {};
-  const uid = s.AadhaarUID || '240402065031820020';
-  const studentName = s.StudentName || 'STUDENT';
-  const fatherName = s.FatherName || '-';
-  const motherName = s.MotherName || '-';
-  const surName = s.SurName || '';
-  const grNo = s.GRNo || '-';
-  const gender = s.Gender || 'Male';
-  const isMale = gender.toLowerCase() === 'male';
+  const uid = s.AadhaarUID || s.AadhaarUid || s.uid || '240402065031820020';
+  const studentName = (s.StudentName || s.student_name || 'STUDENT RECORD').trim();
+  const fatherName = (s.FatherName || s.father_name || '-').trim();
+  const motherName = (s.MotherName || s.mother_name || '-').trim();
+  const surName = (s.SurName || s.surname || '').trim();
+  const grNo = s.GRNo || s.gr_no || '-';
+  const gender = s.Gender || s.gender || 'Male';
+  const isMale = String(gender).toLowerCase().includes('male') || String(gender).toLowerCase().includes('boy');
 
-  const schoolName = s.School || 'PRIMARY SCHOOL';
-  const schoolId = s.SchoolId || '24040200000';
-  const cluster = s.Cluster || 'KADI';
-  const village = s.Village || 'KADI';
-  const management = s.Management || 'Government';
-  const schoolCategory = s.SchoolCategory || 'Primary with Upper Primary';
+  let fullDisplayName = studentName;
+  if (fatherName && fatherName !== '-') {
+    const fatherWords = fatherName.split(/\s+/).filter(Boolean);
+    const hasAll = fatherWords.every(w => fullDisplayName.toUpperCase().includes(w.toUpperCase()));
+    if (!hasAll) fullDisplayName += ' ' + fatherName;
+  }
+  if (surName) {
+    const surWords = surName.split(/\s+/).filter(Boolean);
+    const hasAll = surWords.every(w => fullDisplayName.toUpperCase().includes(w.toUpperCase()));
+    if (!hasAll) fullDisplayName += ' ' + surName;
+  }
 
-  const dob = s.DOB || 'X/X/X';
-  const religion = s.Religion || 'Hindu';
-  const socialCategory = s.SocialCategory || 'General';
-  const subCaste = s.SubCaste || socialCategory;
-  const disability = s.DisabilityName || 'NA';
-  const homeless = s.WhetherHomeLess || 'With Parents';
-  const stdClass = s.StudyingClass === '0' ? 'Balvatika' : (s.StudyingClass || '1');
-  const section = s.Section || 'A';
-  const studentAge = s.StudentAge || '-';
-  const aadhaarId = s.AadhaarID || 'XXXXXXXXXXXX';
+  const schoolName = s.School || s.SchoolName || s.school_name || 'PRIMARY SCHOOL';
+  const schoolId = s.SchoolId || s.SchoolCode || s.school_id || '24040200000';
+  const cluster = s.Cluster || s.ClusterName || s.cluster_name || 'KADI';
+  const village = s.Village || s.VillageName || s.village_name || 'KADI';
+  const management = s.Management || s.management || 'Local Body';
+  const schoolCategory = s.SchoolCategory || s.school_category || 'Primary with Upper Primary';
+
+  const dob = s.DOB || s.BirthDate || s.dob || 'DD/MM/YYYY';
+  const religion = s.Religion || s.religion || 'Hindu';
+  const socialCategory = s.SocialCategory || s.social_category || 'General';
+  const subCaste = s.SubCaste || s.sub_caste || socialCategory;
+  const disability = s.DisabilityName || s.disability || 'None / Not Applicable';
+  const homeless = s.WhetherHomeLess ? String(s.WhetherHomeLess).replace(/^\d+-/, '') : 'With Parents';
+  const stdClass = s.StudyingClass === '0' ? 'Balvatika' : (s.StudyingClass || s.Class || '1');
+  const section = s.Section || s.section || 'A';
+  const studentAge = s.StudentAge || s.age || '-';
+  const aadhaarId = s.AadhaarID || s.aadhaar_id || 'XXXXXXXXXXXX';
+  const studentStatus = s.StudentStatus ? String(s.StudentStatus).replace(/^\d+-/, '') : 'In-School Active';
+  const stream = s.Stream_Desc || s.stream || 'General';
+
+  const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return `
-    <div id="ctsStudentPrintableArea" style="font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a; line-height:1.35; background:#ffffff; padding:0; width:794px; margin:0 auto; box-sizing:border-box;">
+    <div id="ctsStudentPrintableArea" style="font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#0f172a; line-height:1.3; background:#ffffff; padding:0; width:790px; margin:0 auto; box-sizing:border-box; border:2px solid #0f172a; border-radius:8px; overflow:hidden;">
       
-      <!-- 1. TOP HEADER BANNER (GOVT OF GUJARAT - CHILD TRACKING SYSTEM) -->
-      <div style="background:#132f6b; color:#ffffff; border-radius:8px 8px 0 0; padding:12px 18px; display:flex; justify-content:space-between; align-items:center;">
-        
-        <!-- Left Logo Badge -->
+      <!-- 1. OFFICIAL GOVT OF GUJARAT & SAMAGRA SHIKSHA HEADER -->
+      <div style="background:linear-gradient(135deg, #0b2545 0%, #132f6b 100%); color:#ffffff; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #f97316;">
         <div style="display:flex; align-items:center; gap:12px;">
-          <div style="background:#ffffff; border-radius:6px; padding:4px 10px; display:flex; align-items:center; gap:6px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
-            <i class="fa-solid fa-children" style="color:#f97316; font-size:16px;"></i>
-            <div style="line-height:1.1; text-align:left;">
-              <div style="font-size:7px; font-weight:800; color:#64748b; text-transform:uppercase;">Learning Outcome Based</div>
-              <div style="font-size:11px; font-weight:900; color:#0b2545; letter-spacing:0.5px;">CHILD</div>
-              <div style="font-size:6.5px; font-weight:700; color:#ea580c;">Tracking System</div>
-            </div>
+          <div style="width:48px; height:48px; background:#ffffff; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#0b2545; font-size:24px; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+            <i class="fa-solid fa-graduation-cap" style="color:#ea580c;"></i>
           </div>
-
-          <!-- Header Text -->
           <div>
-            <div style="font-size:9.5px; font-weight:900; color:#f97316; letter-spacing:0.8px; text-transform:uppercase;">
-              GOVT. OF GUJARAT
+            <div style="font-size:10px; font-weight:900; color:#fed7aa; letter-spacing:1px; text-transform:uppercase;">
+              GOVERNMENT OF GUJARAT · EDUCATION DEPARTMENT
             </div>
-            <div style="font-size:18px; font-weight:900; color:#ffffff; letter-spacing:0.3px; margin:1px 0;">
-              Child Tracking System
+            <div style="font-size:17px; font-weight:900; color:#ffffff; letter-spacing:0.3px; margin:1px 0;">
+              Child Tracking System (CTS) · Samagra Shiksha
             </div>
-            <div style="font-size:10px; color:#cbd5e1; font-weight:600;">
-              Samagra Shiksha · GCSE · Official Student Profile Record
+            <div style="font-size:9.5px; color:#cbd5e1; font-weight:600;">
+              Block Resource Centre (BRC) Kadi · Official Student Cumulative Record Dossier
             </div>
           </div>
         </div>
 
-        <!-- Right Header Badges -->
-        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-          <div style="background:rgba(255,255,255,0.12); color:#ffffff; border:1px solid rgba(255,255,255,0.25); border-radius:20px; padding:3px 10px; font-size:9.5px; font-weight:800; display:flex; align-items:center; gap:5px; text-transform:uppercase; letter-spacing:0.4px;">
-            <i class="fa-solid fa-id-card-clip" style="color:#38bdf8;"></i> STUDENT REPORT CARD
+        <div style="text-align:right;">
+          <div style="background:rgba(255,255,255,0.12); color:#ffffff; border:1px solid rgba(255,255,255,0.3); border-radius:14px; padding:3px 10px; font-size:9px; font-weight:800; display:inline-flex; align-items:center; gap:5px; text-transform:uppercase;">
+            <i class="fa-solid fa-certificate" style="color:#38bdf8;"></i> OFFICIAL VERIFIED RECORD
           </div>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:16px; font-weight:900; color:#ffffff; letter-spacing:0.2px;">Student Profile Report</span>
-            <span style="background:#ea580c; color:#ffffff; border-radius:14px; padding:2px 8px; font-size:9px; font-weight:800;">
-              AY 2026-27
-            </span>
+          <div style="font-size:13px; font-weight:900; color:#ffffff; margin-top:3px;">
+            Academic Year: <span style="color:#f97316;">2026-27</span>
           </div>
         </div>
-
       </div>
 
-      <!-- 2. STUDENT IDENTIFIER HERO BANNER -->
-      <div style="background:#ffffff; border:1px solid #cbd5e1; border-top:none; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; gap:14px; box-shadow:0 2px 4px rgba(0,0,0,0.03);">
-        
-        <!-- Left: Photo Box & Basic Info -->
+      <!-- 2. STUDENT HERO PROFILE BANNER -->
+      <div style="background:#f8fafc; border-bottom:1.5px solid #cbd5e1; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; gap:14px;">
         <div style="display:flex; align-items:center; gap:14px; flex:1;">
-          <!-- Photo Placeholder Frame -->
-          <div style="width:72px; height:82px; background:#f8fafc; border:1.5px dashed #cbd5e1; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8; flex-shrink:0;">
-            <i class="fa-solid fa-graduation-cap" style="font-size:28px; color:#cbd5e1;"></i>
-            <span style="font-size:8px; font-weight:800; color:#94a3b8; margin-top:4px; letter-spacing:0.5px;">PHOTO</span>
+          <div style="width:70px; height:80px; background:#ffffff; border:2px dashed #94a3b8; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#94a3b8; flex-shrink:0;">
+            <i class="fa-solid fa-user-graduate" style="font-size:26px; color:#cbd5e1;"></i>
+            <span style="font-size:7.5px; font-weight:800; color:#64748b; margin-top:3px;">STUDENT PHOTO</span>
           </div>
-
-          <!-- Student Name & Parentage -->
           <div>
-            <div style="font-size:20px; font-weight:900; color:#0b2545; letter-spacing:0.3px; text-transform:uppercase;">
-              ${studentName}
+            <div style="font-size:18px; font-weight:900; color:#0b2545; letter-spacing:0.2px; text-transform:uppercase;">
+              ${fullDisplayName}
             </div>
-            <div style="font-size:10px; color:#475569; margin:4px 0 6px; display:flex; flex-wrap:wrap; gap:10px; text-transform:uppercase;">
-              <div><strong style="color:#64748b;">FATHER:</strong> <span style="font-weight:800; color:#0f172a;">${fatherName}</span></div>
-              <div><strong style="color:#64748b;">MOTHER:</strong> <span style="font-weight:800; color:#0f172a;">${motherName}</span></div>
-              <div><strong style="color:#64748b;">SURNAME:</strong> <span style="font-weight:800; color:#0f172a;">${surName}</span></div>
-              <div><strong style="color:#64748b;">GR NO:</strong> <span style="font-weight:900; color:#0284c7;">${grNo}</span></div>
+            <div style="font-size:10px; color:#334155; margin:3px 0 5px; display:flex; flex-wrap:wrap; gap:12px; text-transform:uppercase;">
+              <div><strong>FATHER:</strong> <span style="font-weight:700;">${fatherName}</span></div>
+              <div><strong>MOTHER:</strong> <span style="font-weight:700;">${motherName}</span></div>
+              <div><strong>SURNAME:</strong> <span style="font-weight:700;">${surName}</span></div>
+              <div><strong>GR NO:</strong> <span style="font-weight:900; color:#0284c7;">${grNo}</span></div>
             </div>
             <div style="display:flex; gap:6px; align-items:center;">
-              <span style="display:inline-flex; align-items:center; gap:4px; background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:9.5px; font-weight:800; padding:2px 8px; border-radius:12px;">
-                <i class="fa-solid fa-circle-check"></i> IN-SCHOOL ACTIVE
+              <span style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:9px; font-weight:800; padding:2px 8px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;">
+                <i class="fa-solid fa-circle-check"></i> ${studentStatus}
               </span>
-              <span style="display:inline-flex; align-items:center; gap:4px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:9.5px; font-weight:800; padding:2px 8px; border-radius:12px;">
-                <i class="fa-solid fa-graduation-cap"></i> CLASS ${stdClass} ${section ? '(' + section + ')' : ''}
+              <span style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:9px; font-weight:800; padding:2px 8px; border-radius:10px;">
+                Class ${stdClass} ${section ? '(' + section + ')' : ''}
+              </span>
+              <span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; font-size:9px; font-weight:800; padding:2px 8px; border-radius:10px;">
+                Gender: ${gender}
               </span>
             </div>
           </div>
         </div>
 
-        <!-- Right: Orange Gradient Unique ID Card -->
-        <div style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; border-radius:8px; padding:12px 18px; min-width:210px; text-align:left; box-shadow:0 3px 8px rgba(234, 88, 12, 0.25);">
-          <div style="font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; display:flex; align-items:center; gap:5px;">
-            <i class="fa-solid fa-id-card"></i> CHILD UNIQUE ID
+        <div style="background:linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); color:#ffffff; border-radius:8px; padding:10px 16px; min-width:210px; text-align:left; box-shadow:0 2px 6px rgba(234,88,12,0.25);">
+          <div style="font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">
+            <i class="fa-solid fa-id-card"></i> 18-DIGIT STUDENT AADHAAR UID
           </div>
-          <div style="font-size:20px; font-weight:900; letter-spacing:0.8px; margin:4px 0 2px; font-family:monospace;">
+          <div style="font-size:18px; font-weight:900; letter-spacing:0.8px; margin:3px 0 2px; font-family:monospace;">
             ${uid}
           </div>
-          <div style="font-size:8.5px; opacity:0.95; font-weight:600;">18-digit Unique Identifier</div>
-        </div>
-
-      </div>
-
-      <!-- 3. SECTION 1: SCHOOL INFORMATION -->
-      <div style="background:#132f6b; color:#ffffff; border-radius:4px; padding:6px 14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:900;">1</span>
-          <i class="fa-solid fa-school" style="font-size:11px;"></i>
-          <span style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">SCHOOL INFORMATION</span>
-        </div>
-        <span style="font-size:10.5px; font-weight:700; color:#cbd5e1;">શાળાની માહિતી</span>
-      </div>
-
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
-        <div style="grid-column:span 2; background:#fffdf0; border:1px solid #fed7aa; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-school"></i> SCHOOL NAME શાળાનું નામ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${schoolName}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-barcode"></i> SCHOOL ID</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px; font-family:monospace;">${schoolId}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-building-columns"></i> DISTRICT જિલ્લો</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">MAHESANA</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-map-location-dot"></i> BLOCK તાલુકો</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">KADI</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-diagram-project"></i> CLUSTER ક્લસ્ટર</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${cluster}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-house-chimney"></i> VILLAGE ગામ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${village}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-sitemap"></i> MANAGEMENT વ્યવસ્થાપન</div>
-          <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:2px;">${management}</div>
-        </div>
-        <div style="grid-column:span 4; background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-layer-group"></i> SCHOOL CATEGORY શાળા કેટેગરી</div>
-          <div style="font-size:12px; font-weight:800; color:#0f172a; margin-top:2px;">${schoolCategory}</div>
+          <div style="font-size:8px; opacity:0.95;">Samagra Shiksha Gujarat Unique ID</div>
         </div>
       </div>
 
-      <!-- 4. SECTION 2: PERSONAL INFORMATION -->
-      <div style="background:#132f6b; color:#ffffff; border-radius:4px; padding:6px 14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:900;">2</span>
-          <i class="fa-solid fa-user" style="font-size:11px;"></i>
-          <span style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">PERSONAL INFORMATION</span>
+      <div style="padding:10px 16px;">
+        
+        <!-- SECTION 1: SCHOOL DETAILS -->
+        <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">
+            <i class="fa-solid fa-school" style="color:#f97316;"></i> 1. Current School Information
+          </div>
+          <span style="font-size:9px; color:#93c5fd; font-weight:700;">UDISE+ Verified Master</span>
         </div>
-        <span style="font-size:10.5px; font-weight:700; color:#cbd5e1;">વ્યક્તિગત માહિતી</span>
-      </div>
 
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-calendar-days"></i> DATE OF BIRTH જન્મ તારીખ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${dob}</div>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-bottom:10px;">
+          <div style="grid-column:span 2; background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">School Name</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0f172a; margin-top:1px;">${schoolName}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">School DISE Code</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0284c7; margin-top:1px; font-family:monospace;">${schoolId}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Cluster / CRC</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${cluster}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Village / Ward</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${village}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">School Management</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${management}</div>
+          </div>
+          <div style="grid-column:span 2; background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">School Category</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${schoolCategory}</div>
+          </div>
         </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid ${isMale ? 'fa-mars' : 'fa-venus'}"></i> GENDER જાતિ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${gender}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-om"></i> RELIGION ધર્મ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${religion}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-users"></i> SOCIAL CATEGORY સામાજિક વર્ગ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${socialCategory}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-house"></i> BPL STATUS બીપીએલ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">No</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-hand-holding-hand"></i> DISADVANTAGED GROUP</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">No</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-wheelchair"></i> DISABILITY દિવ્યાંગતા</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${disability}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-person-shelter"></i> HOMELESS ઘરવિહોણા</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${homeless}</div>
-        </div>
-      </div>
 
-      <!-- 5. SECTION 3: ACADEMIC & ENROLLMENT DETAILS -->
-      <div style="background:#132f6b; color:#ffffff; border-radius:4px; padding:6px 14px; margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="background:#f59e0b; color:#ffffff; width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:900;">3</span>
-          <i class="fa-solid fa-book-open" style="font-size:11px;"></i>
-          <span style="font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">ACADEMIC &amp; ENROLLMENT DETAILS</span>
+        <!-- SECTION 2: PERSONAL & SOCIO-ECONOMIC DETAILS -->
+        <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">
+            <i class="fa-solid fa-user" style="color:#f97316;"></i> 2. Personal &amp; Demographic Profile
+          </div>
+          <span style="font-size:9px; color:#93c5fd; font-weight:700;">Student Identification</span>
         </div>
-        <span style="font-size:10.5px; font-weight:700; color:#cbd5e1;">શૈક્ષણિક વિગતો</span>
-      </div>
 
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:6px;">
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-graduation-cap"></i> STUDYING CLASS ધોરણ</div>
-          <div style="font-size:12px; font-weight:900; color:#0284c7; margin-top:2px;">Class ${stdClass}</div>
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-bottom:10px;">
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Date of Birth</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0f172a; margin-top:1px;">${dob}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Age &amp; Gender</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${studentAge} Yrs · ${gender}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Social Category</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0284c7; margin-top:1px;">${socialCategory}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Sub Caste / Category</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="${subCaste}">${subCaste}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Religion</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${religion}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Aadhaar Number (12-digit)</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0f172a; margin-top:1px; font-family:monospace;">${aadhaarId}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Special Needs (CWSN)</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${disability}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Living Arrangement</div>
+            <div style="font-size:11.5px; font-weight:800; color:#0f172a; margin-top:1px;">${homeless}</div>
+          </div>
         </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-table-cells"></i> SECTION વર્ગ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">Section ${section}</div>
+
+        <!-- SECTION 3: ACADEMIC & ENROLLMENT DETAILS -->
+        <div style="background:#0b2545; color:#ffffff; border-radius:4px; padding:5px 12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div style="display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:900; text-transform:uppercase; letter-spacing:0.4px;">
+            <i class="fa-solid fa-book-open" style="color:#f97316;"></i> 3. Academic &amp; Enrollment Information
+          </div>
+          <span style="font-size:9px; color:#93c5fd; font-weight:700;">Progression Record</span>
         </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-id-badge"></i> GR NO રજીસ્ટર નંબર</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${grNo}</div>
+
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:5px; margin-bottom:12px;">
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Current Class</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0284c7; margin-top:1px;">Class ${stdClass}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Class Section</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0f172a; margin-top:1px;">Section ${section}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">General Register (GR) No</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0f172a; margin-top:1px;">${grNo}</div>
+          </div>
+          <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:4px; padding:5px 9px;">
+            <div style="font-size:8px; font-weight:800; color:#64748b; text-transform:uppercase;">Academic Stream</div>
+            <div style="font-size:11.5px; font-weight:900; color:#0f172a; margin-top:1px;">${stream}</div>
+          </div>
         </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-hourglass-half"></i> STUDENT AGE ઉંમર</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${studentAge} Years</div>
+
+        <!-- 4. OFFICIAL VERIFICATION & SIGNATURE SEAL BLOCK -->
+        <div style="border-top:1.5px dashed #94a3b8; padding-top:14px; margin-top:6px; display:flex; justify-content:space-between; align-items:flex-end;">
+          <div style="font-size:9.5px; color:#475569; line-height:1.4;">
+            <div><strong>Report Issue Date:</strong> ${todayStr}</div>
+            <div><strong>Issuing Authority:</strong> Block Resource Centre (BRC) Kadi</div>
+            <div style="color:#64748b; font-size:8.5px; margin-top:2px;">This is a computer-generated official document verified under Samagra Shiksha CTS.</div>
+          </div>
+
+          <div style="display:flex; gap:36px; text-align:center;">
+            <div>
+              <div style="height:36px; border-bottom:1px solid #0f172a; width:120px;"></div>
+              <div style="font-size:9.5px; font-weight:800; color:#0f172a; margin-top:4px;">Class Teacher Signature</div>
+            </div>
+            <div>
+              <div style="height:36px; border-bottom:1px solid #0f172a; width:140px;"></div>
+              <div style="font-size:9.5px; font-weight:800; color:#0f172a; margin-top:4px;">Principal / HM Seal &amp; Sign</div>
+            </div>
+          </div>
         </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-address-card"></i> AADHAAR ID આધાર નંબર</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px; font-family:monospace;">${aadhaarId}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-tag"></i> SUB CASTE પેટા જાતિ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${subCaste}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-lines-leaning"></i> STREAM પ્રવાહ</div>
-          <div style="font-size:12px; font-weight:900; color:#0f172a; margin-top:2px;">${s.Stream_Desc || 'General'}</div>
-        </div>
-        <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:4px; padding:6px 10px;">
-          <div style="font-size:8.5px; font-weight:800; color:#ea580c; text-transform:uppercase;"><i class="fa-solid fa-circle-check"></i> STUDENT STATUS સ્થિતિ</div>
-          <div style="font-size:12px; font-weight:900; color:#15803d; margin-top:2px;">In School Active</div>
-        </div>
+
       </div>
 
     </div>
@@ -4532,7 +4537,7 @@ async function downloadStudentProfilePDF(aadhaarUid, btn) {
   let originalContent = "";
   if (btn) {
     originalContent = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PDF તૈયાર થાય છે...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
     btn.disabled = true;
   }
 
@@ -4569,13 +4574,13 @@ async function downloadStudentProfilePDF(aadhaarUid, btn) {
 
     const html = generateOfficialCtsStudentReportHTML(student);
 
-    // 2. Create isolated background rendering iframe
+    // 2. Create isolated background rendering iframe positioned on-screen but hidden behind viewport
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
-    iframe.style.left = '-9999px';
     iframe.style.top = '0';
-    iframe.style.width = '794px';
-    iframe.style.height = '1123px';
+    iframe.style.left = '0';
+    iframe.style.width = '800px';
+    iframe.style.height = '1120px';
     iframe.style.border = 'none';
     iframe.style.zIndex = '-9999';
     iframe.style.opacity = '0.01';
@@ -4596,7 +4601,7 @@ async function downloadStudentProfilePDF(aadhaarUid, btn) {
           </style>
         </head>
         <body>
-          <div style="width: 794px; background: #ffffff;">
+          <div style="width: 790px; margin: 0 auto; background: #ffffff;">
             ${html}
           </div>
         </body>
@@ -4604,13 +4609,14 @@ async function downloadStudentProfilePDF(aadhaarUid, btn) {
     `);
     iframe.contentDocument.close();
 
+    // Allow resources, fonts, and styles to compute
     await new Promise(r => setTimeout(r, 450));
 
     const opt = {
-      margin: 4,
+      margin: [4, 4, 4, 4],
       filename: `CTS_Student_Profile_${aadhaarUid}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
@@ -4632,11 +4638,11 @@ async function downloadStudentProfilePDF(aadhaarUid, btn) {
       }, 1500);
 
       if (btn) {
-        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> PDF ડાઉનલોડ સફળ!';
+        btn.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10b981;"></i> Download Successful!';
         setTimeout(() => {
           btn.innerHTML = originalContent || '<i class="fa-solid fa-file-pdf"></i> Profile PDF';
           btn.disabled = false;
-        }, 3000);
+        }, 2500);
       }
     } else {
       iframe.remove();
@@ -4652,7 +4658,7 @@ async function downloadStudentProfilePDF(aadhaarUid, btn) {
       btn.innerHTML = originalContent;
       btn.disabled = false;
     }
-    alert("PDF જનરેટ કરવામાં સમસ્યા આવી. કૃપા કરીને પ્રિન્ટ વિકલ્પનો ઉપયોગ કરો.");
+    alert("Could not generate PDF. Please use the Print option.");
   }
 }
 
@@ -5276,6 +5282,7 @@ function renderIctOrGyankunjModuleView(tabName) {
 
   const uniquePhases = [...new Set(rows.map(r => r.phase_label).filter(Boolean))].sort();
   const uniqueAgencies = [...new Set(rows.map(r => r.agency).filter(Boolean))].sort();
+  const uniqueManagements = [...new Set(rows.map(r => r.management || 'Local Body').filter(Boolean))].sort();
 
   let html = `
     <div style="background:#0f172a; color:#fff; border-radius:10px; padding:18px 24px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
@@ -5286,7 +5293,7 @@ function renderIctOrGyankunjModuleView(tabName) {
 
     <div id="ictKpiContainerPanel"></div>
 
-    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:14px 18px; margin-bottom:20px; display:grid; grid-template-columns: 1.2fr 1fr 1fr 1fr 1.5fr auto; gap:12px; align-items:center;">
+    <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:14px 18px; margin-bottom:20px; display:grid; grid-template-columns: 1.2fr 1.2fr 1fr 1fr 1.5fr auto; gap:12px; align-items:center;">
       <div>
         <label style="font-size:11px; font-weight:800; color:#0f172a; display:block; margin-bottom:4px;"><i class="fa-solid fa-sitemap"></i> CRC Cluster:</label>
         <select id="selIctCluster" class="form-control" onchange="filterIctTableRows('${tabName}')" style="height:38px; font-size:12px; font-weight:700;">
@@ -5299,9 +5306,7 @@ function renderIctOrGyankunjModuleView(tabName) {
         <label style="font-size:11px; font-weight:800; color:#0f172a; display:block; margin-bottom:4px;"><i class="fa-solid fa-landmark"></i> Management:</label>
         <select id="selIctManagement" class="form-control" onchange="filterIctTableRows('${tabName}')" style="height:38px; font-size:12px; font-weight:700;">
           <option value="ALL">-- All Managements --</option>
-          <option value="Local Body">Local Body / Panchayat</option>
-          <option value="Government Aided">Government Aided</option>
-          <option value="Private Unaided">Private Unaided</option>
+          ${uniqueManagements.map(m => `<option value="${m}">${m}</option>`).join('')}
         </select>
       </div>
 
@@ -5379,10 +5384,10 @@ function filterIctTableRows(tabName) {
   const filtered = rawRows.filter(s => {
     const matchBlock = (selectedAttendanceBlock === "ALL Blocks" || selectedAttendanceBlock === "KADI" || (s.block || "KADI").toUpperCase().includes(selectedAttendanceBlock.toUpperCase()));
     const matchCrc = (crcVal === "ALL" || s.cluster === crcVal);
-    const matchMgt = (mgtVal === "ALL" || (s.management || 'Local Body').toLowerCase().includes(mgtVal.toLowerCase()));
+    const matchMgt = (mgtVal === "ALL" || (s.management || 'Local Body') === mgtVal || (s.management || 'Local Body').toLowerCase() === mgtVal.toLowerCase());
     const matchPhase = (phaseVal === "ALL" || s.phase_label === phaseVal);
     const matchAgency = (agencyVal === "ALL" || s.agency === agencyVal);
-    const matchSearch = (searchVal === "" || s.school_name.toLowerCase().includes(searchVal) || s.school_id.toLowerCase().includes(searchVal));
+    const matchSearch = (searchVal === "" || (s.school_name || '').toLowerCase().includes(searchVal) || (s.school_id || '').toLowerCase().includes(searchVal));
 
     return matchCrc && matchMgt && matchPhase && matchAgency && matchSearch;
   });
