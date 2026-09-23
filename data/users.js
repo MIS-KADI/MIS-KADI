@@ -33,6 +33,6 @@ window.MIS_USERS_DEFAULT = [
     "username": "DEMO_TEST",
     "password": "123",
     "role": "CRC User",
-    "status": "Active"
+    "status": "Deactive"
   }
 ];
