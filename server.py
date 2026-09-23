@@ -216,6 +216,19 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps({"success": True, "count": len(filtered), "records": filtered}, ensure_ascii=False).encode("utf-8"))
             return
 
+        if parsed.path == "/api/users":
+            users_json_path = os.path.join(DIRECTORY, "data", "users.json")
+            if os.path.exists(users_json_path):
+                with open(users_json_path, "r", encoding="utf-8") as f:
+                    users_data = json.load(f)
+            else:
+                users_data = []
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps(users_data, ensure_ascii=False).encode("utf-8"))
+            return
+
         return super().do_GET()
 
     def do_POST(self):
@@ -226,6 +239,28 @@ class MISRequestHandler(http.server.SimpleHTTPRequestHandler):
             payload = json.loads(post_body)
         except Exception:
             payload = {}
+
+        if parsed.path == "/api/save_users":
+            users_list = payload.get("users", [])
+            if isinstance(users_list, list) and len(users_list) > 0:
+                users_json_path = os.path.join(DIRECTORY, "data", "users.json")
+                users_js_path = os.path.join(DIRECTORY, "data", "users.js")
+                with open(users_json_path, "w", encoding="utf-8") as f:
+                    json.dump(users_list, f, ensure_ascii=False, indent=2)
+                with open(users_js_path, "w", encoding="utf-8") as f:
+                    f.write("window.MIS_USERS_DEFAULT = " + json.dumps(users_list, ensure_ascii=False, indent=2) + ";\n")
+
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": True, "message": "Users saved successfully to data/users.json and data/users.js"}).encode("utf-8"))
+                return
+            else:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(json.dumps({"success": False, "message": "Invalid users list"}).encode("utf-8"))
+                return
 
         if parsed.path == "/api/upload_excel":
             records = payload.get("records", [])

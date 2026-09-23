@@ -13,6 +13,9 @@
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
+  <!-- Live Users Configuration -->
+  <script src="data/users.js?v=2.0"></script>
+  
   <style>
     * {
       box-sizing: border-box;
@@ -496,15 +499,52 @@
       }
     }
 
-    // Handle Login Submit with Role Enforcement and Secure Error Messages
-    function handleLoginSubmit(e) {
+    // Fetch live users from data/users.json or data/users.js or localStorage
+    async function fetchLiveUsers() {
+      try {
+        const res = await fetch("data/users.json?t=" + Date.now(), { cache: "no-store" });
+        if (res.ok) {
+          const liveList = await res.json();
+          if (Array.isArray(liveList) && liveList.length > 0) {
+            localStorage.setItem("mis_registered_users", JSON.stringify(liveList));
+            return liveList;
+          }
+        }
+      } catch (err) {
+        // static or offline
+      }
+      if (typeof window.MIS_USERS_DEFAULT !== "undefined" && Array.isArray(window.MIS_USERS_DEFAULT)) {
+        return window.MIS_USERS_DEFAULT;
+      }
+      const stored = localStorage.getItem("mis_registered_users");
+      if (stored) {
+        try { return JSON.parse(stored); } catch (e) {}
+      }
+      return [
+        { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+        { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+        { username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" },
+        { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
+        { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
+      ];
+    }
+
+    // Handle Login Submit with Dynamic Role Enforcement and Flexible Credentials
+    async function handleLoginSubmit(e) {
       e.preventDefault();
       const user = document.getElementById("txtUsername").value.trim();
       const pwd = document.getElementById("txtPassword").value.trim();
       const enteredCaptcha = document.getElementById("txtCaptcha").value.trim().toUpperCase();
       const errBox = document.getElementById("loginErrorMsg");
 
-      // 1. Mandatory Password Check
+      // 1. Mandatory Username and Password Check
+      if (!user) {
+        errBox.style.display = "block";
+        errBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Please enter your User ID / Username.`;
+        document.getElementById("txtUsername").focus();
+        return;
+      }
+
       if (!pwd) {
         errBox.style.display = "block";
         errBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Please enter your Password.`;
@@ -522,53 +562,33 @@
         return;
       }
 
-      // Registered portal users
-      let users = JSON.parse(localStorage.getItem("mis_registered_users")) || [
-        { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
-        { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
-        { username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" },
-        { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
-        { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
-      ];
+      // 3. Load latest live users
+      const users = await fetchLiveUsers();
 
-      // Automatically migrate storage: ensure admin is B@240402 and CRCKADI exists with SSA@123
-      let usersUpdated = false;
-      users.forEach(u => {
-        if (u.username === "240402" || u.username === "240402-KADI BMIS") {
-          if (u.password !== "B@240402") {
-            u.password = "B@240402";
-            usersUpdated = true;
-          }
-        }
-      });
-
-      const existingCrcKadi = users.find(u => u.username.toUpperCase() === "CRCKADI");
-      if (!existingCrcKadi) {
-        users.push({ username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" });
-        usersUpdated = true;
-      } else if (existingCrcKadi.password !== "SSA@123" || existingCrcKadi.status !== "Active") {
-        existingCrcKadi.password = "SSA@123";
-        existingCrcKadi.status = "Active";
-        usersUpdated = true;
-      }
-
-      if (usersUpdated) {
-        localStorage.setItem("mis_registered_users", JSON.stringify(users));
-      }
-
-      // 3. Admin Role Enforcement: Admin can ONLY login with 240402
+      // 4. Admin Role Enforcement: matches any active Admin user configured
       if (currentLoginRole === "admin") {
-        if (user !== "240402" && user !== "240402-KADI BMIS") {
+        const adminUser = users.find(u => 
+          u.username.toLowerCase() === user.toLowerCase() && 
+          u.role && u.role.toLowerCase().includes("admin")
+        );
+
+        if (!adminUser) {
           errBox.style.display = "block";
-          errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Admin login is strictly restricted to User ID <strong>240402</strong>.`;
+          errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> User ID <strong>${user}</strong> does not have Admin access or does not exist.`;
           generateCaptcha();
           return;
         }
 
-        const adminUser = users.find(u => (u.username === "240402" || u.username === "240402-KADI BMIS") && u.password === pwd);
-        if (!adminUser && pwd !== "B@240402") {
+        if (adminUser.status && adminUser.status !== "Active") {
           errBox.style.display = "block";
-          errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect Username or Password! Please try again.`;
+          errBox.innerHTML = `<i class="fa-solid fa-user-slash"></i> Admin account is currently deactivated.`;
+          generateCaptcha();
+          return;
+        }
+
+        if (adminUser.password !== pwd) {
+          errBox.style.display = "block";
+          errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect Password! Please try again.`;
           document.getElementById("txtPassword").value = "";
           document.getElementById("txtCaptcha").value = "";
           generateCaptcha();
@@ -579,21 +599,21 @@
         // Admin login success
         sessionStorage.setItem("mis_session_auth", "true");
         sessionStorage.setItem("mis_user_role", "admin");
-        sessionStorage.setItem("mis_username", "240402");
+        sessionStorage.setItem("mis_username", adminUser.username);
         localStorage.setItem("mis_user_logged_in", "true");
         localStorage.setItem("mis_user_role", "admin");
-        localStorage.setItem("mis_username", "240402");
+        localStorage.setItem("mis_username", adminUser.username);
 
         document.getElementById("txtPassword").value = "";
         window.location.replace("index.html");
         return;
       }
 
-      // 4. Other User Login Enforcement
+      // 5. User Role Enforcement
       if (currentLoginRole === "user") {
-        const foundUser = users.find(u => u.username.toLowerCase() === user.toLowerCase() && u.password === pwd);
+        const foundUser = users.find(u => u.username.toLowerCase() === user.toLowerCase());
 
-        if (!foundUser) {
+        if (!foundUser || foundUser.password !== pwd) {
           errBox.style.display = "block";
           errBox.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Incorrect Username or Password! Please try again.`;
           document.getElementById("txtPassword").value = "";
@@ -603,23 +623,25 @@
           return;
         }
 
-        if (foundUser.status !== "Active") {
+        if (foundUser.status && foundUser.status !== "Active") {
           errBox.style.display = "block";
-          errBox.innerHTML = `<i class="fa-solid fa-user-slash"></i> Account is DEACTIVATED by Admin V.D.PATEL.`;
+          errBox.innerHTML = `<i class="fa-solid fa-user-slash"></i> Account is DEACTIVATED.`;
           generateCaptcha();
           return;
         }
 
-        // User login success (Restricted role)
+        // User login success
+        const userRole = (foundUser.role && foundUser.role.toLowerCase().includes("admin")) ? "admin" : "user";
         sessionStorage.setItem("mis_session_auth", "true");
-        sessionStorage.setItem("mis_user_role", "user");
+        sessionStorage.setItem("mis_user_role", userRole);
         sessionStorage.setItem("mis_username", foundUser.username);
         localStorage.setItem("mis_user_logged_in", "true");
-        localStorage.setItem("mis_user_role", "user");
+        localStorage.setItem("mis_user_role", userRole);
         localStorage.setItem("mis_username", foundUser.username);
 
         document.getElementById("txtPassword").value = "";
         window.location.replace("index.html");
+        return;
       }
     }
 

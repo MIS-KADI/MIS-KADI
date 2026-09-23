@@ -254,40 +254,50 @@ if (typeof Chart !== 'undefined') {
   Chart.register(alwaysShowValuesPlugin);
 }
 
-// User Management System State
-let registeredUsersList = JSON.parse(localStorage.getItem("mis_registered_users")) || [
-  { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
-  { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
-  { username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" },
-  { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
-  { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
-];
+// User Management System State - Dynamic Source of Truth
+let registeredUsersList = (typeof window.MIS_USERS_DEFAULT !== "undefined" && Array.isArray(window.MIS_USERS_DEFAULT))
+  ? JSON.parse(JSON.stringify(window.MIS_USERS_DEFAULT))
+  : (JSON.parse(localStorage.getItem("mis_registered_users")) || [
+      { username: "240402", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+      { username: "240402-KADI BMIS", password: "B@240402", role: "Admin (V.D.PATEL)", status: "Active" },
+      { username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" },
+      { username: "CRC-DANGARWA", password: "SSA@123", role: "CRC User", status: "Active" },
+      { username: "CRC-KADI-KUMAR", password: "SSA@123", role: "CRC User", status: "Active" }
+    ]);
 
-// Ensure admin password is set to B@240402 and CRCKADI is present
-registeredUsersList.forEach(u => {
-  if (u.username === "240402" || u.username === "240402-KADI BMIS") {
-    u.password = "B@240402";
+// Fetch live users from server or GitHub data/users.json
+async function syncLivePortalUsers() {
+  try {
+    const res = await fetch("data/users.json?t=" + Date.now(), { cache: "no-store" });
+    if (res.ok) {
+      const liveList = await res.json();
+      if (Array.isArray(liveList) && liveList.length > 0) {
+        registeredUsersList = liveList;
+        localStorage.setItem("mis_registered_users", JSON.stringify(liveList));
+      }
+    }
+  } catch (err) {
+    // Offline or static mode
   }
-});
-
-const foundCrcKadiInApp = registeredUsersList.find(u => u.username.toUpperCase() === "CRCKADI");
-if (!foundCrcKadiInApp) {
-  registeredUsersList.push({ username: "CRCKADI", password: "SSA@123", role: "CRC User", status: "Active" });
-} else {
-  foundCrcKadiInApp.password = "SSA@123";
-  foundCrcKadiInApp.status = "Active";
 }
-
-localStorage.setItem("mis_registered_users", JSON.stringify(registeredUsersList));
 
 document.addEventListener("DOMContentLoaded", () => {
   checkUserAuth();
-  saveUsersToStorage();
+  syncLivePortalUsers();
   loadDashboardData();
 });
 
-function saveUsersToStorage() {
+async function saveUsersToStorage() {
   localStorage.setItem("mis_registered_users", JSON.stringify(registeredUsersList));
+  try {
+    await fetch("/api/save_users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ users: registeredUsersList })
+    });
+  } catch (e) {
+    // Static / offline mode
+  }
 }
 
 function checkUserAuth() {
@@ -309,14 +319,59 @@ function checkUserAuth() {
     }
   }
 
-  // Enforce Users Management visibility: ONLY Admin (240402) can see Users Management
+  // Enforce Users Management visibility: Any Admin user can see Users Management
   const navUsers = document.getElementById("navItemUsersManagement");
   if (navUsers) {
-    if (role === "admin" && (loggedUser === "240402" || loggedUser === "240402-KADI BMIS")) {
+    if (role === "admin") {
       navUsers.style.display = "block";
     } else {
       navUsers.style.display = "none";
     }
+  }
+}
+
+// Quick Change Password function accessible from anywhere
+function promptChangeMyPassword() {
+  const loggedUser = sessionStorage.getItem("mis_username") || localStorage.getItem("mis_username") || "";
+  if (!loggedUser) {
+    alert("Please log in first.");
+    return;
+  }
+
+  const userObj = registeredUsersList.find(u => u.username.toLowerCase() === loggedUser.toLowerCase());
+  if (!userObj) {
+    alert(`User '${loggedUser}' not found in user list.`);
+    return;
+  }
+
+  const currentPwd = prompt(`Enter CURRENT Password for '${loggedUser}':`);
+  if (currentPwd === null) return;
+  if (currentPwd !== userObj.password) {
+    alert("Incorrect current password! Password change cancelled.");
+    return;
+  }
+
+  const newPwd = prompt(`Enter NEW Password for '${loggedUser}':`);
+  if (newPwd === null) return;
+  if (!newPwd.trim()) {
+    alert("Password cannot be empty.");
+    return;
+  }
+
+  const confirmPwd = prompt(`Confirm NEW Password for '${loggedUser}':`);
+  if (confirmPwd === null) return;
+  if (confirmPwd !== newPwd) {
+    alert("Passwords do not match! Password change cancelled.");
+    return;
+  }
+
+  userObj.password = newPwd.trim();
+  saveUsersToStorage();
+  alert(`Password for '${loggedUser}' has been successfully changed!\n\nતમારો નવો પાસવર્ડ સફળતાપૂર્વક અપડેટ થઈ ગયો છે.`);
+
+  const wrapper = document.getElementById("moduleTabDedicatedContainer");
+  if (wrapper && wrapper.innerHTML.includes("USER MANAGEMENT PANEL")) {
+    renderUsersManagementTable();
   }
 }
 
@@ -7617,10 +7672,9 @@ function renderCwsnDataTables() {
 
 function renderUsersManagementTable() {
   const role = sessionStorage.getItem("mis_user_role") || localStorage.getItem("mis_user_role") || "user";
-  const loggedUser = sessionStorage.getItem("mis_username") || localStorage.getItem("mis_username") || "";
 
-  if (role !== "admin" || (loggedUser !== "240402" && loggedUser !== "240402-KADI BMIS")) {
-    alert("Access Denied: Only Administrator (240402) has permission to access the Users Management Panel.");
+  if (role !== "admin") {
+    alert("Access Denied: Only Administrator has permission to access the Users Management Panel.");
     switchNavTab('home');
     return;
   }
@@ -7631,13 +7685,25 @@ function renderUsersManagementTable() {
 
   let html = `
     <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:20px; margin-bottom:24px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:14px 18px; border-radius:6px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#034433; color:#fff; padding:14px 18px; border-radius:6px; flex-wrap:wrap; gap:10px;">
         <h3 style="font-size:17px; font-weight:800; margin:0;">
           <i class="fa-solid fa-users-gear" style="color:#f97316;"></i> USER MANAGEMENT PANEL (ADMINISTRATOR ACCESS)
         </h3>
-        <button class="btn btn-saffron" style="font-size:12px;" onclick="promptAddNewUser()">
-          <i class="fa-solid fa-user-plus"></i> + ADD NEW USER
-        </button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-saffron" style="font-size:12px;" onclick="promptAddNewUser()">
+            <i class="fa-solid fa-user-plus"></i> + ADD NEW USER
+          </button>
+          <button class="btn btn-light" style="font-size:12px; background:#f8fafc; color:#0f172a; font-weight:700; border:1px solid #cbd5e1;" onclick="downloadUsersJson()" title="Download updated users.json file">
+            <i class="fa-solid fa-download"></i> EXPORT users.json
+          </button>
+        </div>
+      </div>
+
+      <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:12px 16px; margin-bottom:16px; color:#166534; font-size:13px; line-height:1.6;">
+        <strong><i class="fa-solid fa-shield-halved"></i> યુઝરનેમ અને પાસવર્ડ અપડેટ ગાઈડ:</strong><br>
+        • તમે અહીંથી કોઈપણ યુઝરનો પાસવર્ડ કે યુઝરનેમ ગમે ત્યારે બદલી શકો છો, તે તરત જ અમલી બનશે.<br>
+        • લોકલ સર્વર પર <code>data/users.json</code> અને <code>data/users.js</code> માં આપમેળે અપડેટ થઈ જશે.<br>
+        • જો તમે GitHub Pages (ઓનલાઇન) વાપરતા હોવ, તો GitHub રિપોઝિટરીમાં <code>data/users.json</code> માં ફેરફાર કરવાથી અથવા નીચેથી <strong>EXPORT users.json</strong> કરીને પુશ કરવાથી ઓનલાઇન પણ તરત જ અપડેટ થઈ જશે.
       </div>
 
       <div style="overflow-x:auto;">
@@ -7694,6 +7760,17 @@ function renderUsersManagementTable() {
   wrapper.innerHTML = html;
 }
 
+function downloadUsersJson() {
+  const jsonStr = JSON.stringify(registeredUsersList, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "users.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function editUsernamePrompt(idx) {
   const targetUser = registeredUsersList[idx];
   if (!targetUser) return;
@@ -7711,8 +7788,19 @@ function editUsernamePrompt(idx) {
   }
 
   targetUser.username = trimmed;
+
+  const currentLogged = sessionStorage.getItem("mis_username") || "";
+  if (currentLogged.toLowerCase() === oldName.toLowerCase()) {
+    sessionStorage.setItem("mis_username", trimmed);
+    localStorage.setItem("mis_username", trimmed);
+    const welcomeSpan = document.getElementById("txtWelcomeUser");
+    if (welcomeSpan) {
+      welcomeSpan.innerHTML = `<i class="fa-solid fa-user-shield" style="color:#f97316;"></i> ADMIN (${trimmed})`;
+    }
+  }
+
   saveUsersToStorage();
-  alert(`Username successfully updated from '${oldName}' to '${trimmed}'!`);
+  alert(`Username successfully updated from '${oldName}' to '${trimmed}'!\n\nયુઝરનેમ સફળતાપૂર્વક બદલાઈ ગયું છે.`);
   renderUsersManagementTable();
 }
 
@@ -7737,30 +7825,32 @@ function toggleUserStatus(idx) {
 
 function resetUserPasswordPrompt(idx) {
   const targetUser = registeredUsersList[idx];
-  const newPwd = prompt(`Enter NEW Password for user '${targetUser.username}':`, "SSA@123");
+  const newPwd = prompt(`Enter NEW Password for user '${targetUser.username}':`, targetUser.password || "SSA@123");
   if (newPwd && newPwd.trim() !== "") {
     targetUser.password = newPwd.trim();
     saveUsersToStorage();
-    alert(`Password for '${targetUser.username}' has been successfully reset to '${targetUser.password}'!`);
+    alert(`Password for '${targetUser.username}' has been successfully reset to '${targetUser.password}'!\n\nપાસવર્ડ સફળતાપૂર્વક અપડેટ થઈ ગયો છે.`);
     renderUsersManagementTable();
   }
 }
 
 function promptAddNewUser() {
-  const newUsername = prompt("Enter New User ID / Username:", "240402");
-  if (!newUsername) return;
+  const newUsername = prompt("Enter New User ID / Username:");
+  if (!newUsername || !newUsername.trim()) return;
   const newPwd = prompt("Enter Password for New User:", "SSA@123");
-  if (!newPwd) return;
+  if (!newPwd || !newPwd.trim()) return;
+
+  const role = prompt("Enter Role for New User (e.g. CRC User / Admin):", "CRC User") || "CRC User";
 
   registeredUsersList.push({
     username: newUsername.trim(),
     password: newPwd.trim(),
-    role: "CRC / School User",
+    role: role.trim(),
     status: "Active"
   });
 
   saveUsersToStorage();
-  alert(`User '${newUsername}' successfully created with password '${newPwd}'!`);
+  alert(`User '${newUsername.trim()}' successfully created with password '${newPwd.trim()}'!`);
   renderUsersManagementTable();
 }
 

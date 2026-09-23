@@ -20,6 +20,8 @@
   <script src="xlsx.full.min.js"></script>
   <!-- Local html2pdf Library for Instant School Profile PDF Generation -->
   <script src="html2pdf.bundle.min.js"></script>
+  <!-- Live Users Configuration -->
+  <script src="data/users.js?v=2.0"></script>
   <!-- Stylesheet -->
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -184,6 +186,10 @@
           <span class="ay-badge">
             <i class="fa-regular fa-calendar"></i> AY 2026-27
           </span>
+
+          <button class="btn" onclick="promptChangeMyPassword()" style="font-size: 11px; padding: 6px 12px; background: #ea580c; color: #ffffff; border: none; font-weight: 700; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px;" title="Change Password / પાસવર્ડ બદલો">
+            <i class="fa-solid fa-key"></i> પાસવર્ડ બદલો
+          </button>
 
           <button class="btn btn-light" onclick="handleLogout()" style="font-size: 11px; padding: 6px 12px;">
             <i class="fa-solid fa-right-from-bracket"></i> Logout
