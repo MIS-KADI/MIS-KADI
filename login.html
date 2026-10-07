@@ -382,7 +382,7 @@
 
         <div style="text-align: center; margin-top: 14px;">
           <a href="javascript:void(0);" onclick="forceSyncUsersFromRemote()" style="color: #047857; font-size: 12px; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 4px; background: #ecfdf5;" title="Pull latest credentials from server or GitHub">
-            <i class="fa-solid fa-arrows-rotate"></i> ક્રેડેન્શિયલ્સ રિફ્રેશ કરો (Sync from Server/GitHub)
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh Credentials (Sync from Server/GitHub)
           </a>
         </div>
       </form>
@@ -562,12 +562,12 @@
           if (Array.isArray(liveList) && liveList.length > 0) {
             localStorage.setItem("mis_registered_users", JSON.stringify(liveList));
             localStorage.removeItem("mis_users_is_custom");
-            alert("ક્રેડેન્શિયલ્સ સફળતાપૂર્વક સર્વર/GitHub સાથે સિંક થઈ ગયા છે!\n(Credentials successfully refreshed from server/GitHub!)");
+            alert("Credentials successfully refreshed from Server/GitHub!");
             return;
           }
         }
       } catch (e) {}
-      alert("સર્વર અથવા GitHub સાથે કનેક્ટ થઈ શક્યું નથી.");
+      alert("Could not connect to Server or GitHub.");
     }
 
     // Handle Login Submit with Dynamic Role Enforcement and Flexible Credentials
