@@ -7800,96 +7800,139 @@ function renderCtsTeachersModuleView() {
       </div>
     </div>
 
-    <!-- 7 RICH KPI METRIC CARDS -->
-    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:20px;">
+    <!-- 8 BALANCED EXECUTIVE KPI CARDS (ROW 1: CORE CADRE | ROW 2: SUPPORT & PLANNING) -->
+    <!-- ROW 1: CORE TEACHER CADRE DISTRIBUTION -->
+    <div class="cts-kpi-grid-4" style="margin-bottom:12px;">
       
       <!-- Card 1: Total Teachers -->
       <div class="cts-card" style="border-left:4px solid #0284c7;">
-        <div class="cts-card-head" style="background:#0284c7; color:#fff;"><span>TOTAL TEACHERS</span></div>
-        <div class="cts-card-body" style="background:#f0f9ff;">
+        <div class="cts-card-head" style="background:#0284c7; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>TOTAL TEACHERS</span>
+          <i class="fa-solid fa-users" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#f0f9ff; padding:12px 14px;">
           <div class="card-icon-avatar" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-users-rectangle"></i></div>
-          <div class="card-text-wrap">
+          <div class="card-text-wrap" style="flex:1;">
             <strong style="color:#0369a1;">Active CTS Teachers</strong>
-            <div class="card-count-num" id="kpiTeachersTotal" style="color:#0284c7;">${totalTeachers.toLocaleString()}</div>
-            <div style="font-size:10px; color:#64748b; font-weight:700;">132 Operational Schools</div>
+            <div class="card-count-num" id="kpiTeachersTotal" style="color:#0284c7; font-size:22px; font-weight:900;">${totalTeachers.toLocaleString()}</div>
+            <div id="subTeachersTotal" style="font-size:10px; color:#64748b; font-weight:700;">132 Operational Schools</div>
           </div>
         </div>
       </div>
 
       <!-- Card 2: Primary (1-5) -->
       <div class="cts-card" style="border-left:4px solid #16a34a;">
-        <div class="cts-card-head" style="background:#16a34a; color:#fff;"><span>PRIMARY (STD 1-5)</span></div>
-        <div class="cts-card-body" style="background:#f0fdf4;">
+        <div class="cts-card-head" style="background:#16a34a; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>PRIMARY (STD 1-5)</span>
+          <i class="fa-solid fa-shapes" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#f0fdf4; padding:12px 14px;">
           <div class="card-icon-avatar" style="background:#dcfce7; color:#16a34a;"><i class="fa-solid fa-shapes"></i></div>
-          <div class="card-text-wrap">
+          <div class="card-text-wrap" style="flex:1;">
             <strong style="color:#15803d;">Primary Cadre</strong>
-            <div class="card-count-num" id="kpiTeachersPrimary" style="color:#16a34a;">${primaryTeachers.toLocaleString()}</div>
-            <div style="font-size:10px; color:#15803d; font-weight:700;">${((primaryTeachers/totalTeachers)*100).toFixed(1)}% of Teachers</div>
+            <div class="card-count-num" id="kpiTeachersPrimary" style="color:#16a34a; font-size:22px; font-weight:900;">${primaryTeachers.toLocaleString()}</div>
+            <div id="subTeachersPrimary" style="font-size:10px; color:#15803d; font-weight:700;">${((primaryTeachers/totalTeachers)*100).toFixed(1)}% of Teachers</div>
           </div>
         </div>
       </div>
 
       <!-- Card 3: Upper Primary (6-8) -->
       <div class="cts-card" style="border-left:4px solid #8b5cf6;">
-        <div class="cts-card-head" style="background:#8b5cf6; color:#fff;"><span>UPPER PRIMARY (STD 6-8)</span></div>
-        <div class="cts-card-body" style="background:#faf5ff;">
+        <div class="cts-card-head" style="background:#8b5cf6; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>UPPER PRIMARY (STD 6-8)</span>
+          <i class="fa-solid fa-graduation-cap" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#faf5ff; padding:12px 14px;">
           <div class="card-icon-avatar" style="background:#f3e8ff; color:#8b5cf6;"><i class="fa-solid fa-graduation-cap"></i></div>
-          <div class="card-text-wrap">
+          <div class="card-text-wrap" style="flex:1;">
             <strong style="color:#7e22ce;">Upper Primary Cadre</strong>
-            <div class="card-count-num" id="kpiTeachersUpper" style="color:#8b5cf6;">${upperPrimaryTeachers.toLocaleString()}</div>
-            <div style="font-size:10px; color:#7e22ce; font-weight:700;">${((upperPrimaryTeachers/totalTeachers)*100).toFixed(1)}% of Teachers</div>
+            <div class="card-count-num" id="kpiTeachersUpper" style="color:#8b5cf6; font-size:22px; font-weight:900;">${upperPrimaryTeachers.toLocaleString()}</div>
+            <div id="subTeachersUpper" style="font-size:10px; color:#7e22ce; font-weight:700;">${((upperPrimaryTeachers/totalTeachers)*100).toFixed(1)}% of Teachers</div>
           </div>
         </div>
       </div>
 
       <!-- Card 4: Principals & HTAT -->
       <div class="cts-card" style="border-left:4px solid #ea580c;">
-        <div class="cts-card-head" style="background:#ea580c; color:#fff;"><span>PRINCIPALS &amp; HTAT</span></div>
-        <div class="cts-card-body" style="background:#fff7ed;">
+        <div class="cts-card-head" style="background:#ea580c; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>PRINCIPALS &amp; HTAT</span>
+          <i class="fa-solid fa-user-tie" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#fff7ed; padding:12px 14px;">
           <div class="card-icon-avatar" style="background:#ffedd5; color:#ea580c;"><i class="fa-solid fa-user-tie"></i></div>
-          <div class="card-text-wrap">
+          <div class="card-text-wrap" style="flex:1;">
             <strong style="color:#c2410c;">Leadership Cadre</strong>
-            <div class="card-count-num" id="kpiTeachersPrincipals" style="color:#ea580c;">${principalsCount}</div>
-            <div style="font-size:10px; color:#c2410c; font-weight:700;">54 HTAT + 78 Principals</div>
+            <div class="card-count-num" id="kpiTeachersPrincipals" style="color:#ea580c; font-size:22px; font-weight:900;">${principalsCount}</div>
+            <div id="subTeachersPrincipals" style="font-size:10px; color:#c2410c; font-weight:700;">54 HTAT + 78 Principals</div>
           </div>
         </div>
       </div>
 
+    </div>
+
+    <!-- ROW 2: SUPPORT CADRE, INFRASTRUCTURE & PLANNING -->
+    <div class="cts-kpi-grid-4" style="margin-bottom:20px;">
+
       <!-- Card 5: Sahayaks -->
       <div class="cts-card" style="border-left:4px solid #d97706;">
-        <div class="cts-card-head" style="background:#d97706; color:#fff;"><span>SAHAYAKS CADRE</span></div>
-        <div class="cts-card-body" style="background:#fffbeb;">
+        <div class="cts-card-head" style="background:#d97706; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>SAHAYAKS CADRE</span>
+          <i class="fa-solid fa-hand-holding-hand" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#fffbeb; padding:12px 14px;">
           <div class="card-icon-avatar" style="background:#fef3c7; color:#d97706;"><i class="fa-solid fa-hand-holding-hand"></i></div>
-          <div class="card-text-wrap">
+          <div class="card-text-wrap" style="flex:1;">
             <strong style="color:#b45309;">Support Teachers</strong>
-            <div class="card-count-num" id="kpiTeachersSahayak" style="color:#d97706;">${sahayaksCount}</div>
-            <div style="font-size:10px; color:#b45309; font-weight:700;">35 Gyan + 2 Vidhya + 1 Khel</div>
+            <div class="card-count-num" id="kpiTeachersSahayak" style="color:#d97706; font-size:22px; font-weight:900;">${sahayaksCount}</div>
+            <div id="subTeachersSahayak" style="font-size:10px; color:#b45309; font-weight:700;">35 Gyan + 2 Vidhya + 1 Khel</div>
           </div>
         </div>
       </div>
 
       <!-- Card 6: Subject Mapping -->
       <div class="cts-card" style="border-left:4px solid #059669;">
-        <div class="cts-card-head" style="background:#059669; color:#fff;"><span>SUBJECT MAPPING</span></div>
-        <div class="cts-card-body" style="background:#ecfdf5;">
+        <div class="cts-card-head" style="background:#059669; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>SUBJECT MAPPING</span>
+          <i class="fa-solid fa-link" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#ecfdf5; padding:12px 14px;">
           <div class="card-icon-avatar" style="background:#d1fae5; color:#059669;"><i class="fa-solid fa-link"></i></div>
-          <div class="card-text-wrap">
+          <div class="card-text-wrap" style="flex:1;">
             <strong style="color:#047857;">Mapped Status</strong>
-            <div class="card-count-num" id="kpiTeachersMapped" style="color:#059669;">${mappedCount}</div>
-            <div style="font-size:10px; color:#dc2626; font-weight:800;">${pendingCount} Pending Mapping</div>
+            <div class="card-count-num" id="kpiTeachersMapped" style="color:#059669; font-size:22px; font-weight:900;">${mappedCount}</div>
+            <div id="subTeachersMapped" style="font-size:10px; color:#dc2626; font-weight:800;">${pendingCount} Pending Mapping</div>
           </div>
         </div>
       </div>
 
-      <!-- Card 7: Retirement Alert (2026-30) -->
+      <!-- Card 7: Operational Schools -->
+      <div class="cts-card" style="border-left:4px solid #0891b2;">
+        <div class="cts-card-head" style="background:#0891b2; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>OPERATIONAL SCHOOLS</span>
+          <i class="fa-solid fa-school" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#ecfeff; padding:12px 14px;">
+          <div class="card-icon-avatar" style="background:#cffafe; color:#0891b2;"><i class="fa-solid fa-school-flag"></i></div>
+          <div class="card-text-wrap" style="flex:1;">
+            <strong style="color:#0e7490;">CTS Staffed Schools</strong>
+            <div class="card-count-num" id="kpiTeachersSchools" style="color:#0891b2; font-size:22px; font-weight:900;">132</div>
+            <div id="subTeachersSchools" style="font-size:10px; color:#0e7490; font-weight:700;">Across 14 CRC Clusters</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 8: Retirement Alert (2026-30) -->
       <div class="cts-card" style="border-left:4px solid #e11d48;">
-        <div class="cts-card-head" style="background:#e11d48; color:#fff;"><span>RETIREMENTS (2026-30)</span></div>
-        <div class="cts-card-body" style="background:#fff1f2;">
+        <div class="cts-card-head" style="background:#e11d48; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:7px 12px;">
+          <span>RETIREMENTS (2026-30)</span>
+          <i class="fa-solid fa-hourglass-half" style="opacity:0.85;"></i>
+        </div>
+        <div class="cts-card-body" style="background:#fff1f2; padding:12px 14px;">
           <div class="card-icon-avatar" style="background:#ffe4e6; color:#e11d48;"><i class="fa-solid fa-hourglass-half"></i></div>
-          <div class="card-text-wrap">
+          <div class="card-text-wrap" style="flex:1;">
             <strong style="color:#be123c;">Upcoming 5 Years</strong>
-            <div class="card-count-num" id="kpiTeachersRetire" style="color:#e11d48;">${retireSoonCount}</div>
-            <div style="font-size:10px; color:#be123c; font-weight:800;">⚡ ${retireCurrentYear} Retiring in 2026</div>
+            <div class="card-count-num" id="kpiTeachersRetire" style="color:#e11d48; font-size:22px; font-weight:900;">${retireSoonCount}</div>
+            <div id="subTeachersRetire" style="font-size:10px; color:#be123c; font-weight:800;">⚡ ${retireCurrentYear} Retiring in 2026</div>
           </div>
         </div>
       </div>
@@ -8281,10 +8324,54 @@ function filterCtsTeacherRows() {
   const kMapped = document.getElementById("kpiTeachersMapped");
   if (kMapped) kMapped.innerText = filtered.filter(t => t.subject_mapping === "Mapped").length.toLocaleString();
 
+  const kSchools = document.getElementById("kpiTeachersSchools");
+  if (kSchools) kSchools.innerText = uniqueSchools.toLocaleString();
+
   const kRetire = document.getElementById("kpiTeachersRetire");
   if (kRetire) {
     const r5 = filtered.filter(t => { const y = parseInt(t.retire_year); return y >= 2026 && y <= 2030; }).length;
     kRetire.innerText = r5.toLocaleString();
+  }
+
+  // Update subtitle badges dynamically
+  const subTotal = document.getElementById("subTeachersTotal");
+  if (subTotal) subTotal.innerText = `${uniqueSchools} Operational Schools`;
+
+  const subPrimary = document.getElementById("subTeachersPrimary");
+  if (subPrimary) {
+    const pCount = filtered.filter(t => t.joined_as === "1 To 5").length;
+    subPrimary.innerText = filtered.length > 0 ? `${((pCount/filtered.length)*100).toFixed(1)}% of Teachers` : "0% of Teachers";
+  }
+
+  const subUpper = document.getElementById("subTeachersUpper");
+  if (subUpper) {
+    const uCount = filtered.filter(t => t.joined_as === "6 To 8").length;
+    subUpper.innerText = filtered.length > 0 ? `${((uCount/filtered.length)*100).toFixed(1)}% of Teachers` : "0% of Teachers";
+  }
+
+  const subPrinc = document.getElementById("subTeachersPrincipals");
+  if (subPrinc) {
+    const htat = filtered.filter(t => t.joined_as === "HTAT").length;
+    const princ = filtered.filter(t => (t.designation || "").includes("Principal") && t.joined_as !== "HTAT").length;
+    subPrinc.innerText = `${htat} HTAT + ${princ} Principals`;
+  }
+
+  const subMapped = document.getElementById("subTeachersMapped");
+  if (subMapped) {
+    const pend = filtered.filter(t => t.subject_mapping !== "Mapped").length;
+    subMapped.innerText = `${pend} Pending Mapping`;
+  }
+
+  const subSchools = document.getElementById("subTeachersSchools");
+  if (subSchools) {
+    const clusCount = new Set(filtered.map(t => t.cluster).filter(Boolean)).size;
+    subSchools.innerText = `Across ${clusCount} CRC Clusters`;
+  }
+
+  const subRetire = document.getElementById("subTeachersRetire");
+  if (subRetire) {
+    const r26 = filtered.filter(t => t.retire_year === "2026").length;
+    subRetire.innerText = `⚡ ${r26} Retiring in 2026`;
   }
 
   // Refresh current sub-view
