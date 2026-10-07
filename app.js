@@ -10,6 +10,17 @@ let allCwsnRows = [];
 let allIctRows = [];
 let allGyankunjRows = [];
 let allGsqacRows = [];
+let allCtsTeacherRows = [];
+let filteredCtsTeacherRows = [];
+let activeTeachersSubView = "directory";
+let teachersPivotRowDim = "cluster";
+let teachersPivotColDim = "joined_as";
+let currentTeachersPage = 1;
+const TEACHERS_PAGE_SIZE = 50;
+let chartTeachersClusterObj = null;
+let chartTeachersDesigObj = null;
+let chartTeachersSubjectObj = null;
+let chartTeachersRetireObj = null;
 let gsqacYearsList = [];
 let gsqacByYear = {};
 let selectedGsqacYear = "2024-25";
@@ -528,6 +539,12 @@ function applyGlobalDataToState() {
       }
     });
   }
+
+  if (globalData.cts_teachers_records) {
+    allCtsTeacherRows = globalData.cts_teachers_records;
+  } else if (window.ctsTeachersData && window.ctsTeachersData.teachers) {
+    allCtsTeacherRows = window.ctsTeachersData.teachers;
+  }
   if (globalData.gsqac_records) allGsqacRows = globalData.gsqac_records;
   if (globalData.gsqac_years_list) {
     gsqacYearsList = globalData.gsqac_years_list;
@@ -746,6 +763,11 @@ function openModuleTab(tabName) {
 
     if (tabName === "Principal Contact Numbers" || tabName === "Principal Contacts" || tabName === "Principal Contact" || tabName === "આચાર્ય સંપર્ક નંબર" || tabName === "PRINCIPAL CONTACT NUMBER") {
       renderPrincipalContactsView();
+      return;
+    }
+
+    if (tabName === "Teachers in CTS" || tabName === "Teachers in CTS (1,076)" || tabName === "Teacher's in CTS" || tabName === "TEACHERS IN CTS" || tabName === "TEACHER'S IN CTS" || tabName === "Teachers") {
+      renderCtsTeachersModuleView();
       return;
     }
 
@@ -7340,6 +7362,9 @@ function renderTotalSchoolsDataTables() {
       <button onclick="openModuleTab('Principal Contact Numbers')" class="btn" style="background:#ffffff; color:#15803d; border:1.5px solid #16a34a; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; transition:all 0.2s;">
         <i class="fa-solid fa-address-book"></i> Principal Contact Numbers (આચાર્ય સંપર્ક નંબર)
       </button>
+      <button onclick="openModuleTab('Teachers in CTS')" class="btn" style="background:#ffffff; color:#d97706; border:1.5px solid #d97706; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; transition:all 0.2s;">
+        <i class="fa-solid fa-chalkboard-user"></i> Teachers in CTS (1,076 Teachers)
+      </button>
     `;
     dedicatedContainer.insertBefore(subnavDiv, dedicatedContainer.firstChild);
   }
@@ -7424,13 +7449,16 @@ function renderPrincipalContactsView() {
   const mgtOptions = mgtList.map(m => `<option value="${m}">${m}</option>`).join('');
 
   tabWrapper.innerHTML = `
-    <!-- Top Sub-Navigation Switcher (Between School Master and Principal Contacts) -->
+    <!-- Top Sub-Navigation Switcher (Between School Master, Principal Contacts, and Teachers) -->
     <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
       <button onclick="openModuleTab('All School Information')" class="btn" style="background:#ffffff; color:#0284c7; border:1.5px solid #0284c7; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; transition:all 0.2s;">
         <i class="fa-solid fa-list-check"></i> School Master List (244 Schools)
       </button>
       <button onclick="openModuleTab('Principal Contact Numbers')" class="btn" style="background:#16a34a; color:#ffffff; border:1.5px solid #15803d; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; box-shadow:0 3px 8px rgba(22,163,74,0.3);">
         <i class="fa-solid fa-address-book"></i> Principal Contact Numbers (આચાર્ય સંપર્ક નંબર)
+      </button>
+      <button onclick="openModuleTab('Teachers in CTS')" class="btn" style="background:#ffffff; color:#d97706; border:1.5px solid #d97706; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; transition:all 0.2s;">
+        <i class="fa-solid fa-chalkboard-user"></i> Teachers in CTS (1,076 Teachers)
       </button>
     </div>
 
@@ -7669,6 +7697,1272 @@ function exportPrincipalContactsCSV() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TEACHERS IN CTS MODULE (Source: TeacherReport_Block_240402_20261007_1157.csv)
+// Complete Teacher Directory, 7 KPI Cards, 4 Interactive Charts & Pivot Matrix
+// ═════════════════════════════════════════════════════════════════════════════
+
+function getCtsTeachersMasterData() {
+  if (allCtsTeacherRows && allCtsTeacherRows.length > 0) return allCtsTeacherRows;
+  if (window.ctsTeachersData && Array.isArray(window.ctsTeachersData.teachers) && window.ctsTeachersData.teachers.length > 0) {
+    allCtsTeacherRows = window.ctsTeachersData.teachers;
+    return allCtsTeacherRows;
+  }
+  if (globalData && Array.isArray(globalData.cts_teachers_records) && globalData.cts_teachers_records.length > 0) {
+    allCtsTeacherRows = globalData.cts_teachers_records;
+    return allCtsTeacherRows;
+  }
+  return [];
+}
+
+function renderCtsTeachersModuleView() {
+  activeTabName = "Teachers in CTS";
+  const homeWrapper = document.getElementById("homeDashboardContentWrapper");
+  const tabWrapper = document.getElementById("moduleTabDedicatedContainer");
+  const title = document.getElementById("txtMainModuleTitle");
+
+  if (homeWrapper) homeWrapper.style.display = "none";
+  if (tabWrapper) tabWrapper.style.display = "block";
+  if (title) title.innerText = "TEACHERS IN CTS (કડી તાલુકા શિક્ષકોની માહિતી)";
+  updateSidebarActiveLink("Teachers in CTS");
+
+  const allTeachers = getCtsTeachersMasterData();
+  filteredCtsTeacherRows = [...allTeachers];
+  activeTeachersSubView = "directory";
+  currentTeachersPage = 1;
+
+  // Extract unique filter lists
+  const clusters = [...new Set(allTeachers.map(t => t.cluster).filter(Boolean))].sort();
+  const designations = [...new Set(allTeachers.map(t => t.designation).filter(Boolean))].sort();
+  const levels = [...new Set(allTeachers.map(t => t.joined_as).filter(Boolean))].sort();
+  const subjects68 = [...new Set(allTeachers.map(t => t.subject_6_to_8).filter(s => s && s !== "-"))].sort();
+  const retireYears = [...new Set(allTeachers.map(t => t.retire_year).filter(y => y && parseInt(y) >= 2026))].sort((a,b) => parseInt(a)-parseInt(b));
+
+  const totalTeachers = allTeachers.length;
+  const primaryTeachers = allTeachers.filter(t => t.joined_as === "1 To 5").length;
+  const upperPrimaryTeachers = allTeachers.filter(t => t.joined_as === "6 To 8").length;
+  const principalsCount = allTeachers.filter(t => (t.designation || "").includes("Principal") || t.joined_as === "HTAT").length;
+  const sahayaksCount = allTeachers.filter(t => (t.designation || "").includes("Sahayak")).length;
+  const mappedCount = allTeachers.filter(t => t.subject_mapping === "Mapped").length;
+  const pendingCount = allTeachers.filter(t => t.subject_mapping !== "Mapped").length;
+  const retireSoonCount = allTeachers.filter(t => {
+    const y = parseInt(t.retire_year);
+    return y >= 2026 && y <= 2030;
+  }).length;
+  const retireCurrentYear = allTeachers.filter(t => t.retire_year === "2026").length;
+
+  tabWrapper.innerHTML = `
+    <!-- Top Sub-Navigation Switcher (Between School Master, Principal Contacts, and Teachers) -->
+    <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+      <button onclick="openModuleTab('All School Information')" class="btn" style="background:#ffffff; color:#0284c7; border:1.5px solid #0284c7; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; transition:all 0.2s;">
+        <i class="fa-solid fa-list-check"></i> School Master List (244 Schools)
+      </button>
+      <button onclick="openModuleTab('Principal Contact Numbers')" class="btn" style="background:#ffffff; color:#15803d; border:1.5px solid #16a34a; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; transition:all 0.2s;">
+        <i class="fa-solid fa-address-book"></i> Principal Contact Numbers (આચાર્ય સંપર્ક નંબર)
+      </button>
+      <button onclick="openModuleTab('Teachers in CTS')" class="btn" style="background:#d97706; color:#ffffff; border:1.5px solid #b45309; font-weight:800; padding:8px 18px; border-radius:6px; cursor:pointer; box-shadow:0 3px 8px rgba(217,119,6,0.3);">
+        <i class="fa-solid fa-chalkboard-user"></i> Teachers in CTS (1,076 Teachers)
+      </button>
+    </div>
+
+    <!-- Official Header Banner -->
+    <div style="background:linear-gradient(135deg, #0b2545 0%, #15803d 100%); color:#ffffff; border-radius:12px; padding:20px 24px; margin-bottom:20px; box-shadow:0 4px 14px rgba(11,37,69,0.18);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div>
+          <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.28); padding:3px 12px; border-radius:20px; font-size:11px; font-weight:800; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">
+            <i class="fa-solid fa-certificate" style="color:#fde047;"></i> Samagra Shiksha · Child Tracking System (CTS) Official Master
+          </div>
+          <h2 style="font-size:22px; font-weight:900; margin:0 0 6px; letter-spacing:0.3px; display:flex; align-items:center; gap:10px;">
+            <i class="fa-solid fa-chalkboard-user" style="color:#fde047;"></i> TEACHERS IN CTS · કડી તાલુકા શિક્ષકોની માહિતી
+          </h2>
+          <div style="font-size:12.5px; opacity:0.92; line-height:1.5; max-width:820px;">
+            કડી બ્લોકની 132 શાળાઓના તમામ <strong>1,076 શિક્ષકો, આચાર્યશ્રીઓ, HTAT અને સહાયકો</strong>ની વિગતવાર કેડર, વિષય મેપિંગ, વર્ગ વિતરણ અને નિવૃત્તિ સમયરેખા (સોર્સ: <code>TeacherReport_Block_240402_20261007_1157.csv</code>).
+          </div>
+        </div>
+
+        <!-- Quick Summary Badges in Banner -->
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="background:#16a34a; color:#fff; font-size:11.5px; padding:6px 14px; border-radius:8px; font-weight:800; display:inline-flex; align-items:center; gap:6px; box-shadow:0 2px 6px rgba(0,0,0,0.15);">
+            <i class="fa-solid fa-users"></i> ${totalTeachers.toLocaleString()} Total Teachers
+          </span>
+          <span style="background:#0284c7; color:#fff; font-size:11.5px; padding:6px 14px; border-radius:8px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-school"></i> 132 Schools
+          </span>
+          <span style="background:#8b5cf6; color:#fff; font-size:11.5px; padding:6px 14px; border-radius:8px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-sitemap"></i> 14 Clusters
+          </span>
+          <span style="background:#059669; color:#fff; font-size:11.5px; padding:6px 14px; border-radius:8px; font-weight:800; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-circle-check"></i> 99.3% Mapped
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7 RICH KPI METRIC CARDS -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:20px;">
+      
+      <!-- Card 1: Total Teachers -->
+      <div class="cts-card" style="border-left:4px solid #0284c7;">
+        <div class="cts-card-head" style="background:#0284c7; color:#fff;"><span>TOTAL TEACHERS</span></div>
+        <div class="cts-card-body" style="background:#f0f9ff;">
+          <div class="card-icon-avatar" style="background:#e0f2fe; color:#0284c7;"><i class="fa-solid fa-users-rectangle"></i></div>
+          <div class="card-text-wrap">
+            <strong style="color:#0369a1;">Active CTS Teachers</strong>
+            <div class="card-count-num" id="kpiTeachersTotal" style="color:#0284c7;">${totalTeachers.toLocaleString()}</div>
+            <div style="font-size:10px; color:#64748b; font-weight:700;">132 Operational Schools</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Primary (1-5) -->
+      <div class="cts-card" style="border-left:4px solid #16a34a;">
+        <div class="cts-card-head" style="background:#16a34a; color:#fff;"><span>PRIMARY (STD 1-5)</span></div>
+        <div class="cts-card-body" style="background:#f0fdf4;">
+          <div class="card-icon-avatar" style="background:#dcfce7; color:#16a34a;"><i class="fa-solid fa-shapes"></i></div>
+          <div class="card-text-wrap">
+            <strong style="color:#15803d;">Primary Cadre</strong>
+            <div class="card-count-num" id="kpiTeachersPrimary" style="color:#16a34a;">${primaryTeachers.toLocaleString()}</div>
+            <div style="font-size:10px; color:#15803d; font-weight:700;">${((primaryTeachers/totalTeachers)*100).toFixed(1)}% of Teachers</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Upper Primary (6-8) -->
+      <div class="cts-card" style="border-left:4px solid #8b5cf6;">
+        <div class="cts-card-head" style="background:#8b5cf6; color:#fff;"><span>UPPER PRIMARY (STD 6-8)</span></div>
+        <div class="cts-card-body" style="background:#faf5ff;">
+          <div class="card-icon-avatar" style="background:#f3e8ff; color:#8b5cf6;"><i class="fa-solid fa-graduation-cap"></i></div>
+          <div class="card-text-wrap">
+            <strong style="color:#7e22ce;">Upper Primary Cadre</strong>
+            <div class="card-count-num" id="kpiTeachersUpper" style="color:#8b5cf6;">${upperPrimaryTeachers.toLocaleString()}</div>
+            <div style="font-size:10px; color:#7e22ce; font-weight:700;">${((upperPrimaryTeachers/totalTeachers)*100).toFixed(1)}% of Teachers</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Principals & HTAT -->
+      <div class="cts-card" style="border-left:4px solid #ea580c;">
+        <div class="cts-card-head" style="background:#ea580c; color:#fff;"><span>PRINCIPALS &amp; HTAT</span></div>
+        <div class="cts-card-body" style="background:#fff7ed;">
+          <div class="card-icon-avatar" style="background:#ffedd5; color:#ea580c;"><i class="fa-solid fa-user-tie"></i></div>
+          <div class="card-text-wrap">
+            <strong style="color:#c2410c;">Leadership Cadre</strong>
+            <div class="card-count-num" id="kpiTeachersPrincipals" style="color:#ea580c;">${principalsCount}</div>
+            <div style="font-size:10px; color:#c2410c; font-weight:700;">54 HTAT + 78 Principals</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Sahayaks -->
+      <div class="cts-card" style="border-left:4px solid #d97706;">
+        <div class="cts-card-head" style="background:#d97706; color:#fff;"><span>SAHAYAKS CADRE</span></div>
+        <div class="cts-card-body" style="background:#fffbeb;">
+          <div class="card-icon-avatar" style="background:#fef3c7; color:#d97706;"><i class="fa-solid fa-hand-holding-hand"></i></div>
+          <div class="card-text-wrap">
+            <strong style="color:#b45309;">Support Teachers</strong>
+            <div class="card-count-num" id="kpiTeachersSahayak" style="color:#d97706;">${sahayaksCount}</div>
+            <div style="font-size:10px; color:#b45309; font-weight:700;">35 Gyan + 2 Vidhya + 1 Khel</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6: Subject Mapping -->
+      <div class="cts-card" style="border-left:4px solid #059669;">
+        <div class="cts-card-head" style="background:#059669; color:#fff;"><span>SUBJECT MAPPING</span></div>
+        <div class="cts-card-body" style="background:#ecfdf5;">
+          <div class="card-icon-avatar" style="background:#d1fae5; color:#059669;"><i class="fa-solid fa-link"></i></div>
+          <div class="card-text-wrap">
+            <strong style="color:#047857;">Mapped Status</strong>
+            <div class="card-count-num" id="kpiTeachersMapped" style="color:#059669;">${mappedCount}</div>
+            <div style="font-size:10px; color:#dc2626; font-weight:800;">${pendingCount} Pending Mapping</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 7: Retirement Alert (2026-30) -->
+      <div class="cts-card" style="border-left:4px solid #e11d48;">
+        <div class="cts-card-head" style="background:#e11d48; color:#fff;"><span>RETIREMENTS (2026-30)</span></div>
+        <div class="cts-card-body" style="background:#fff1f2;">
+          <div class="card-icon-avatar" style="background:#ffe4e6; color:#e11d48;"><i class="fa-solid fa-hourglass-half"></i></div>
+          <div class="card-text-wrap">
+            <strong style="color:#be123c;">Upcoming 5 Years</strong>
+            <div class="card-count-num" id="kpiTeachersRetire" style="color:#e11d48;">${retireSoonCount}</div>
+            <div style="font-size:10px; color:#be123c; font-weight:800;">⚡ ${retireCurrentYear} Retiring in 2026</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SUB-VIEW NAVIGATION SWITCHER (Matches Student Portal UI) -->
+    <div style="display:flex; gap:10px; margin-bottom:18px; border-bottom:2px solid #e2e8f0; padding-bottom:10px; flex-wrap:wrap;">
+      <button id="btnCtsTeacherSubViewDirectory" onclick="switchCtsTeachersSubView('directory')" class="cts-sub-nav-btn active" style="font-weight:800; font-size:13px; padding:9px 18px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; border:none; background:#0284c7; color:#fff; box-shadow:0 2px 6px rgba(2,132,199,0.3);">
+        <i class="fa-solid fa-address-book"></i> 1. Live Teacher Directory &amp; Dossiers
+      </button>
+      <button id="btnCtsTeacherSubViewCharts" onclick="switchCtsTeachersSubView('charts')" class="cts-sub-nav-btn" style="font-weight:800; font-size:13px; padding:9px 18px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; border:1px solid #cbd5e1; background:#ffffff; color:#334155;">
+        <i class="fa-solid fa-chart-pie"></i> 2. Interactive Visual Analytics &amp; Charts
+      </button>
+      <button id="btnCtsTeacherSubViewPivot" onclick="switchCtsTeachersSubView('pivot')" class="cts-sub-nav-btn" style="font-weight:800; font-size:13px; padding:9px 18px; border-radius:6px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; border:1px solid #cbd5e1; background:#ffffff; color:#334155;">
+        <i class="fa-solid fa-table-cells"></i> 3. Cross-Tabulated Pivot Matrix
+      </button>
+    </div>
+
+    <!-- COMPREHENSIVE FILTER BAR -->
+    <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:16px 18px; margin-bottom:20px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
+        <div style="font-size:13px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:8px;">
+          <i class="fa-solid fa-sliders" style="color:#0284c7;"></i> MULTI-DIMENSIONAL FILTERS &amp; SEARCH:
+          <span id="badgeCtsTeacherCount" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:11px; font-weight:800; padding:3px 10px; border-radius:12px;">
+            Showing ${totalTeachers} Teachers (132 Schools)
+          </span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button onclick="exportCtsTeachersCSV()" class="btn" style="background:#16a34a; color:#fff; font-weight:800; font-size:11.5px; padding:6px 14px; border-radius:6px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-file-csv"></i> Download CSV
+          </button>
+          <button onclick="exportCtsTeachersExcel()" class="btn" style="background:#0284c7; color:#fff; font-weight:800; font-size:11.5px; padding:6px 14px; border-radius:6px; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-file-excel"></i> Download Excel (.xlsx)
+          </button>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; align-items:end;">
+        <div>
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-sitemap"></i> Cluster / CRC:</label>
+          <select id="selCtsTeacherCluster" class="form-control" onchange="onCtsTeacherClusterChange()" style="height:36px; font-size:11.5px; font-weight:700;">
+            <option value="ALL">-- All 14 Clusters --</option>
+            ${clusters.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-school"></i> School:</label>
+          <select id="selCtsTeacherSchool" class="form-control" onchange="filterCtsTeacherRows()" style="height:36px; font-size:11.5px; font-weight:700;">
+            <option value="ALL">-- All Schools --</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-user-tag"></i> Designation:</label>
+          <select id="selCtsTeacherDesignation" class="form-control" onchange="filterCtsTeacherRows()" style="height:36px; font-size:11.5px; font-weight:700;">
+            <option value="ALL">-- All Designations --</option>
+            ${designations.map(d => `<option value="${d}">${d}</option>`).join('')}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-layer-group"></i> Level (Joined As):</label>
+          <select id="selCtsTeacherLevel" class="form-control" onchange="filterCtsTeacherRows()" style="height:36px; font-size:11.5px; font-weight:700;">
+            <option value="ALL">-- All Levels --</option>
+            ${levels.map(l => `<option value="${l}">${l}</option>`).join('')}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-book-bookmark"></i> Std 6-8 Subject:</label>
+          <select id="selCtsTeacherSubject" class="form-control" onchange="filterCtsTeacherRows()" style="height:36px; font-size:11.5px; font-weight:700;">
+            <option value="ALL">-- All Subjects --</option>
+            ${subjects68.map(s => `<option value="${s}">${s}</option>`).join('')}
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-link"></i> Subject Mapping:</label>
+          <select id="selCtsTeacherMapping" class="form-control" onchange="filterCtsTeacherRows()" style="height:36px; font-size:11.5px; font-weight:700;">
+            <option value="ALL">-- All Mapping Status --</option>
+            <option value="Mapped">Mapped</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-hourglass-start"></i> Retirement:</label>
+          <select id="selCtsTeacherRetireYear" class="form-control" onchange="filterCtsTeacherRows()" style="height:36px; font-size:11.5px; font-weight:700;">
+            <option value="ALL">-- All Retirements --</option>
+            <option value="2026">Retiring in 2026 (Immediate)</option>
+            <option value="2027">Retiring in 2027</option>
+            <option value="2028">Retiring in 2028</option>
+            <option value="2026-2030">Retiring in 2026-2030 (5 Years)</option>
+            <option value="2031-2035">Retiring in 2031-2035</option>
+            <option value="2036-2040">Retiring in 2036-2040</option>
+          </select>
+        </div>
+
+        <div style="grid-column: span 2;">
+          <label style="font-size:11px; font-weight:800; color:#334155; display:block; margin-bottom:3px;"><i class="fa-solid fa-magnifying-glass"></i> Search Teacher / School:</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="searchCtsTeacherInput" class="form-control" placeholder="Search Teacher Name, 8-digit Code, School, DISE..." onkeyup="filterCtsTeacherRows()" style="height:36px; font-size:11.5px; font-weight:700; flex:1;" />
+            <button onclick="resetCtsTeacherFilters()" class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:800; padding:0 12px; height:36px; border-radius:6px; cursor:pointer;" title="Reset All Filters">
+              <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 1: LIVE TEACHER DIRECTORY TABLE CONTAINER -->
+    <div id="ctsTeachersDirectoryContainer" style="display:block;">
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+        <div style="overflow-x:auto; max-height:640px; margin-bottom:14px;">
+          <table class="custom-table" style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="position:sticky; top:0; z-index:2; background:#f8fafc;">
+                <th style="width:45px; text-align:center;">#</th>
+                <th style="width:105px;">Teacher Code</th>
+                <th>Teacher Name</th>
+                <th style="width:125px;">Designation</th>
+                <th style="width:90px; text-align:center;">Joined As</th>
+                <th>School Name &amp; UDISE</th>
+                <th style="width:130px;">CRC Cluster</th>
+                <th style="width:130px;">Std 6-8 Subject</th>
+                <th>Teaching Classes</th>
+                <th style="width:100px; text-align:center;">Retirement</th>
+                <th style="width:95px; text-align:center;">Mapping</th>
+                <th style="width:90px; text-align:center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyCtsTeachers"></tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div id="ctsTeacherPaginationBar" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding-top:10px; border-top:1px solid #e2e8f0;"></div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: INTERACTIVE CHARTS CONTAINER -->
+    <div id="ctsTeachersChartsContainer" style="display:none;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(460px, 1fr)); gap:18px;">
+        
+        <!-- Chart 1: Cluster-wise Teacher Strength -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 12px; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-chart-column" style="color:#0284c7;"></i> CLUSTER-WISE TEACHER STRENGTH (14 CLUSTERS)
+          </h3>
+          <div style="height:320px; position:relative;">
+            <canvas id="chartTeachersClusterCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Designation & Cadre Breakdown -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 12px; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-chart-pie" style="color:#16a34a;"></i> CADRE &amp; DESIGNATION BREAKDOWN
+          </h3>
+          <div style="height:320px; position:relative;">
+            <canvas id="chartTeachersDesigCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Std 6-8 Subject Specialization -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 12px; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-book-open" style="color:#8b5cf6;"></i> UPPER PRIMARY (STD 6-8) SUBJECT SPECIALIZATION
+          </h3>
+          <div style="height:320px; position:relative;">
+            <canvas id="chartTeachersSubjectCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 4: Retirement Timeline -->
+        <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+          <h3 style="font-size:14px; font-weight:800; color:#0f172a; margin:0 0 12px; display:flex; align-items:center; gap:8px;">
+            <i class="fa-solid fa-hourglass-half" style="color:#e11d48;"></i> UPCOMING RETIREMENT TIMELINE (BY YEAR)
+          </h3>
+          <div style="height:320px; position:relative;">
+            <canvas id="chartTeachersRetireCanvas"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW 3: CROSS-TABULATED PIVOT MATRIX CONTAINER -->
+    <div id="ctsTeachersPivotContainer" style="display:none;">
+      <div style="background:#ffffff; border-radius:10px; border:1px solid #cbd5e1; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h3 style="font-size:15px; font-weight:800; color:#0f172a; margin:0 0 4px; display:flex; align-items:center; gap:8px;">
+              <i class="fa-solid fa-table-cells" style="color:#d97706;"></i> TEACHER CROSS-TABULATION MATRIX &amp; PIVOT
+            </h3>
+            <div style="font-size:11.5px; color:#64748b;">
+              Cross-tabulate teachers across Clusters, Designations, Levels, and Teaching Subjects in real time.
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button onclick="exportCtsTeachersPivotCSV()" class="btn" style="background:#16a34a; color:#fff; font-weight:800; font-size:11px; padding:6px 12px; border-radius:6px; border:none; cursor:pointer;">
+              <i class="fa-solid fa-file-csv"></i> Export Pivot CSV
+            </button>
+            <button onclick="exportCtsTeachersPivotExcel()" class="btn" style="background:#0284c7; color:#fff; font-weight:800; font-size:11px; padding:6px 12px; border-radius:6px; border:none; cursor:pointer;">
+              <i class="fa-solid fa-file-excel"></i> Export Pivot Excel
+            </button>
+          </div>
+        </div>
+
+        <!-- Pivot Dimension Selectors -->
+        <div style="display:flex; gap:16px; align-items:center; margin-bottom:16px; background:#f8fafc; padding:12px 16px; border-radius:8px; border:1px solid #e2e8f0; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:12px; font-weight:800; color:#0f172a;"><i class="fa-solid fa-arrows-up-down"></i> Row Dimension:</label>
+            <select id="selCtsTeacherPivotRow" class="form-control" onchange="onCtsTeacherPivotDimChange()" style="height:36px; font-size:12px; font-weight:700; width:200px;">
+              <option value="cluster" selected>CRC Cluster (14)</option>
+              <option value="designation">Designation / Cadre</option>
+              <option value="joined_as">Joined As Level (1-5, 6-8, HTAT)</option>
+              <option value="subject_6_to_8">Std 6-8 Subject</option>
+              <option value="management">School Management</option>
+            </select>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label style="font-size:12px; font-weight:800; color:#0f172a;"><i class="fa-solid fa-arrows-left-right"></i> Column Dimension:</label>
+            <select id="selCtsTeacherPivotCol" class="form-control" onchange="onCtsTeacherPivotDimChange()" style="height:36px; font-size:12px; font-weight:700; width:200px;">
+              <option value="joined_as" selected>Joined As Level (1-5, 6-8, HTAT)</option>
+              <option value="designation">Designation / Cadre</option>
+              <option value="subject_6_to_8">Std 6-8 Subject</option>
+              <option value="subject_mapping">Subject Mapping Status</option>
+              <option value="cluster">CRC Cluster</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="ctsTeachersPivotTableContainer" style="overflow-x:auto;"></div>
+      </div>
+    </div>
+
+    <!-- OFFICIAL TEACHER DOSSIER MODAL OVERLAY -->
+    <div id="ctsTeacherDossierModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); z-index:99999; backdrop-filter:blur(3px); align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+      <div id="ctsTeacherDossierModalCard" style="background:#ffffff; border-radius:12px; width:100%; max-width:780px; max-height:92vh; overflow-y:auto; box-shadow:0 20px 40px rgba(0,0,0,0.3); border:1px solid #cbd5e1; animation:ctsSlideIn 0.25s ease-out;">
+      </div>
+    </div>
+  `;
+
+  // Populate school dropdown
+  onCtsTeacherClusterChange();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function switchCtsTeachersSubView(subview) {
+  activeTeachersSubView = subview;
+  const dirCont = document.getElementById("ctsTeachersDirectoryContainer");
+  const chartCont = document.getElementById("ctsTeachersChartsContainer");
+  const pivotCont = document.getElementById("ctsTeachersPivotContainer");
+
+  const btnDir = document.getElementById("btnCtsTeacherSubViewDirectory");
+  const btnChart = document.getElementById("btnCtsTeacherSubViewCharts");
+  const btnPivot = document.getElementById("btnCtsTeacherSubViewPivot");
+
+  [btnDir, btnChart, btnPivot].forEach(b => {
+    if (b) {
+      b.classList.remove("active");
+      b.style.background = "#ffffff";
+      b.style.color = "#334155";
+      b.style.border = "1px solid #cbd5e1";
+      b.style.boxShadow = "none";
+    }
+  });
+
+  if (dirCont) dirCont.style.display = subview === "directory" ? "block" : "none";
+  if (chartCont) chartCont.style.display = subview === "charts" ? "block" : "none";
+  if (pivotCont) pivotCont.style.display = subview === "pivot" ? "block" : "none";
+
+  if (subview === "directory" && btnDir) {
+    btnDir.classList.add("active");
+    btnDir.style.background = "#0284c7";
+    btnDir.style.color = "#fff";
+    btnDir.style.border = "none";
+    btnDir.style.boxShadow = "0 2px 6px rgba(2,132,199,0.3)";
+    renderCtsTeacherTable(filteredCtsTeacherRows, currentTeachersPage);
+  } else if (subview === "charts" && btnChart) {
+    btnChart.classList.add("active");
+    btnChart.style.background = "#16a34a";
+    btnChart.style.color = "#fff";
+    btnChart.style.border = "none";
+    btnChart.style.boxShadow = "0 2px 6px rgba(22,163,74,0.3)";
+    renderCtsTeachersCharts(filteredCtsTeacherRows);
+  } else if (subview === "pivot" && btnPivot) {
+    btnPivot.classList.add("active");
+    btnPivot.style.background = "#d97706";
+    btnPivot.style.color = "#fff";
+    btnPivot.style.border = "none";
+    btnPivot.style.boxShadow = "0 2px 6px rgba(217,119,6,0.3)";
+    renderCtsTeachersPivot(filteredCtsTeacherRows);
+  }
+}
+
+function onCtsTeacherClusterChange() {
+  const allTeachers = getCtsTeachersMasterData();
+  const clusterVal = document.getElementById("selCtsTeacherCluster")?.value || "ALL";
+  const schoolSelect = document.getElementById("selCtsTeacherSchool");
+
+  if (schoolSelect) {
+    const schools = (clusterVal === "ALL") 
+      ? allTeachers.map(t => ({ udise: t.udise_code, name: t.school_name }))
+      : allTeachers.filter(t => t.cluster === clusterVal).map(t => ({ udise: t.udise_code, name: t.school_name }));
+    
+    const uniqueSchoolsMap = new Map();
+    schools.forEach(s => {
+      if (s.udise && !uniqueSchoolsMap.has(s.udise)) uniqueSchoolsMap.set(s.udise, s.name);
+    });
+
+    const sortedSchools = Array.from(uniqueSchoolsMap.entries()).sort((a,b) => a[1].localeCompare(b[1]));
+    schoolSelect.innerHTML = `<option value="ALL">-- All Schools (${sortedSchools.length}) --</option>` +
+      sortedSchools.map(([udise, name]) => `<option value="${udise}">${name} (${udise})</option>`).join('');
+  }
+
+  filterCtsTeacherRows();
+}
+
+function filterCtsTeacherRows() {
+  const all = getCtsTeachersMasterData();
+  const clusterVal = document.getElementById("selCtsTeacherCluster")?.value || "ALL";
+  const schoolVal = document.getElementById("selCtsTeacherSchool")?.value || "ALL";
+  const desigVal = document.getElementById("selCtsTeacherDesignation")?.value || "ALL";
+  const levelVal = document.getElementById("selCtsTeacherLevel")?.value || "ALL";
+  const subjectVal = document.getElementById("selCtsTeacherSubject")?.value || "ALL";
+  const mappingVal = document.getElementById("selCtsTeacherMapping")?.value || "ALL";
+  const retireVal = document.getElementById("selCtsTeacherRetireYear")?.value || "ALL";
+  const searchVal = (document.getElementById("searchCtsTeacherInput")?.value || "").toLowerCase().trim();
+
+  const filtered = all.filter(t => {
+    if (clusterVal !== "ALL" && t.cluster !== clusterVal) return false;
+    if (schoolVal !== "ALL" && t.udise_code !== schoolVal) return false;
+    if (desigVal !== "ALL" && t.designation !== desigVal) return false;
+    if (levelVal !== "ALL" && t.joined_as !== levelVal) return false;
+    if (subjectVal !== "ALL" && t.subject_6_to_8 !== subjectVal) return false;
+    if (mappingVal !== "ALL" && t.subject_mapping !== mappingVal) return false;
+
+    if (retireVal !== "ALL") {
+      const yr = parseInt(t.retire_year);
+      if (retireVal === "2026-2030") {
+        if (!(yr >= 2026 && yr <= 2030)) return false;
+      } else if (retireVal === "2031-2035") {
+        if (!(yr >= 2031 && yr <= 2035)) return false;
+      } else if (retireVal === "2036-2040") {
+        if (!(yr >= 2036 && yr <= 2040)) return false;
+      } else {
+        if (t.retire_year !== retireVal) return false;
+      }
+    }
+
+    if (searchVal !== "") {
+      const hay = `${t.teacher_name} ${t.teacher_code} ${t.school_name} ${t.udise_code} ${t.cluster} ${t.designation} ${t.subjects_taught_str || ''}`.toLowerCase();
+      if (!hay.includes(searchVal)) return false;
+    }
+
+    return true;
+  });
+
+  filteredCtsTeacherRows = filtered;
+  currentTeachersPage = 1;
+
+  // Update KPI counters dynamically
+  const uniqueSchools = new Set(filtered.map(t => t.udise_code).filter(Boolean)).size;
+  const countBadge = document.getElementById("badgeCtsTeacherCount");
+  if (countBadge) {
+    countBadge.innerText = `Showing ${filtered.length} Teachers (${uniqueSchools} Schools)`;
+  }
+
+  const kTotal = document.getElementById("kpiTeachersTotal");
+  if (kTotal) kTotal.innerText = filtered.length.toLocaleString();
+
+  const kPrimary = document.getElementById("kpiTeachersPrimary");
+  if (kPrimary) kPrimary.innerText = filtered.filter(t => t.joined_as === "1 To 5").length.toLocaleString();
+
+  const kUpper = document.getElementById("kpiTeachersUpper");
+  if (kUpper) kUpper.innerText = filtered.filter(t => t.joined_as === "6 To 8").length.toLocaleString();
+
+  const kPrincipals = document.getElementById("kpiTeachersPrincipals");
+  if (kPrincipals) kPrincipals.innerText = filtered.filter(t => (t.designation || "").includes("Principal") || t.joined_as === "HTAT").length.toLocaleString();
+
+  const kSahayak = document.getElementById("kpiTeachersSahayak");
+  if (kSahayak) kSahayak.innerText = filtered.filter(t => (t.designation || "").includes("Sahayak")).length.toLocaleString();
+
+  const kMapped = document.getElementById("kpiTeachersMapped");
+  if (kMapped) kMapped.innerText = filtered.filter(t => t.subject_mapping === "Mapped").length.toLocaleString();
+
+  const kRetire = document.getElementById("kpiTeachersRetire");
+  if (kRetire) {
+    const r5 = filtered.filter(t => { const y = parseInt(t.retire_year); return y >= 2026 && y <= 2030; }).length;
+    kRetire.innerText = r5.toLocaleString();
+  }
+
+  // Refresh current sub-view
+  if (activeTeachersSubView === "directory") {
+    renderCtsTeacherTable(filtered, 1);
+  } else if (activeTeachersSubView === "charts") {
+    renderCtsTeachersCharts(filtered);
+  } else if (activeTeachersSubView === "pivot") {
+    renderCtsTeachersPivot(filtered);
+  }
+}
+
+function resetCtsTeacherFilters() {
+  const clusterSel = document.getElementById("selCtsTeacherCluster");
+  const desigSel = document.getElementById("selCtsTeacherDesignation");
+  const levelSel = document.getElementById("selCtsTeacherLevel");
+  const subjSel = document.getElementById("selCtsTeacherSubject");
+  const mapSel = document.getElementById("selCtsTeacherMapping");
+  const retSel = document.getElementById("selCtsTeacherRetireYear");
+  const searchInp = document.getElementById("searchCtsTeacherInput");
+
+  if (clusterSel) clusterSel.value = "ALL";
+  if (desigSel) desigSel.value = "ALL";
+  if (levelSel) levelSel.value = "ALL";
+  if (subjSel) subjSel.value = "ALL";
+  if (mapSel) mapSel.value = "ALL";
+  if (retSel) retSel.value = "ALL";
+  if (searchInp) searchInp.value = "";
+
+  onCtsTeacherClusterChange();
+}
+
+function renderCtsTeacherTable(records, page) {
+  currentTeachersPage = page || 1;
+  const tbody = document.getElementById("tbodyCtsTeachers");
+  const pBar = document.getElementById("ctsTeacherPaginationBar");
+  if (!tbody) return;
+
+  if (!records || records.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding:36px; color:#64748b; font-weight:800; font-size:13px;">કોઈ શિક્ષક રેકોર્ડ મળ્યો નથી (No matching teacher records found)</td></tr>`;
+    if (pBar) pBar.innerHTML = "";
+    return;
+  }
+
+  const totalPages = Math.ceil(records.length / TEACHERS_PAGE_SIZE);
+  const startIdx = (currentTeachersPage - 1) * TEACHERS_PAGE_SIZE;
+  const endIdx = Math.min(startIdx + TEACHERS_PAGE_SIZE, records.length);
+  const pageRows = records.slice(startIdx, endIdx);
+
+  tbody.innerHTML = pageRows.map((t, idx) => {
+    const isPrincipal = (t.designation || "").includes("Principal") || t.joined_as === "HTAT";
+    const isSahayak = (t.designation || "").includes("Sahayak");
+    const desigBadgeBg = isPrincipal ? "#dcfce7" : (isSahayak ? "#fef3c7" : "#e0f2fe");
+    const desigBadgeCol = isPrincipal ? "#15803d" : (isSahayak ? "#b45309" : "#0369a1");
+    const desigBorder = isPrincipal ? "#bbf7d0" : (isSahayak ? "#fde68a" : "#bae6fd");
+
+    const isMapped = t.subject_mapping === "Mapped";
+    const mapBadge = isMapped
+      ? `<span style="background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-circle-check"></i> Mapped</span>`
+      : `<span style="background:#fef2f2; color:#dc2626; border:1px solid #fecaca; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; display:inline-flex; align-items:center; gap:4px;"><i class="fa-solid fa-clock"></i> Pending</span>`;
+
+    // Teaching subjects display pill
+    let subjectsHtml = "-";
+    if (t.subjects_taught && t.subjects_taught.length > 0) {
+      const top3 = t.subjects_taught.slice(0, 2);
+      const remaining = t.subjects_taught.length - top3.length;
+      subjectsHtml = top3.map(s => `<span style="background:#f1f5f9; color:#334155; border:1px solid #e2e8f0; font-size:9.5px; font-weight:700; padding:1px 5px; border-radius:4px; display:inline-block; margin:1px;">${s}</span>`).join('') +
+        (remaining > 0 ? `<span style="background:#e0f2fe; color:#0369a1; font-size:9.5px; font-weight:800; padding:1px 5px; border-radius:4px; margin-left:2px;">+${remaining}</span>` : '');
+    }
+
+    return `
+      <tr style="border-bottom:1px solid #f1f5f9; font-size:12px;">
+        <td style="padding:8px 6px; text-align:center; font-weight:700; color:#64748b;">${startIdx + idx + 1}</td>
+        <td style="padding:8px 8px;">
+          <code style="background:#f8fafc; border:1px solid #e2e8f0; color:#0f172a; padding:3px 6px; border-radius:4px; font-weight:800; font-size:11px;">${t.teacher_code}</code>
+        </td>
+        <td style="padding:8px 10px;">
+          <div style="font-weight:800; color:#0b2545; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-user" style="font-size:10px; color:#0284c7;"></i> ${t.teacher_name}
+          </div>
+          <div style="font-size:10px; color:#64748b; margin-top:2px;">${t.post || t.designation}</div>
+        </td>
+        <td style="padding:8px 8px;">
+          <span style="background:${desigBadgeBg}; color:${desigBadgeCol}; border:1px solid ${desigBorder}; font-size:10.5px; font-weight:800; padding:2px 7px; border-radius:5px; display:inline-block;">
+            ${t.designation}
+          </span>
+        </td>
+        <td style="padding:8px 6px; text-align:center;">
+          <span style="background:#f8fafc; border:1px solid #cbd5e1; color:#334155; font-size:10.5px; font-weight:800; padding:2px 6px; border-radius:4px;">
+            ${t.joined_as}
+          </span>
+        </td>
+        <td style="padding:8px 10px;">
+          <div style="font-weight:800; color:#1e293b; font-size:11.5px;">${t.school_name}</div>
+          <div style="font-size:10px; color:#64748b; margin-top:1px;">DISE: <code>${t.udise_code}</code> · ${t.management || 'Local Body'}</div>
+        </td>
+        <td style="padding:8px 8px;">
+          <span style="background:#f1f5f9; color:#0f172a; font-weight:800; font-size:10.5px; padding:2px 6px; border-radius:4px;">
+            ${t.cluster || '-'}
+          </span>
+        </td>
+        <td style="padding:8px 8px;">
+          <div style="font-size:11px; font-weight:700; color:#334155;">${t.subject_6_to_8 || '-'}</div>
+          ${t.language && t.language !== '-' ? `<div style="font-size:9.5px; color:#0284c7; font-weight:800;">Lang: ${t.language}</div>` : ''}
+        </td>
+        <td style="padding:8px 8px; max-width:180px;">${subjectsHtml}</td>
+        <td style="padding:8px 6px; text-align:center;">
+          <span style="font-size:11px; font-weight:800; color:#475569;">${t.retire_date || '-'}</span>
+          ${t.retire_year ? `<div style="font-size:9.5px; color:${parseInt(t.retire_year) <= 2030 ? '#dc2626' : '#64748b'}; font-weight:800;">Yr: ${t.retire_year}</div>` : ''}
+        </td>
+        <td style="padding:8px 6px; text-align:center;">${mapBadge}</td>
+        <td style="padding:8px 6px; text-align:center;">
+          <button onclick="openTeacherDossierModal('${t.teacher_code}')" class="btn" style="background:#0284c7; color:#fff; border:none; padding:4px 8px; border-radius:5px; font-size:10.5px; font-weight:800; cursor:pointer; display:inline-flex; align-items:center; gap:4px;" title="View Complete Teacher Dossier">
+            <i class="fa-solid fa-id-card"></i> Dossier
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Render pagination bar
+  if (pBar) {
+    pBar.innerHTML = `
+      <div style="font-size:11.5px; color:#64748b; font-weight:700;">
+        Showing <strong>${startIdx + 1}</strong> to <strong>${endIdx}</strong> of <strong>${records.length}</strong> teachers
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button onclick="changeCtsTeacherPage(1)" class="btn" ${currentTeachersPage === 1 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} style="padding:4px 8px; font-size:11px; font-weight:800; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">
+          <i class="fa-solid fa-angles-left"></i> First
+        </button>
+        <button onclick="changeCtsTeacherPage(${currentTeachersPage - 1})" class="btn" ${currentTeachersPage === 1 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} style="padding:4px 8px; font-size:11px; font-weight:800; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">
+          <i class="fa-solid fa-angle-left"></i> Prev
+        </button>
+        <span style="font-size:11.5px; font-weight:800; color:#0f172a; padding:0 8px;">
+          Page ${currentTeachersPage} of ${totalPages}
+        </span>
+        <button onclick="changeCtsTeacherPage(${currentTeachersPage + 1})" class="btn" ${currentTeachersPage === totalPages ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} style="padding:4px 8px; font-size:11px; font-weight:800; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">
+          Next <i class="fa-solid fa-angle-right"></i>
+        </button>
+        <button onclick="changeCtsTeacherPage(${totalPages})" class="btn" ${currentTeachersPage === totalPages ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''} style="padding:4px 8px; font-size:11px; font-weight:800; background:#f8fafc; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;">
+          Last <i class="fa-solid fa-angles-right"></i>
+        </button>
+      </div>
+    `;
+  }
+}
+
+function changeCtsTeacherPage(newPage) {
+  const totalPages = Math.ceil(filteredCtsTeacherRows.length / TEACHERS_PAGE_SIZE);
+  if (newPage < 1 || newPage > totalPages) return;
+  renderCtsTeacherTable(filteredCtsTeacherRows, newPage);
+  document.getElementById("ctsTeachersDirectoryContainer")?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderCtsTeachersCharts(records) {
+  if (typeof Chart === "undefined") {
+    console.warn("Chart.js not loaded.");
+    return;
+  }
+
+  // 1. Cluster-wise Teacher Distribution Chart
+  const clusterCounts = {};
+  records.forEach(r => {
+    if (r.cluster) clusterCounts[r.cluster] = (clusterCounts[r.cluster] || 0) + 1;
+  });
+  const clusterLabels = Object.keys(clusterCounts).sort((a,b) => clusterCounts[b] - clusterCounts[a]);
+  const clusterData = clusterLabels.map(k => clusterCounts[k]);
+
+  const ctxCluster = document.getElementById("chartTeachersClusterCanvas");
+  if (ctxCluster) {
+    if (chartTeachersClusterObj) chartTeachersClusterObj.destroy();
+    chartTeachersClusterObj = new Chart(ctxCluster, {
+      type: 'bar',
+      data: {
+        labels: clusterLabels,
+        datasets: [{
+          label: 'Teachers Count',
+          data: clusterData,
+          backgroundColor: '#0284c7',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 30, font: { size: 9.5 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // 2. Designation Breakdown Chart
+  const desigCounts = {};
+  records.forEach(r => {
+    const d = r.designation || "Other";
+    desigCounts[d] = (desigCounts[d] || 0) + 1;
+  });
+  const desigLabels = Object.keys(desigCounts);
+  const desigData = desigLabels.map(k => desigCounts[k]);
+  const desigColors = ['#0284c7', '#16a34a', '#ea580c', '#d97706', '#8b5cf6', '#059669', '#64748b'];
+
+  const ctxDesig = document.getElementById("chartTeachersDesigCanvas");
+  if (ctxDesig) {
+    if (chartTeachersDesigObj) chartTeachersDesigObj.destroy();
+    chartTeachersDesigObj = new Chart(ctxDesig, {
+      type: 'doughnut',
+      data: {
+        labels: desigLabels,
+        datasets: [{
+          data: desigData,
+          backgroundColor: desigColors.slice(0, desigLabels.length)
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  // 3. Std 6-8 Subject Specialization Chart
+  const subjCounts = { 'Language': 0, 'Maths-Science': 0, 'Social-Science': 0, 'Primary / Unassigned': 0 };
+  records.forEach(r => {
+    if (r.subject_6_to_8 === "Language") subjCounts['Language']++;
+    else if (r.subject_6_to_8 === "Maths-Science") subjCounts['Maths-Science']++;
+    else if (r.subject_6_to_8 === "Social-Science") subjCounts['Social-Science']++;
+    else subjCounts['Primary / Unassigned']++;
+  });
+
+  const ctxSubj = document.getElementById("chartTeachersSubjectCanvas");
+  if (ctxSubj) {
+    if (chartTeachersSubjectObj) chartTeachersSubjectObj.destroy();
+    chartTeachersSubjectObj = new Chart(ctxSubj, {
+      type: 'bar',
+      data: {
+        labels: Object.keys(subjCounts),
+        datasets: [{
+          label: 'Teacher Count',
+          data: Object.values(subjCounts),
+          backgroundColor: ['#8b5cf6', '#0284c7', '#ea580c', '#64748b'],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { grid: { display: false }, ticks: { font: { size: 10.5 } } }
+        }
+      }
+    });
+  }
+
+  // 4. Retirement Timeline by Year (Grouped into 5-yr bins & individual upcoming)
+  const retireCounts = {};
+  records.forEach(r => {
+    const yr = parseInt(r.retire_year);
+    if (yr) {
+      if (yr <= 2030) {
+        retireCounts[yr] = (retireCounts[yr] || 0) + 1;
+      } else if (yr <= 2035) {
+        retireCounts['2031-35'] = (retireCounts['2031-35'] || 0) + 1;
+      } else if (yr <= 2040) {
+        retireCounts['2036-40'] = (retireCounts['2036-40'] || 0) + 1;
+      } else if (yr <= 2045) {
+        retireCounts['2041-45'] = (retireCounts['2041-45'] || 0) + 1;
+      } else {
+        retireCounts['2046+'] = (retireCounts['2046+'] || 0) + 1;
+      }
+    }
+  });
+
+  const retireLabels = Object.keys(retireCounts);
+  const retireData = retireLabels.map(k => retireCounts[k]);
+
+  const ctxRetire = document.getElementById("chartTeachersRetireCanvas");
+  if (ctxRetire) {
+    if (chartTeachersRetireObj) chartTeachersRetireObj.destroy();
+    chartTeachersRetireObj = new Chart(ctxRetire, {
+      type: 'line',
+      data: {
+        labels: retireLabels,
+        datasets: [{
+          label: 'Retiring Staff',
+          data: retireData,
+          borderColor: '#e11d48',
+          backgroundColor: 'rgba(225, 29, 72, 0.12)',
+          fill: true,
+          tension: 0.35,
+          pointBackgroundColor: '#e11d48',
+          pointRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+          x: { grid: { color: '#f8fafc' }, ticks: { font: { size: 10.5 } } }
+        }
+      }
+    });
+  }
+}
+
+function onCtsTeacherPivotDimChange() {
+  teachersPivotRowDim = document.getElementById("selCtsTeacherPivotRow")?.value || "cluster";
+  teachersPivotColDim = document.getElementById("selCtsTeacherPivotCol")?.value || "joined_as";
+  renderCtsTeachersPivot(filteredCtsTeacherRows);
+}
+
+function renderCtsTeachersPivot(records) {
+  const container = document.getElementById("ctsTeachersPivotTableContainer");
+  if (!container) return;
+
+  const rowKey = teachersPivotRowDim;
+  const colKey = teachersPivotColDim;
+
+  // Extract distinct row and column values
+  const rowValsSet = new Set();
+  const colValsSet = new Set();
+
+  records.forEach(r => {
+    rowValsSet.add(r[rowKey] || "Unknown");
+    colValsSet.add(r[colKey] || "Unknown");
+  });
+
+  const rowVals = Array.from(rowValsSet).sort();
+  const colVals = Array.from(colValsSet).sort();
+
+  // Matrix calculation
+  const matrix = {};
+  const rowTotals = {};
+  const colTotals = {};
+  let grandTotal = 0;
+
+  rowVals.forEach(r => {
+    matrix[r] = {};
+    rowTotals[r] = 0;
+    colVals.forEach(c => { matrix[r][c] = 0; });
+  });
+  colVals.forEach(c => { colTotals[c] = 0; });
+
+  records.forEach(r => {
+    const rv = r[rowKey] || "Unknown";
+    const cv = r[colKey] || "Unknown";
+    if (matrix[rv] && matrix[rv][cv] !== undefined) {
+      matrix[rv][cv]++;
+      rowTotals[rv]++;
+      colTotals[cv]++;
+      grandTotal++;
+    }
+  });
+
+  let html = `
+    <table class="custom-table" style="width:100%; border-collapse:collapse; font-size:12px;">
+      <thead>
+        <tr style="background:#0f172a; color:#fff;">
+          <th style="padding:10px; text-transform:uppercase;">${rowKey.replace(/_/g, ' ')} / ${colKey.replace(/_/g, ' ')}</th>
+          ${colVals.map(c => `<th style="padding:10px; text-align:center;">${c}</th>`).join('')}
+          <th style="padding:10px; text-align:center; background:#1e293b; color:#38bdf8;">ROW TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowVals.map((r, idx) => `
+          <tr style="border-bottom:1px solid #e2e8f0; background:${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+            <td style="padding:8px 10px; font-weight:800; color:#0f172a;">${r}</td>
+            ${colVals.map(c => `
+              <td style="padding:8px; text-align:center; font-weight:700; color:${matrix[r][c] > 0 ? '#0369a1' : '#94a3b8'};">
+                ${matrix[r][c] > 0 ? matrix[r][c].toLocaleString() : '-'}
+              </td>
+            `).join('')}
+            <td style="padding:8px; text-align:center; font-weight:900; background:#f1f5f9; color:#0f172a;">
+              ${rowTotals[r].toLocaleString()}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+      <tfoot>
+        <tr style="background:#0f172a; color:#ffffff; font-weight:900;">
+          <td style="padding:10px;">GRAND TOTAL</td>
+          ${colVals.map(c => `
+            <td style="padding:10px; text-align:center; color:#fde047;">${colTotals[c].toLocaleString()}</td>
+          `).join('')}
+          <td style="padding:10px; text-align:center; background:#ea580c; color:#ffffff;">${grandTotal.toLocaleString()}</td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+
+  container.innerHTML = html;
+}
+
+function openTeacherDossierModal(teacherCode) {
+  const all = getCtsTeachersMasterData();
+  const t = all.find(r => String(r.teacher_code) === String(teacherCode));
+  if (!t) {
+    alert("Teacher details not found for code: " + teacherCode);
+    return;
+  }
+
+  const modal = document.getElementById("ctsTeacherDossierModal");
+  const card = document.getElementById("ctsTeacherDossierModalCard");
+  if (!modal || !card) return;
+
+  // Calculate retirement countdown
+  let retireCountdown = "-";
+  if (t.retire_year) {
+    const yr = parseInt(t.retire_year);
+    const nowYr = new Date().getFullYear();
+    const diff = yr - nowYr;
+    if (diff <= 0) retireCountdown = "Due this academic session!";
+    else retireCountdown = `In approx ${diff} year(s)`;
+  }
+
+  // Parse subjects into grade pills
+  let subjectsDetailed = "";
+  if (t.subjects_taught && t.subjects_taught.length > 0) {
+    subjectsDetailed = t.subjects_taught.map(s => {
+      return `<span style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:11px; font-weight:800; padding:4px 9px; border-radius:6px; display:inline-block; margin:3px;">
+        <i class="fa-solid fa-book" style="font-size:9px;"></i> ${s}
+      </span>`;
+    }).join('');
+  } else {
+    subjectsDetailed = '<span style="color:#64748b; font-style:italic;">No direct class subjects mapped.</span>';
+  }
+
+  card.innerHTML = `
+    <!-- Modal Header -->
+    <div style="background:linear-gradient(135deg, #0b2545 0%, #15803d 100%); color:#fff; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; border-top-left-radius:12px; border-top-right-radius:12px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="width:40px; height:40px; background:#ffffff; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#0b2545; font-size:20px;">
+          <i class="fa-solid fa-id-badge" style="color:#ea580c;"></i>
+        </div>
+        <div>
+          <div style="font-size:10px; font-weight:800; color:#fde047; letter-spacing:0.8px; text-transform:uppercase;">
+            Government of Gujarat · Samagra Shiksha · CTS
+          </div>
+          <div style="font-size:16px; font-weight:900; margin:1px 0;">
+            OFFICIAL TEACHER SERVICE DOSSIER
+          </div>
+        </div>
+      </div>
+      <button onclick="closeTeacherDossierModal()" style="background:rgba(255,255,255,0.15); border:none; color:#fff; width:32px; height:32px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div style="padding:20px; font-size:12.5px; color:#1e293b;">
+      
+      <!-- Teacher Hero Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:54px; height:54px; background:#e0f2fe; color:#0284c7; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:24px; border:2px solid #bae6fd;">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div>
+            <div style="font-size:16px; font-weight:900; color:#0f172a; text-transform:uppercase;">
+              ${t.teacher_name}
+            </div>
+            <div style="font-size:11.5px; color:#64748b; margin-top:2px;">
+              Designation: <strong style="color:#0369a1;">${t.designation}</strong> · Post: <strong>${t.post || '-'}</strong>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">TEACHER CODE</div>
+          <code style="font-size:16px; font-weight:900; color:#ea580c; background:#ffedd5; padding:3px 10px; border-radius:6px; display:inline-block; border:1px solid #fed7aa;">
+            ${t.teacher_code}
+          </code>
+        </div>
+      </div>
+
+      <!-- Information Grids -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+        
+        <!-- Box 1: School Placement -->
+        <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px;">
+          <div style="font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-school"></i> School Placement &amp; Location
+          </div>
+          <div style="display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:11.5px;">
+            <span style="color:#64748b; font-weight:700;">School Name:</span>
+            <span style="font-weight:800; color:#0f172a;">${t.school_name}</span>
+
+            <span style="color:#64748b; font-weight:700;">UDISE Code:</span>
+            <span><code>${t.udise_code}</code></span>
+
+            <span style="color:#64748b; font-weight:700;">CRC Cluster:</span>
+            <span style="font-weight:800; color:#0369a1;">${t.cluster}</span>
+
+            <span style="color:#64748b; font-weight:700;">Village / Block:</span>
+            <span>${t.village} / ${t.block} (${t.district})</span>
+
+            <span style="color:#64748b; font-weight:700;">Management:</span>
+            <span style="font-weight:700;">${t.management}</span>
+          </div>
+        </div>
+
+        <!-- Box 2: Service & Service Status -->
+        <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px;">
+          <div style="font-size:11px; font-weight:800; color:#16a34a; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+            <i class="fa-solid fa-user-check"></i> Service &amp; Cadre Details
+          </div>
+          <div style="display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:11.5px;">
+            <span style="color:#64748b; font-weight:700;">Joined As:</span>
+            <span style="font-weight:800;">${t.joined_as}</span>
+
+            <span style="color:#64748b; font-weight:700;">Recruitment Mode:</span>
+            <span>${t.recruitment_mode || 'Direct / General'}</span>
+
+            <span style="color:#64748b; font-weight:700;">Current Status:</span>
+            <span style="font-weight:800; color:#15803d;">${t.current_status}</span>
+
+            <span style="color:#64748b; font-weight:700;">Profile Status:</span>
+            <span style="font-weight:800; color:#0284c7;">${t.profile_status}</span>
+
+            <span style="color:#64748b; font-weight:700;">Subject Mapping:</span>
+            <span style="font-weight:800; color:${t.subject_mapping === 'Mapped' ? '#16a34a' : '#dc2626'};">${t.subject_mapping}</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Box 3: Retirement Planning -->
+      <div style="background:#fff1f2; border:1px solid #fecaca; border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+        <div style="font-size:11px; font-weight:800; color:#be123c; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-hourglass-half"></i> Retirement Record &amp; Timeline
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-size:13px; font-weight:800; color:#9f1239;">Date of Superannuation: ${t.retire_date || 'N/A'}</div>
+            <div style="font-size:11px; color:#be123c; margin-top:2px;">Retirement Year: <strong>${t.retire_year || 'N/A'}</strong> (${retireCountdown})</div>
+          </div>
+          <span style="background:#ffffff; color:#9f1239; border:1px solid #fda4af; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:800;">
+            ${t.relieving_status ? 'Relieved: ' + t.relieving_status : 'Active in Current School'}
+          </span>
+        </div>
+      </div>
+
+      <!-- Box 4: Teaching Subject Allocation -->
+      <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; padding:12px 14px; margin-bottom:16px;">
+        <div style="font-size:11px; font-weight:800; color:#475569; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-chalkboard"></i> Teaching Grades &amp; Subjects Allotted (From CTS Portal)
+        </div>
+        <div style="font-size:11.5px; color:#334155; margin-bottom:8px;">
+          ${t.subject_6_to_8 && t.subject_6_to_8 !== '-' ? `<strong>Std 6-8 Cadre:</strong> <span style="color:#0369a1; font-weight:800;">${t.subject_6_to_8}</span>` : ''}
+          ${t.language && t.language !== '-' ? ` · <strong>Medium/Language:</strong> <span style="color:#15803d; font-weight:800;">${t.language}</span>` : ''}
+        </div>
+        <div>
+          ${subjectsDetailed}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom-left-radius:12px; border-bottom-right-radius:12px;">
+      <span style="font-size:10.5px; color:#64748b;">
+        Report Issued: <strong>${new Date().toLocaleDateString('en-GB')}</strong> · BRC Kadi
+      </span>
+      <div style="display:flex; gap:8px;">
+        <button onclick="window.print()" class="btn" style="background:#0284c7; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:11.5px; font-weight:800; cursor:pointer;">
+          <i class="fa-solid fa-print"></i> Print Dossier
+        </button>
+        <button onclick="closeTeacherDossierModal()" class="btn" style="background:#64748b; color:#fff; border:none; padding:6px 14px; border-radius:6px; font-size:11.5px; font-weight:800; cursor:pointer;">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+
+  modal.style.display = "flex";
+}
+
+function closeTeacherDossierModal() {
+  const modal = document.getElementById("ctsTeacherDossierModal");
+  if (modal) modal.style.display = "none";
+}
+
+function exportCtsTeachersCSV() {
+  const records = filteredCtsTeacherRows || getCtsTeachersMasterData();
+  let csv = "data:text/csv;charset=utf-8,﻿";
+  csv += "Sr No,District,Block,Cluster,School UDISE,School Name,Teacher Code,Teacher Name,Designation,Std,Joined_As,Std_6_To_8_Subject,Language,Post,RecruitmentMode_6To8,RetiredDate,CurrentStatus,RelievingStatus,Profile,Subject Mapping\n";
+  
+  records.forEach((r, idx) => {
+    csv += `"${idx + 1}","${r.district || 'MAHESANA'}","${r.block || 'KADI'}","${r.cluster || ''}","${r.udise_code || ''}","${(r.school_name || '').replace(/"/g, '""')}","${r.teacher_code || ''}","${(r.teacher_name || '').replace(/"/g, '""')}","${r.designation || ''}","${(r.subjects_taught_str || '').replace(/"/g, '""')}","${r.joined_as || ''}","${r.subject_6_to_8 || ''}","${r.language || ''}","${r.post || ''}","${r.recruitment_mode || ''}","${r.retire_date || ''}","${r.current_status || ''}","${r.relieving_status || ''}","${r.profile_status || ''}","${r.subject_mapping || ''}"\n`;
+  });
+
+  const encodedUri = encodeURI(csv);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Teachers_In_CTS_Kadi_Block_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportCtsTeachersExcel() {
+  const records = filteredCtsTeacherRows || getCtsTeachersMasterData();
+  if (typeof XLSX === "undefined") {
+    exportCtsTeachersCSV();
+    return;
+  }
+
+  const data = [
+    ["Sr No", "District", "Block", "Cluster", "School UDISE", "School Name", "Teacher Code", "Teacher Name", "Designation", "Joined As", "Std 6-8 Subject", "Language", "Post", "Retirement Date", "Current Status", "Subject Mapping", "Teaching Allocation"]
+  ];
+
+  records.forEach((r, idx) => {
+    data.push([
+      idx + 1,
+      r.district || "MAHESANA",
+      r.block || "KADI",
+      r.cluster || "",
+      r.udise_code || "",
+      r.school_name || "",
+      r.teacher_code || "",
+      r.teacher_name || "",
+      r.designation || "",
+      r.joined_as || "",
+      r.subject_6_to_8 || "",
+      r.language || "",
+      r.post || "",
+      r.retire_date || "",
+      r.current_status || "",
+      r.subject_mapping || "",
+      r.subjects_taught_str || ""
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Teachers in CTS");
+  XLSX.writeFile(wb, `Teachers_In_CTS_Kadi_Block_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+function exportCtsTeachersPivotCSV() {
+  const table = document.querySelector("#ctsTeachersPivotTableContainer table");
+  if (!table) return;
+
+  let csv = "data:text/csv;charset=utf-8,﻿";
+  const rows = table.querySelectorAll("tr");
+  rows.forEach(r => {
+    const cols = Array.from(r.querySelectorAll("th, td")).map(td => `"${td.innerText.trim().replace(/"/g, '""')}"`);
+    csv += cols.join(",") + "\n";
+  });
+
+  const encodedUri = encodeURI(csv);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Teachers_In_CTS_Pivot_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportCtsTeachersPivotExcel() {
+  const table = document.querySelector("#ctsTeachersPivotTableContainer table");
+  if (!table || typeof XLSX === "undefined") {
+    exportCtsTeachersPivotCSV();
+    return;
+  }
+
+  const wb = XLSX.utils.table_to_book(table, { sheet: "Teachers Pivot" });
+  XLSX.writeFile(wb, `Teachers_In_CTS_Pivot_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 function renderGsosDataTables() {
@@ -12353,6 +13647,77 @@ function sendBotMessage() {
       })();
       return;
     }
+  }
+
+  // =========================================================================
+  // 0.1 CTS TEACHER SEARCH BY 8-DIGIT CODE OR TEACHER INTENT
+  // =========================================================================
+  const teacherCodeMatch = rawText.match(/\b(10\d{6})\b/);
+  const searchedTeacherCode = teacherCodeMatch ? teacherCodeMatch[1] : null;
+  const ctsMasterTeachers = (typeof getCtsTeachersMasterData === "function") ? getCtsTeachersMasterData() : [];
+
+  if (searchedTeacherCode && ctsMasterTeachers.length > 0) {
+    const t = ctsMasterTeachers.find(item => String(item.teacher_code) === searchedTeacherCode);
+    if (t) {
+      appendBotAiMessage(`
+        <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.06); margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+            <div>
+              <span style="font-size:10px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:10px; text-transform:uppercase;">CTS Teacher</span>
+              <h4 style="margin:4px 0 2px; font-size:14px; font-weight:800; color:#0f172a;">${t.teacher_name}</h4>
+              <div style="font-size:11px; color:#64748b;">${t.designation} · Post: ${t.post}</div>
+            </div>
+            <span style="background:#fef3c7; color:#92400e; font-weight:800; font-size:11px; padding:4px 8px; border-radius:6px; border:1px solid #fde68a;">
+              Code: ${t.teacher_code}
+            </span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px; margin-bottom:10px; background:#f8fafc; padding:8px 10px; border-radius:6px;">
+            <div><strong>શાળા:</strong> ${t.school_name}</div>
+            <div><strong>CRC ક્લસ્ટર:</strong> ${t.cluster}</div>
+            <div><strong>Joined As:</strong> ${t.joined_as}</div>
+            <div><strong>વિષય (૬-૮):</strong> ${t.subject_6_to_8 || '-'}</div>
+            <div><strong>નિવૃત્તિ વર્ષ:</strong> ${t.retire_year || '-'} (${t.superannuation_date || '-'})</div>
+            <div><strong>મેપિંગ:</strong> <span style="color:${t.subject_mapping === 'Mapped' ? '#16a34a' : '#dc2626'}; font-weight:800;">${t.subject_mapping}</span></div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button onclick="openModuleTab('Teachers in CTS'); setTimeout(() => openTeacherDossierModal('${t.teacher_code}'), 300);" class="btn" style="background:#0284c7; color:#fff; font-size:11px; font-weight:800; padding:5px 12px; border-radius:6px; border:none; cursor:pointer;">
+              <i class="fa-solid fa-address-card"></i> View Full Dossier
+            </button>
+            <button onclick="openModuleTab('Teachers in CTS');" class="btn" style="background:#f1f5f9; color:#334155; font-size:11px; font-weight:800; padding:5px 12px; border-radius:6px; border:1px solid #cbd5e1; cursor:pointer;">
+              <i class="fa-solid fa-chalkboard-user"></i> Teachers Module
+            </button>
+          </div>
+        </div>
+      `);
+      return;
+    }
+  }
+
+  // Teacher count / summary intent
+  const isTeacherStatsIntent = /(કેટલા શિક્ષક|કુલ શિક્ષક|શિક્ષકોની સંખ્યા|શિક્ષક માહિતી|cts teacher|teachers count|total teacher)/i.test(query);
+  if (isTeacherStatsIntent && ctsMasterTeachers.length > 0) {
+    appendBotAiMessage(`
+      <div style="background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; padding:12px 14px; box-shadow:0 2px 6px rgba(0,0,0,0.06); margin-bottom:8px;">
+        <h4 style="margin:0 0 6px; font-size:13.5px; font-weight:800; color:#034433; display:flex; align-items:center; gap:6px;">
+          <i class="fa-solid fa-chalkboard-user" style="color:#f97316;"></i> કડી તાલુકા CTS શિક્ષકોની માહિતી (Samagra Shiksha)
+        </h4>
+        <div style="font-size:11.5px; color:#334155; line-height:1.5; margin-bottom:10px;">
+          કડી તાલુકાની <strong>132 સરકારી/ગ્રાન્ટેડ શાળાઓ</strong>માં કુલ <strong>1,076 શિક્ષકો</strong> કાર્યરત છે:
+          <ul style="margin:6px 0 6px 18px; padding:0;">
+            <li><strong>પ્રાથમિક (૧ થી ૫):</strong> 617 શિક્ષકો (57.3%)</li>
+            <li><strong>ઉચ્ચ પ્રાથમિક (૬ થી ૮):</strong> 440 શિક્ષકો (40.9%)</li>
+            <li><strong>આચાર્યશ્રીઓ &amp; HTAT:</strong> 132 (54 HTAT + 78 Principals)</li>
+            <li><strong>સહાયક કેડર:</strong> 38 (35 જ્ઞાન સહાયક + 2 વિદ્યા સહાયક + 1 ખેલ સહાયક)</li>
+            <li><strong>વિષય મેપિંગ:</strong> 1,069 Mapped (99.3%) · 7 Pending</li>
+            <li><strong>આગામી ૫ વર્ષમાં નિવૃત્તિ:</strong> 148 શિક્ષકો (2026 માં 17 શિક્ષકો)</li>
+          </ul>
+        </div>
+        <button onclick="openModuleTab('Teachers in CTS')" class="btn" style="background:#034433; color:#fff; font-size:11.5px; font-weight:800; padding:6px 14px; border-radius:6px; border:none; cursor:pointer;">
+          <i class="fa-solid fa-chalkboard-user"></i> Open Teachers in CTS Module
+        </button>
+      </div>
+    `);
+    return;
   }
 
   // =========================================================================
